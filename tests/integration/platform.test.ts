@@ -948,7 +948,6 @@ test('flexible fee components, concessions, analytics and late-fee assessment re
   );
 });
 
-
 test('hosted checkout is idempotent, provider-gated and reconciles to the fee ledger', async () => {
   let providerCalls = 0;
   let providerReturnUrl = '';
