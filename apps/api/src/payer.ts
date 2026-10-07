@@ -15,6 +15,7 @@ import { uuid } from './content';
 import { feePayerProfileSchema, payerLinkSchema } from '../../../packages/core/src/contracts';
 import { decrypt, digest, encrypt, token } from '../../../packages/core/src/security';
 import { checkoutProviderEnabled } from './payment-checkout';
+import { autopayProviderEnabled } from './mandate-autopay';
 
 type PayerProfile = {
   accountReference: string;
@@ -231,8 +232,16 @@ export class PayerPortalController {
   @Get(':token')
   async portal(@Param('token') rawToken: string) {
     const access = await this.access(rawToken);
-    const [installments, payments, refunds, checkoutSessions, components, allocationCoverage] =
-      await Promise.all([
+    const [
+      installments,
+      payments,
+      refunds,
+      checkoutSessions,
+      components,
+      allocationCoverage,
+      mandates,
+      mandateSetups,
+    ] = await Promise.all([
         this.db.query(
           `SELECT id,sequence,due_date,amount_minor,paid_amount_minor,
           CASE
@@ -298,6 +307,22 @@ export class PayerPortalController {
          WHERE pr.schedule_id=$1`,
           [access.schedule_id],
         ),
+        this.db.query(
+          `SELECT id,rail,provider,provider_reference,status,last_event_at
+           FROM payment_mandates
+           WHERE schedule_id=$1
+           ORDER BY last_event_at DESC
+           LIMIT 20`,
+          [access.schedule_id],
+        ),
+        this.db.query(
+          `SELECT id,rail,status,failure_code,expires_at,created_at,updated_at
+           FROM payment_mandate_setup_requests
+           WHERE schedule_id=$1
+           ORDER BY created_at DESC
+           LIMIT 20`,
+          [access.schedule_id],
+        ),
       ]);
     const profile = decrypt<PayerProfile>(access.encrypted_profile);
     return {
@@ -336,7 +361,10 @@ export class PayerPortalController {
             ? 'Component selection is disabled because earlier payment/refund history cannot be allocated safely by fee head.'
             : null,
       },
+      mandates,
+      mandateSetups,
       providerConnected: checkoutProviderEnabled(),
+      autopayProviderConnected: autopayProviderEnabled(),
       note: checkoutProviderEnabled()
         ? 'Hosted checkout is activated. The selected provider collects payment credentials; this platform records only validated payment outcomes.'
         : 'This portal shows the platform ledger. Payment actions are enabled only after a verified payment provider is configured.',
