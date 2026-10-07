@@ -240,12 +240,18 @@ export const mandateRecordSchema = z
   })
   .strict();
 
-
 export const feeHeadSchema = z
   .object({
-    code: z.string().trim().regex(/^[A-Z0-9_]{2,40}$/),
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Z0-9_]{2,40}$/),
     name: z.string().trim().min(2).max(100),
-    settlementAccountKey: z.string().trim().regex(/^[A-Za-z0-9_-]{2,80}$/).optional(),
+    settlementAccountKey: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,80}$/)
+      .optional(),
   })
   .strict();
 
@@ -268,7 +274,11 @@ export const installmentComponentSchema = z
   .superRefine((value, ctx) => {
     const ids = value.components.map((x) => x.feeHeadId);
     if (new Set(ids).size !== ids.length)
-      ctx.addIssue({ code: 'custom', path: ['components'], message: 'Fee heads must be unique per installment' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['components'],
+        message: 'Fee heads must be unique per installment',
+      });
   });
 
 export const feeAdjustmentSchema = z
@@ -301,13 +311,21 @@ export const collectionPageCreateSchema = z
   .strict()
   .superRefine((value, ctx) => {
     if (!value.allowFull && !value.allowPartial && !value.allowCustom)
-      ctx.addIssue({ code: 'custom', path: ['allowFull'], message: 'Enable at least one collection mode' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['allowFull'],
+        message: 'Enable at least one collection mode',
+      });
     if (
       value.minimumMinor !== undefined &&
       value.maximumMinor !== undefined &&
       value.maximumMinor < value.minimumMinor
     )
-      ctx.addIssue({ code: 'custom', path: ['maximumMinor'], message: 'Maximum must be at least the minimum' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['maximumMinor'],
+        message: 'Maximum must be at least the minimum',
+      });
   });
 
 export const collectionIntentSchema = z

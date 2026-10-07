@@ -73,7 +73,9 @@ export class FeeStructureController {
       ).rows[0];
       if (!installment) throw new ConflictException('Installment does not exist');
       if (installment.schedule_status !== 'draft')
-        throw new ConflictException('Fee-head structure can only be set while the schedule is a draft');
+        throw new ConflictException(
+          'Fee-head structure can only be set while the schedule is a draft',
+        );
 
       const existing = (
         await c.query(
@@ -86,7 +88,9 @@ export class FeeStructureController {
 
       const total = v.components.reduce((sum, item) => sum + item.amountMinor, 0);
       if (total !== Number(installment.amount_minor))
-        throw new UnprocessableEntityException('Fee-head component total must equal the installment amount');
+        throw new UnprocessableEntityException(
+          'Fee-head component total must equal the installment amount',
+        );
 
       const known = await c.query(
         `SELECT id FROM fee_heads WHERE id = ANY($1::uuid[]) AND active=true`,
@@ -140,7 +144,9 @@ export class FeeStructureController {
       if (installment.status === 'cancelled')
         throw new ConflictException('Cancelled installments cannot be adjusted');
       if (installment.schedule_status === 'draft')
-        throw new ConflictException('Activate the fee schedule before applying financial adjustments');
+        throw new ConflictException(
+          'Activate the fee schedule before applying financial adjustments',
+        );
 
       const nextAmount = Number(installment.amount_minor) + direction * v.amountMinor;
       if (nextAmount <= 0 || nextAmount < Number(installment.paid_amount_minor))
@@ -174,10 +180,11 @@ export class FeeStructureController {
               ? 'scheduled'
               : installment.status;
 
-      await c.query(
-        `UPDATE fee_installments SET amount_minor=$2,status=$3 WHERE id=$1`,
-        [v.installmentId, nextAmount, nextStatus],
-      );
+      await c.query(`UPDATE fee_installments SET amount_minor=$2,status=$3 WHERE id=$1`, [
+        v.installmentId,
+        nextAmount,
+        nextStatus,
+      ]);
       await c.query(
         `UPDATE fee_schedules
          SET total_amount_minor=total_amount_minor+$2,version=version+1,updated_at=now(),
@@ -197,11 +204,7 @@ export class FeeStructureController {
   }
 
   @Post('adjustments/:id/reverse')
-  async reverse(
-    @Param('id') id: string,
-    @Body() body: unknown,
-    @Req() req: AuthedRequest,
-  ) {
+  async reverse(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
     const adjustmentId = uuid(id);
     const v = feeAdjustmentReverseSchema.parse(body);
     return this.db.tx(async (c) => {
@@ -234,10 +237,11 @@ export class FeeStructureController {
           : Number(installment.paid_amount_minor) > 0
             ? 'part_paid'
             : 'scheduled';
-      await c.query(
-        'UPDATE fee_installments SET amount_minor=$2,status=$3 WHERE id=$1',
-        [adjustment.installment_id, nextAmount, nextStatus],
-      );
+      await c.query('UPDATE fee_installments SET amount_minor=$2,status=$3 WHERE id=$1', [
+        adjustment.installment_id,
+        nextAmount,
+        nextStatus,
+      ]);
       await c.query(
         `UPDATE fee_schedules
          SET total_amount_minor=total_amount_minor+$2,version=version+1,updated_at=now()
@@ -407,8 +411,7 @@ export class CollectionPagePublicController {
         process.env.PAYMENT_PROVIDER_MODE === 'signed_hmac'
           ? 'callback_ready_checkout_not_configured'
           : 'disabled',
-      note:
-        'Choose an amount only. The platform never asks for card, bank, UPI PIN or OTP credentials on this page.',
+      note: 'Choose an amount only. The platform never asks for card, bank, UPI PIN or OTP credentials on this page.',
     };
   }
 
@@ -454,7 +457,9 @@ export class CollectionPagePublicController {
         throw new ConflictException('Selected collection mode is not enabled');
 
       if (!v.installmentId)
-        throw new UnprocessableEntityException('Select an installment before creating a collection intent');
+        throw new UnprocessableEntityException(
+          'Select an installment before creating a collection intent',
+        );
 
       const installment = (
         await c.query(

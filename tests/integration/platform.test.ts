@@ -851,7 +851,6 @@ test('signed provider webhooks verify authenticity and apply payment exactly onc
   }
 });
 
-
 test('fee heads, discounts and collection pages preserve an auditable amount lifecycle', async () => {
   const tuition = await call(
     '/v1/admin/fees/structure/heads',
@@ -948,22 +947,22 @@ test('fee heads, discounts and collection pages preserve an auditable amount lif
   assert.equal(Number(publicPage.data.installments[0].outstanding_minor), 90000);
 
   const intentKey = randomUUID();
-  const intent = await call(
-    '/v1/collections/' + slug + '/intents',
-    'POST',
-    { installmentId, mode: 'full', idempotencyKey: intentKey },
-  );
+  const intent = await call('/v1/collections/' + slug + '/intents', 'POST', {
+    installmentId,
+    mode: 'full',
+    idempotencyKey: intentKey,
+  });
   assert.equal(intent.r.status, 201, JSON.stringify(intent.data));
   assert.equal(Number(intent.data.amount_minor), 90000);
   assert.equal(intent.data.status, 'provider_required');
   assert.equal(intent.data.checkoutAvailable, false);
   assert.match(intent.data.message, /no payment has been taken|no payment/i);
 
-  const replay = await call(
-    '/v1/collections/' + slug + '/intents',
-    'POST',
-    { installmentId, mode: 'full', idempotencyKey: intentKey },
-  );
+  const replay = await call('/v1/collections/' + slug + '/intents', 'POST', {
+    installmentId,
+    mode: 'full',
+    idempotencyKey: intentKey,
+  });
   assert.equal(replay.r.status, 201);
   assert.equal(replay.data.id, intent.data.id);
   assert.equal(replay.data.replayed, true);
@@ -978,9 +977,8 @@ test('fee heads, discounts and collection pages preserve an auditable amount lif
   assert.equal(reversed.r.status, 201);
   assert.equal(
     Number(
-      (
-        await db.query('SELECT amount_minor FROM fee_installments WHERE id=$1', [installmentId])
-      )[0]!.amount_minor,
+      (await db.query('SELECT amount_minor FROM fee_installments WHERE id=$1', [installmentId]))[0]!
+        .amount_minor,
     ),
     100000,
   );

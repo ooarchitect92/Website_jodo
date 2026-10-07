@@ -391,9 +391,7 @@ export function FeeOperations() {
         <button
           type="button"
           className="button outline"
-          onClick={() =>
-            setComponentRows((rows) => [...rows, { feeHeadId: '', amount: '' }])
-          }
+          onClick={() => setComponentRows((rows) => [...rows, { feeHeadId: '', amount: '' }])}
         >
           Add fee head
         </button>{' '}

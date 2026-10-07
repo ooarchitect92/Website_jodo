@@ -26,7 +26,11 @@ import { MediaController } from './media';
 import { FeeOperationsController } from './fees';
 import { PayerAdminController, PayerLinkAdminController, PayerPortalController } from './payer';
 import { PaymentProviderAdminController, PaymentProviderController } from './payment-provider';
-import { CollectionPageAdminController, CollectionPagePublicController, FeeStructureController } from './fee-structure';
+import {
+  CollectionPageAdminController,
+  CollectionPagePublicController,
+  FeeStructureController,
+} from './fee-structure';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
 class SafeErrors implements ExceptionFilter {
