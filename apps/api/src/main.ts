@@ -24,6 +24,7 @@ import { OperationsController } from './operations';
 import { ChatController } from './chat';
 import { MediaController } from './media';
 import { FeeOperationsController } from './fees';
+import { PayerAdminController, PayerLinkAdminController, PayerPortalController } from './payer';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
 class SafeErrors implements ExceptionFilter {
@@ -76,6 +77,9 @@ class Health {
     ChatController,
     MediaController,
     FeeOperationsController,
+    PayerAdminController,
+    PayerLinkAdminController,
+    PayerPortalController,
   ],
   providers: [Db, AuthGuard, LeadsService],
 })
