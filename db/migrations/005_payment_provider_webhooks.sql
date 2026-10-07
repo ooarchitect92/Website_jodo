@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS payment_provider_events(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   provider text NOT NULL,
   provider_event_id text NOT NULL,
-  event_type text NOT NULL CHECK(event_type IN('payment_confirmed','payment_failed','refund_confirmed','mandate_status')),
+  event_type text NOT NULL CHECK(event_type IN('payment_confirmed','payment_failed','mandate_status')),
   body_hash text NOT NULL,
   normalized_payload jsonb NOT NULL,
   status text NOT NULL DEFAULT 'received' CHECK(status IN('received','applied','ignored','failed')),
@@ -23,3 +23,12 @@ ALTER TABLE payment_records
 CREATE INDEX IF NOT EXISTS payment_records_provider_event_idx
   ON payment_records(provider_event_id)
   WHERE provider_event_id IS NOT NULL;
+
+ALTER TABLE payment_records
+  ALTER COLUMN recorded_by DROP NOT NULL;
+
+ALTER TABLE payment_records
+  ADD COLUMN IF NOT EXISTS recorded_via text NOT NULL DEFAULT 'staff'
+  CHECK(recorded_via IN('staff','provider'));
+
+UPDATE payment_records SET recorded_via='staff' WHERE recorded_via IS NULL;
