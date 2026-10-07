@@ -18,6 +18,11 @@ import {
   feePayerProfileSchema,
   payerLinkSchema,
   paymentProviderEventSchema,
+  feeHeadSchema,
+  installmentComponentSchema,
+  feeAdjustmentSchema,
+  collectionPageCreateSchema,
+  collectionIntentSchema,
 } from '../../packages/core/src/contracts';
 import { encrypt, decrypt, equal, bucket } from '../../packages/core/src/security';
 import { seedPages } from '../../packages/core/src/site';
@@ -289,3 +294,76 @@ test('normalized payment provider events allow only bounded authoritative states
     false,
   );
 });
+
+test('fee head contract prevents bank credentials from being stored as routing configuration', () => {
+  assert.equal(
+    feeHeadSchema.safeParse({
+      code: 'TUITION',
+      name: 'Tuition',
+      settlementAccountKey: 'tuition_primary',
+    }).success,
+    true,
+  );
+  assert.equal(
+    feeHeadSchema.safeParse({
+      code: 'TUITION',
+      name: 'Tuition',
+      settlementAccountKey: 'account 1234 / IFSC ABC',
+    }).success,
+    false,
+  );
+});
+test('installment fee-head structure rejects duplicate heads', () => {
+  const id = crypto.randomUUID();
+  assert.equal(
+    installmentComponentSchema.safeParse({
+      installmentId: crypto.randomUUID(),
+      components: [
+        { feeHeadId: id, amountMinor: 10000 },
+        { feeHeadId: id, amountMinor: 5000 },
+      ],
+    }).success,
+    false,
+  );
+});
+test('financial adjustments are bounded and typed', () => {
+  assert.equal(
+    feeAdjustmentSchema.safeParse({
+      installmentId: crypto.randomUUID(),
+      kind: 'late_fee',
+      amountMinor: 10000,
+      reason: 'Late payment policy',
+    }).success,
+    true,
+  );
+  assert.equal(
+    feeAdjustmentSchema.safeParse({
+      installmentId: crypto.randomUUID(),
+      kind: 'arbitrary_credit',
+      amountMinor: 10000,
+      reason: 'Unknown',
+    }).success,
+    false,
+  );
+});
+test('collection pages require at least one amount mode', () =>
+  assert.equal(
+    collectionPageCreateSchema.safeParse({
+      scheduleId: crypto.randomUUID(),
+      title: 'Trip fee',
+      allowFull: false,
+      allowPartial: false,
+      allowCustom: false,
+    }).success,
+    false,
+  ));
+test('collection intent does not contain payment credentials', () =>
+  assert.equal(
+    collectionIntentSchema.safeParse({
+      installmentId: crypto.randomUUID(),
+      mode: 'full',
+      idempotencyKey: crypto.randomUUID(),
+      upiPin: '1234',
+    }).success,
+    false,
+  ));
