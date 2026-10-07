@@ -15,8 +15,29 @@ export async function POST(
 
   const form = await request.formData();
   const installmentId = String(form.get('installmentId') || '');
-  const amountMinor = Number(form.get('amountMinor'));
   const idempotencyKey = String(form.get('idempotencyKey') || '');
+
+  const allocations = Array.from(form.entries())
+    .filter(([key]) => key.startsWith('component_'))
+    .map(([key, value]) => {
+      const amount = Number(value);
+      return {
+        componentCode: key.slice('component_'.length),
+        amountMinor: Number.isFinite(amount) ? Math.round(amount * 100) : 0,
+      };
+    })
+    .filter((item) => item.amountMinor > 0);
+
+  const explicitMinor = Number(form.get('amountMinor'));
+  const customMajor = Number(form.get('amount'));
+  const amountMinor = allocations.length
+    ? allocations.reduce((sum, item) => sum + item.amountMinor, 0)
+    : Number.isInteger(explicitMinor) && explicitMinor > 0
+      ? explicitMinor
+      : Number.isFinite(customMajor) && customMajor > 0
+        ? Math.round(customMajor * 100)
+        : 0;
+
   if (
     !/^[0-9a-f-]{36}$/i.test(installmentId) ||
     !Number.isInteger(amountMinor) ||
@@ -39,7 +60,7 @@ export async function POST(
       installmentId,
       amountMinor,
       idempotencyKey,
-      allocations: [],
+      allocations,
     }),
     cache: 'no-store',
     signal: AbortSignal.timeout(8000),

@@ -61,6 +61,14 @@ export default async function PayerPortal({ params, searchParams }: Props) {
         <p className="lead">
           Review your installments, payments and receipts from one protected view.
         </p>
+        <p className="small">
+          Payment link mode:{' '}
+          <strong>
+            {data.paymentPolicy?.mode === 'flexible' ? 'Flexible collection' : 'Full balance'}
+          </strong>
+          {data.paymentPolicy?.mode === 'flexible' &&
+            ' · Custom and fee-head options are enforced by the server.'}
+        </p>
         {query.checkout && (
           <p className="admin-message" role="status">
             {query.checkout === 'invalid'
@@ -119,14 +127,89 @@ export default async function PayerPortal({ params, searchParams }: Props) {
                 <div className="payer-installment-action">
                   <span className="status-pill">{i.status}</span>
                   {payable && (
-                    <form action={'/payer/' + encodeURIComponent(token) + '/pay/'} method="post">
-                      <input type="hidden" name="installmentId" value={i.id} />
-                      <input type="hidden" name="amountMinor" value={remaining} />
-                      <input type="hidden" name="idempotencyKey" value={randomUUID()} />
-                      <button className="button" type="submit">
-                        Pay {money(remaining)}
-                      </button>
-                    </form>
+                    <div className="payer-payment-options">
+                      <form action={'/payer/' + encodeURIComponent(token) + '/pay/'} method="post">
+                        <input type="hidden" name="installmentId" value={i.id} />
+                        <input type="hidden" name="amountMinor" value={remaining} />
+                        <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+                        <button className="button" type="submit">
+                          Pay full {money(remaining)}
+                        </button>
+                      </form>
+
+                      {data.paymentPolicy?.mode === 'flexible' &&
+                        data.paymentPolicy?.allowCustomAmount && (
+                          <form
+                            className="payer-flex-form"
+                            action={'/payer/' + encodeURIComponent(token) + '/pay/'}
+                            method="post"
+                          >
+                            <input type="hidden" name="installmentId" value={i.id} />
+                            <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+                            <label>
+                              Custom amount (INR)
+                              <input
+                                name="amount"
+                                type="number"
+                                step="0.01"
+                                min={
+                                  data.paymentPolicy.minAmountMinor
+                                    ? Number(data.paymentPolicy.minAmountMinor) / 100
+                                    : 0.01
+                                }
+                                max={remaining / 100}
+                                required
+                              />
+                            </label>
+                            <button className="button outline" type="submit">
+                              Pay custom amount
+                            </button>
+                          </form>
+                        )}
+
+                      {data.paymentPolicy?.mode === 'flexible' &&
+                        data.paymentPolicy?.allowComponentSelection &&
+                        data.components?.some((component: any) => component.remainingMinor > 0) && (
+                          <form
+                            className="payer-flex-form payer-component-form"
+                            action={'/payer/' + encodeURIComponent(token) + '/pay/'}
+                            method="post"
+                          >
+                            <input type="hidden" name="installmentId" value={i.id} />
+                            <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+                            <fieldset>
+                              <legend>Choose fee heads</legend>
+                              <p className="small">
+                                Enter amounts against one or more fee heads. The combined amount
+                                cannot exceed {money(remaining)} for this installment.
+                              </p>
+                              <div className="payer-component-grid">
+                                {data.components
+                                  .filter((component: any) => component.remainingMinor > 0)
+                                  .map((component: any) => (
+                                    <label key={component.code}>
+                                      {component.label}{' '}
+                                      <span className="small">
+                                        ({money(component.remainingMinor)} remaining)
+                                      </span>
+                                      <input
+                                        name={'component_' + component.code}
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max={Number(component.remainingMinor) / 100}
+                                        placeholder="0.00"
+                                      />
+                                    </label>
+                                  ))}
+                              </div>
+                            </fieldset>
+                            <button className="button outline" type="submit">
+                              Pay selected fee heads
+                            </button>
+                          </form>
+                        )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -200,6 +283,13 @@ export default async function PayerPortal({ params, searchParams }: Props) {
             ))}
           </div>
         </section>
+      )}
+
+      {data.paymentPolicy?.componentSelectionBlockedReason && (
+        <aside className="payer-security-note">
+          <strong>Fee-head selection unavailable</strong>
+          <p>{data.paymentPolicy.componentSelectionBlockedReason}</p>
+        </aside>
       )}
 
       <aside className="payer-security-note">

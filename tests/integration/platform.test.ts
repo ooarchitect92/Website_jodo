@@ -1046,15 +1046,53 @@ test('hosted checkout is idempotent, provider-gated and reconciles to the fee le
     const list = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
     const active = list.find((row: any) => row.id === schedule.data.id);
     const installmentId = active.installments[0].id;
+    const fullBalanceLink = await call(
+      '/v1/admin/fees/schedules/' + schedule.data.id + '/payer-link',
+      'POST',
+      {
+        expiresHours: 1,
+        paymentMode: 'full_balance',
+        allowCustomAmount: false,
+        allowComponentSelection: false,
+      },
+      {},
+      true,
+    );
+    assert.equal(fullBalanceLink.r.status, 201, JSON.stringify(fullBalanceLink.data));
+    const fullBalanceToken = String(fullBalanceLink.data.path).split('/').filter(Boolean).pop()!;
+    const rejectedPartial = await call('/v1/payer/' + fullBalanceToken + '/checkout', 'POST', {
+      installmentId,
+      amountMinor: 50000,
+      idempotencyKey: randomUUID(),
+      allocations: [],
+    });
+    assert.equal(rejectedPartial.r.status, 409, JSON.stringify(rejectedPartial.data));
+    assert.equal(providerCalls, 0);
+
     const link = await call(
       '/v1/admin/fees/schedules/' + schedule.data.id + '/payer-link',
       'POST',
-      { expiresHours: 1 },
+      {
+        expiresHours: 1,
+        paymentMode: 'flexible',
+        allowCustomAmount: true,
+        allowComponentSelection: true,
+        minAmountMinor: 100,
+      },
       {},
       true,
     );
     assert.equal(link.r.status, 201, JSON.stringify(link.data));
+    assert.equal(link.data.paymentPolicy.mode, 'flexible');
     const payerToken = String(link.data.path).split('/').filter(Boolean).pop()!;
+
+    const portal = await call('/v1/payer/' + payerToken);
+    assert.equal(portal.r.status, 200, JSON.stringify(portal.data));
+    assert.equal(portal.data.paymentPolicy.mode, 'flexible');
+    assert.equal(portal.data.paymentPolicy.allowCustomAmount, true);
+    assert.equal(portal.data.paymentPolicy.allowComponentSelection, true);
+    assert.equal(portal.data.components.length, 2);
+
     const idempotencyKey = randomUUID();
     const checkoutBody = {
       installmentId,

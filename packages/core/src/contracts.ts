@@ -402,8 +402,35 @@ export const payerLinkSchema = z
       .min(1)
       .max(24 * 30)
       .default(72),
+    paymentMode: z.enum(['full_balance', 'flexible']).default('full_balance'),
+    allowCustomAmount: z.boolean().default(false),
+    allowComponentSelection: z.boolean().default(false),
+    minAmountMinor: moneyMinor.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if (
+      value.paymentMode === 'flexible' &&
+      !value.allowCustomAmount &&
+      !value.allowComponentSelection
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['paymentMode'],
+        message: 'Flexible links must allow a custom amount or fee-component selection',
+      });
+    if (
+      value.paymentMode === 'full_balance' &&
+      (value.allowCustomAmount ||
+        value.allowComponentSelection ||
+        value.minAmountMinor !== undefined)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['paymentMode'],
+        message: 'Full-balance links cannot enable flexible payment options',
+      });
+  });
 
 export const consentSchema = z
   .object({
