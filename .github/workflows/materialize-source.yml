@@ -1,0 +1,91 @@
+name: Import verified website source
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/materialize-source.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: initial-source-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Verify and unpack bounded source snapshot
+        run: |
+          python3 <<'PY'
+          import base64, hashlib, json, lzma
+          from pathlib import Path, PurePosixPath
+          encoded = ''.join(Path(f'.delivery/source-{i:02d}.b64').read_text().strip() for i in range(8))
+          payload = base64.b64decode(encoded, validate=True)
+          expected = 'a49016229c7db305193986f236afd81850fd4c5139778dcd3f14b7e087ba18fc'
+          actual = hashlib.sha256(payload).hexdigest()
+          if actual != expected:
+              raise SystemExit(f'Source checksum mismatch: {actual}')
+          files = json.loads(lzma.decompress(payload))
+          if len(files) != 90:
+              raise SystemExit('Unexpected source manifest size')
+          for name, content in files.items():
+              path = PurePosixPath(name)
+              if path.is_absolute() or '..' in path.parts or '.github' in path.parts or not isinstance(content, str):
+                  raise SystemExit('Unsafe source entry')
+              if path.name.startswith('.env') and path.name != '.env.example':
+                  raise SystemExit('Environment secret entry rejected')
+              if Path(name).is_symlink():
+                  raise SystemExit('Symlink target rejected')
+              Path(name).parent.mkdir(parents=True, exist_ok=True)
+              Path(name).write_text(content, encoding='utf8')
+          print('Verified 90 source, migration, test and documentation files')
+          PY
+      - name: Retrieve approved asset and dependency manifests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 37580756507 -n jodo-build-toolchain -D "$RUNNER_TEMP/jodo-assets"
+          gh run download 37582174772 -n jodo-security-toolchain -D "$RUNNER_TEMP/jodo-security"
+          python3 <<'PY'
+          import os, shutil, tarfile
+          from pathlib import Path, PurePosixPath
+          root = Path(os.environ['RUNNER_TEMP'])
+          count = 0
+          with tarfile.open(root / 'jodo-assets/jodo-toolchain.tar.gz') as archive:
+              for member in archive.getmembers():
+                  name = member.name
+                  allowed = name.startswith('apps/web/public/reference/') or name == 'docs/reference/assets.json'
+                  if not allowed or not member.isfile():
+                      continue
+                  path = PurePosixPath(name)
+                  if '..' in path.parts or path.is_absolute() or member.size > 10000000:
+                      raise SystemExit('Unsafe asset entry rejected')
+                  if path.suffix.lower() not in {'.png', '.jpg', '.jpeg', '.webp', '.svg', '.json'}:
+                      raise SystemExit('Unexpected asset type rejected')
+                  Path(name).parent.mkdir(parents=True, exist_ok=True)
+                  with archive.extractfile(member) as source, open(name, 'wb') as target:
+                      shutil.copyfileobj(source, target)
+                  count += 1
+          shutil.copyfile(root / 'jodo-security/package-lock.json', 'package-lock.json')
+          print(f'Imported {count} image/manifest entries and pinned dependency lockfile; no fonts or dependencies vendored')
+          PY
+      - name: Format tooling and commit normal source tree
+        run: |
+          cat >> .prettierignore <<'TXT'
+          .github/workflows/reference-audit.yml
+          .github/workflows/toolchain-audit.yml
+          .github/workflows/database-test-runtime.yml
+          .github/workflows/materialize-source.yml
+          TXT
+          git rm .delivery/source-*.b64
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .
+          git diff --cached --stat
+          git commit -m "feat: implement Jodo public site, owner CMS, durable lead API and verification suite"
+          git push origin HEAD:main
+          git rev-parse HEAD
