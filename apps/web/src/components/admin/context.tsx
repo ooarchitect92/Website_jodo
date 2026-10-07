@@ -1,9 +1,16 @@
 'use client';
 import { createContext, useContext } from 'react';
 import { api } from '@/lib/client';
-export type Session = { user: { id: string; email: string; role: string }; csrf: string };
+export type Session = {
+  user: { id: string; email: string; role: string };
+  tenant: { id: string; name: string; role: string; status?: string };
+  workspaces: Array<{ id: string; name: string; role: string; status?: string }>;
+  csrf: string;
+};
 export const AdminContext = createContext<Session>({
   user: { id: '', email: '', role: '' },
+  tenant: { id: '', name: '', role: '' },
+  workspaces: [],
   csrf: '',
 });
 export function useAdminApi() {
