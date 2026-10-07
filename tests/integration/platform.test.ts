@@ -851,7 +851,6 @@ test('signed provider webhooks verify authenticity and apply payment exactly onc
   }
 });
 
-
 test('flexible fee components, concessions, analytics and late-fee assessment remain consistent', async () => {
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const reference = 'structure_' + randomUUID().slice(0, 8);
@@ -865,7 +864,12 @@ test('flexible fee components, concessions, analytics and late-fee assessment re
       currency: 'INR',
       components: [
         { code: 'tuition', label: 'Tuition', amountMinor: 120000 },
-        { code: 'transport', label: 'Transport', amountMinor: 30000, bankRouteKey: 'transport_route' },
+        {
+          code: 'transport',
+          label: 'Transport',
+          amountMinor: 30000,
+          bankRouteKey: 'transport_route',
+        },
       ],
       concessions: [
         {
@@ -909,10 +913,9 @@ test('flexible fee components, concessions, analytics and late-fee assessment re
   assert.equal(schedule.concessions.length, 1);
   assert.equal(schedule.late_fee.mode, 'fixed_once');
 
-  const assessments = await db.query(
-    'SELECT * FROM late_fee_assessments WHERE schedule_id=$1',
-    [created.data.id],
-  );
+  const assessments = await db.query('SELECT * FROM late_fee_assessments WHERE schedule_id=$1', [
+    created.data.id,
+  ]);
   assert.equal(assessments.length, 1);
   assert.equal(Number(assessments[0]!.amount_minor), 5000);
 
