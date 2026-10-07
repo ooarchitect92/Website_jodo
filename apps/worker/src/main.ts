@@ -188,10 +188,7 @@ export async function tick(db: Db) {
     }
 
     if (process.env.AUTOPAY_PROVIDER_MODE === 'mandate_api') {
-      const maxAttempts = Math.max(
-        1,
-        Math.min(10, Number(process.env.AUTOPAY_MAX_ATTEMPTS || 3)),
-      );
+      const maxAttempts = Math.max(1, Math.min(10, Number(process.env.AUTOPAY_MAX_ATTEMPTS || 3)));
       const autopayRows = (
         await c.query(
           `SELECT i.id AS installment_id,i.schedule_id,i.amount_minor,i.paid_amount_minor,
