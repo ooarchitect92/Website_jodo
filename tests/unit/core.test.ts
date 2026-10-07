@@ -18,6 +18,9 @@ import {
   feePayerProfileSchema,
   payerLinkSchema,
   paymentProviderEventSchema,
+  feeComponentInputSchema,
+  feeConcessionInputSchema,
+  lateFeeRuleInputSchema,
 } from '../../packages/core/src/contracts';
 import { encrypt, decrypt, equal, bucket } from '../../packages/core/src/security';
 import { seedPages } from '../../packages/core/src/site';
@@ -287,5 +290,88 @@ test('normalized payment provider events allow only bounded authoritative states
       occurredAt: new Date().toISOString(),
     }).success,
     false,
+  );
+});
+
+test('flexible fee structure validates component minus concession against installments', () => {
+  const parsed = feeScheduleCreateSchema.parse({
+    accountReference: 'flexible_001',
+    scopeType: 'course',
+    scopeReference: 'btech_2027',
+    currency: 'INR',
+    components: [
+      { code: 'tuition', label: 'Tuition', amountMinor: 5000000 },
+      {
+        code: 'transport',
+        label: 'Transport',
+        amountMinor: 1000000,
+        bankRouteKey: 'transport_acct',
+      },
+    ],
+    concessions: [
+      {
+        code: 'merit',
+        label: 'Merit scholarship',
+        amountMinor: 1000000,
+        reason: 'Synthetic scholarship fixture',
+      },
+    ],
+    lateFee: { mode: 'fixed_once', graceDays: 5, amountMinor: 50000, capMinor: 50000 },
+    installments: [
+      { dueDate: '2027-06-10', amountMinor: 2500000 },
+      { dueDate: '2027-07-10', amountMinor: 2500000 },
+    ],
+  });
+  assert.equal(parsed.scopeType, 'course');
+  assert.equal(parsed.components.length, 2);
+  assert.equal(parsed.concessions.length, 1);
+});
+test('flexible fee structure rejects a net-total mismatch', () =>
+  assert.equal(
+    feeScheduleCreateSchema.safeParse({
+      accountReference: 'flexible_002',
+      scopeType: 'batch',
+      scopeReference: 'batch_a',
+      currency: 'INR',
+      components: [{ code: 'tuition', label: 'Tuition', amountMinor: 100000 }],
+      concessions: [
+        {
+          code: 'scholarship',
+          label: 'Scholarship',
+          amountMinor: 10000,
+          reason: 'Synthetic discount',
+        },
+      ],
+      installments: [{ dueDate: '2027-06-10', amountMinor: 100000 }],
+    }).success,
+    false,
+  ));
+test('late-fee rule rejects a cap below a single assessment', () =>
+  assert.equal(
+    lateFeeRuleInputSchema.safeParse({
+      mode: 'daily_fixed',
+      graceDays: 0,
+      amountMinor: 5000,
+      capMinor: 3000,
+    }).success,
+    false,
+  ));
+test('component and concession contracts reject invalid codes', () => {
+  assert.equal(
+    feeComponentInputSchema.safeParse({
+      code: 'bad code',
+      label: 'Tuition',
+      amountMinor: 100,
+    }).success,
+    false,
+  );
+  assert.equal(
+    feeConcessionInputSchema.safeParse({
+      code: 'ok_code',
+      label: 'Scholarship',
+      amountMinor: 100,
+      reason: 'Approved synthetic reason',
+    }).success,
+    true,
   );
 });

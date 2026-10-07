@@ -24,6 +24,28 @@ type Schedule = {
   id: string;
   account_reference: string;
   payer_id?: string | null;
+  scope_type?: string;
+  scope_reference?: string;
+  gross_amount_minor?: number | string | null;
+  concession_amount_minor?: number | string;
+  components?: Array<{
+    code: string;
+    label: string;
+    amountMinor: number | string;
+    bankRouteKey?: string | null;
+  }>;
+  concessions?: Array<{
+    code: string;
+    label: string;
+    amountMinor: number | string;
+    reason: string;
+  }>;
+  late_fee?: {
+    mode: string;
+    graceDays: number;
+    amountMinor: number | string;
+    capMinor?: number | string | null;
+  } | null;
   currency: string;
   total_amount_minor: number | string;
   note: string;
@@ -52,12 +74,20 @@ export function FeeOperations() {
   const [communications, setCommunications] = useState<any[]>([]);
   const [providerEvents, setProviderEvents] = useState<any[]>([]);
   const [providerStatus, setProviderStatus] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [lateFees, setLateFees] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [installmentRows, setInstallmentRows] = useState([{ dueDate: '', amount: '' }]);
+  const [componentRows, setComponentRows] = useState([
+    { code: 'tuition', label: 'Tuition fee', amount: '', bankRouteKey: '' },
+  ]);
+  const [concessionRows, setConcessionRows] = useState<
+    Array<{ code: string; label: string; amount: string; reason: string }>
+  >([]);
 
   const load = async () => {
     try {
-      const [o, s, p, m, st, py, cm, pe, ps] = await Promise.all([
+      const [o, s, p, m, st, py, cm, pe, ps, an, lf] = await Promise.all([
         request('admin/fees/overview'),
         request<Schedule[]>('admin/fees/schedules'),
         request<any[]>('admin/fees/payments'),
@@ -67,6 +97,8 @@ export function FeeOperations() {
         request<any[]>('admin/fees/communications'),
         request<any[]>('admin/fees/provider-events'),
         request<any>('provider/payments/status'),
+        request<any>('admin/fees/analytics'),
+        request<any[]>('admin/fees/late-fees'),
       ]);
       setOverview(o);
       setSchedules(s);
@@ -77,6 +109,8 @@ export function FeeOperations() {
       setCommunications(cm);
       setProviderEvents(pe);
       setProviderStatus(ps);
+      setAnalytics(an);
+      setLateFees(lf);
       setMessage('');
     } catch (e) {
       setMessage((e as Error).message);
@@ -106,7 +140,33 @@ export function FeeOperations() {
       await request('admin/fees/schedules', 'POST', {
         accountReference: String(f.get('accountReference') || ''),
         ...(String(f.get('payerId') || '') ? { payerId: String(f.get('payerId')) } : {}),
+        scopeType: String(f.get('scopeType') || 'custom'),
+        scopeReference: String(f.get('scopeReference') || 'custom'),
         currency: 'INR',
+        components: componentRows.map((row) => ({
+          code: row.code,
+          label: row.label,
+          amountMinor: toMinor(row.amount),
+          ...(row.bankRouteKey ? { bankRouteKey: row.bankRouteKey } : {}),
+        })),
+        concessions: concessionRows.map((row) => ({
+          code: row.code,
+          label: row.label,
+          amountMinor: toMinor(row.amount),
+          reason: row.reason,
+        })),
+        ...(String(f.get('lateFeeAmount') || '')
+          ? {
+              lateFee: {
+                mode: String(f.get('lateFeeMode') || 'fixed_once'),
+                graceDays: Number(f.get('lateFeeGraceDays') || 0),
+                amountMinor: toMinor(f.get('lateFeeAmount')),
+                ...(String(f.get('lateFeeCap') || '')
+                  ? { capMinor: toMinor(f.get('lateFeeCap')) }
+                  : {}),
+              },
+            }
+          : {}),
         note: String(f.get('note') || ''),
         installments: installmentRows.map((row) => ({
           dueDate: row.dueDate,
@@ -115,7 +175,11 @@ export function FeeOperations() {
       });
       form.reset();
       setInstallmentRows([{ dueDate: '', amount: '' }]);
-      setMessage('Draft fee schedule created. Review it before activation.');
+      setComponentRows([{ code: 'tuition', label: 'Tuition fee', amount: '', bankRouteKey: '' }]);
+      setConcessionRows([]);
+      setMessage(
+        'Draft fee schedule created. Review components, concessions and installments before activation.',
+      );
       await load();
     } catch (e) {
       setMessage((e as Error).message);
@@ -244,6 +308,215 @@ export function FeeOperations() {
             <input name="note" maxLength={300} placeholder="Course / cohort context" />
           </label>
         </div>
+        <div className="row">
+          <label className="field">
+            Fee scope
+            <select name="scopeType" defaultValue="course">
+              <option value="course">Course</option>
+              <option value="batch">Batch</option>
+              <option value="year">Year</option>
+              <option value="student">Student</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label className="field">
+            Scope reference
+            <input
+              name="scopeReference"
+              required
+              defaultValue="general"
+              pattern="[A-Za-z0-9_./:-]{2,100}"
+            />
+          </label>
+        </div>
+
+        <h3>Fee components</h3>
+        <p className="small">
+          Break the fee into auditable heads such as tuition, transport or hostel. Optional bank
+          route keys stay logical until a verified settlement provider mapping is activated.
+        </p>
+        {componentRows.map((row, index) => (
+          <div className="row" key={'component-' + index}>
+            <label className="field">
+              Code
+              <input
+                value={row.code}
+                required
+                onChange={(e) =>
+                  setComponentRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, code: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            <label className="field">
+              Label
+              <input
+                value={row.label}
+                required
+                onChange={(e) =>
+                  setComponentRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, label: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            <label className="field">
+              Amount (INR)
+              <input
+                inputMode="decimal"
+                value={row.amount}
+                required
+                onChange={(e) =>
+                  setComponentRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, amount: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            <label className="field">
+              Bank route key
+              <input
+                value={row.bankRouteKey}
+                placeholder="optional"
+                onChange={(e) =>
+                  setComponentRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, bankRouteKey: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            {componentRows.length > 1 && (
+              <button
+                type="button"
+                className="button outline"
+                onClick={() => setComponentRows((rows) => rows.filter((_, n) => n !== index))}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          className="button outline"
+          onClick={() =>
+            setComponentRows((rows) => [
+              ...rows,
+              {
+                code: 'fee_' + (rows.length + 1),
+                label: 'Fee component',
+                amount: '',
+                bankRouteKey: '',
+              },
+            ])
+          }
+        >
+          Add fee component
+        </button>
+
+        <h3>Concessions / scholarships</h3>
+        {concessionRows.map((row, index) => (
+          <div className="row" key={'concession-' + index}>
+            <label className="field">
+              Code
+              <input
+                value={row.code}
+                required
+                onChange={(e) =>
+                  setConcessionRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, code: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            <label className="field">
+              Label
+              <input
+                value={row.label}
+                required
+                onChange={(e) =>
+                  setConcessionRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, label: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            <label className="field">
+              Amount (INR)
+              <input
+                inputMode="decimal"
+                value={row.amount}
+                required
+                onChange={(e) =>
+                  setConcessionRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, amount: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            <label className="field">
+              Reason
+              <input
+                value={row.reason}
+                required
+                onChange={(e) =>
+                  setConcessionRows((rows) =>
+                    rows.map((r, n) => (n === index ? { ...r, reason: e.target.value } : r)),
+                  )
+                }
+              />
+            </label>
+            <button
+              type="button"
+              className="button outline"
+              onClick={() => setConcessionRows((rows) => rows.filter((_, n) => n !== index))}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="button outline"
+          onClick={() =>
+            setConcessionRows((rows) => [
+              ...rows,
+              {
+                code: 'concession_' + (rows.length + 1),
+                label: 'Concession',
+                amount: '',
+                reason: '',
+              },
+            ])
+          }
+        >
+          Add concession
+        </button>
+
+        <h3>Late-fee policy</h3>
+        <div className="row">
+          <label className="field">
+            Mode
+            <select name="lateFeeMode" defaultValue="fixed_once">
+              <option value="fixed_once">Fixed once</option>
+              <option value="daily_fixed">Daily fixed</option>
+            </select>
+          </label>
+          <label className="field">
+            Grace days
+            <input name="lateFeeGraceDays" type="number" min={0} max={60} defaultValue={0} />
+          </label>
+          <label className="field">
+            Late fee amount (INR)
+            <input name="lateFeeAmount" inputMode="decimal" placeholder="leave blank to disable" />
+          </label>
+          <label className="field">
+            Maximum late fee (INR)
+            <input name="lateFeeCap" inputMode="decimal" placeholder="optional cap" />
+          </label>
+        </div>
+
         <h3>Installments</h3>
         {installmentRows.map((row, index) => (
           <div className="row" key={index}>
@@ -317,7 +590,21 @@ export function FeeOperations() {
                 </div>
                 <strong>{rupees(s.total_amount_minor)}</strong>
               </div>
+              <p className="small">
+                {s.scope_type || 'custom'} · {s.scope_reference || 'custom'} · Gross{' '}
+                {rupees(s.gross_amount_minor || s.total_amount_minor)} · Concessions{' '}
+                {rupees(s.concession_amount_minor || 0)}
+              </p>
               {s.note && <p>{s.note}</p>}
+              {!!s.components?.length && (
+                <div className="fee-component-list">
+                  {s.components.map((component) => (
+                    <span key={component.code}>
+                      {component.label}: {rupees(component.amountMinor)}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="fee-installments">
                 {s.installments.map((i) => (
                   <div key={i.id}>
@@ -464,6 +751,64 @@ export function FeeOperations() {
             <span className="status-pill">{event.status}</span>
           </div>
         ))}
+      </section>
+
+      <section className="admin-panel">
+        <div className="admin-toolbar">
+          <div>
+            <p className="eyebrow">Collection intelligence</p>
+            <h2>Fee analytics</h2>
+          </div>
+          <span className="status-pill">
+            {lateFees.filter((x) => x.status === 'assessed').length} active late fee(s)
+          </span>
+        </div>
+        <div className="dashboard-stats">
+          {(analytics?.byScope || []).slice(0, 4).map((row: any) => (
+            <div className="dashboard-stat" key={row.scope_type + ':' + row.scope_reference}>
+              <span>
+                {row.scope_type} · {row.scope_reference}
+              </span>
+              <strong>{rupees(row.paid_minor)}</strong>
+              <small>{rupees(row.outstanding_minor)} outstanding</small>
+            </div>
+          ))}
+        </div>
+        {!!lateFees.length && (
+          <div className="fee-schedule-grid">
+            {lateFees.slice(0, 8).map((fee) => (
+              <div className="record-row" key={fee.id}>
+                <strong>{fee.account_reference}</strong>
+                <span>{rupees(fee.amount_minor)}</span>
+                <span>
+                  Installment #{fee.sequence} · {fee.status}
+                </span>
+                {fee.status === 'assessed' ? (
+                  <button
+                    className="button outline"
+                    onClick={async () => {
+                      const reason = window.prompt('Reason for waiving this late fee?');
+                      if (!reason) return;
+                      try {
+                        await request('admin/fees/late-fees/' + fee.id + '/waive', 'POST', {
+                          reason,
+                        });
+                        setMessage('Late fee waived with an audit record.');
+                        await load();
+                      } catch (e) {
+                        setMessage((e as Error).message);
+                      }
+                    }}
+                  >
+                    Waive
+                  </button>
+                ) : (
+                  <span className="status-pill">{fee.status}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="admin-grid">

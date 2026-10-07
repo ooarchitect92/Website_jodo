@@ -118,6 +118,52 @@ export const leadSchema = z
 export type LeadInput = z.infer<typeof leadSchema>;
 
 export const moneyMinor = z.number().int().positive().max(1_000_000_000_000);
+
+export const feeComponentInputSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,40}$/),
+    label: z.string().trim().min(2).max(100),
+    amountMinor: moneyMinor,
+    bankRouteKey: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,60}$/)
+      .optional(),
+  })
+  .strict();
+
+export const feeConcessionInputSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,40}$/),
+    label: z.string().trim().min(2).max(100),
+    amountMinor: moneyMinor,
+    reason: z.string().trim().min(3).max(240),
+  })
+  .strict();
+
+export const lateFeeRuleInputSchema = z
+  .object({
+    mode: z.enum(['fixed_once', 'daily_fixed']),
+    graceDays: z.number().int().min(0).max(60).default(0),
+    amountMinor: moneyMinor,
+    capMinor: moneyMinor.optional(),
+  })
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.capMinor !== undefined && v.capMinor < v.amountMinor)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['capMinor'],
+        message: 'Late-fee cap cannot be lower than one assessment',
+      });
+  });
+
 export const feeInstallmentInputSchema = z
   .object({
     dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -131,7 +177,16 @@ export const feeScheduleCreateSchema = z
       .trim()
       .regex(/^[A-Za-z0-9_-]{2,80}$/),
     payerId: z.uuid().optional(),
+    scopeType: z.enum(['course', 'batch', 'year', 'student', 'custom']).default('custom'),
+    scopeReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_./:-]{2,100}$/)
+      .default('custom'),
     currency: z.literal('INR').default('INR'),
+    components: z.array(feeComponentInputSchema).max(30).default([]),
+    concessions: z.array(feeConcessionInputSchema).max(20).default([]),
+    lateFee: lateFeeRuleInputSchema.optional(),
     installments: z.array(feeInstallmentInputSchema).min(1).max(60),
     note: z.string().trim().max(300).default(''),
   })
@@ -144,6 +199,37 @@ export const feeScheduleCreateSchema = z
         path: ['installments'],
         message: 'Installment due dates must be unique',
       });
+    if (value.components.length) {
+      const componentCodes = value.components.map((i) => i.code);
+      const concessionCodes = value.concessions.map((i) => i.code);
+      if (new Set(componentCodes).size !== componentCodes.length)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['components'],
+          message: 'Fee component codes must be unique',
+        });
+      if (new Set(concessionCodes).size !== concessionCodes.length)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['concessions'],
+          message: 'Concession codes must be unique',
+        });
+      const gross = value.components.reduce((sum, i) => sum + i.amountMinor, 0);
+      const concession = value.concessions.reduce((sum, i) => sum + i.amountMinor, 0);
+      const installments = value.installments.reduce((sum, i) => sum + i.amountMinor, 0);
+      if (concession >= gross)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['concessions'],
+          message: 'Concessions must be lower than gross fees',
+        });
+      if (gross - concession !== installments)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['installments'],
+          message: 'Installment total must equal component total minus concessions',
+        });
+    }
   });
 export const feeScheduleActivationSchema = z
   .object({ expectedVersion: z.number().int().positive() })

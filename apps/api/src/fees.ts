@@ -60,6 +60,8 @@ const settlementSchema = z
       });
   });
 
+const lateFeeWaiverSchema = z.object({ reason: z.string().trim().min(3).max(240) }).strict();
+
 @Controller('v1/admin/fees')
 @UseGuards(AuthGuard)
 @Roles('owner')
@@ -115,8 +117,8 @@ export class FeeOperationsController {
   async schedules() {
     return this.db.query(
       `SELECT s.*,
-        coalesce(
-          json_agg(
+        coalesce((
+          SELECT json_agg(
             json_build_object(
               'id',i.id,
               'sequence',i.sequence,
@@ -129,14 +131,36 @@ export class FeeOperationsController {
                 WHEN i.due_date=current_date AND i.status NOT IN('paid','cancelled') THEN 'due'
                 ELSE i.status
               END
-            )
-            ORDER BY i.sequence
-          ) FILTER (WHERE i.id IS NOT NULL),
-          '[]'::json
-        ) AS installments
+            ) ORDER BY i.sequence
+          )
+          FROM fee_installments i WHERE i.schedule_id=s.id
+        ), '[]'::json) AS installments,
+        coalesce((
+          SELECT json_agg(
+            json_build_object(
+              'id',fc.id,'code',fc.code,'label',fc.label,'amountMinor',fc.amount_minor,
+              'bankRouteKey',fc.bank_route_key
+            ) ORDER BY fc.code
+          )
+          FROM fee_schedule_components fc WHERE fc.schedule_id=s.id
+        ), '[]'::json) AS components,
+        coalesce((
+          SELECT json_agg(
+            json_build_object(
+              'id',cn.id,'code',cn.code,'label',cn.label,'amountMinor',cn.amount_minor,
+              'reason',cn.reason
+            ) ORDER BY cn.code
+          )
+          FROM fee_schedule_concessions cn WHERE cn.schedule_id=s.id
+        ), '[]'::json) AS concessions,
+        (
+          SELECT json_build_object(
+            'id',lf.id,'mode',lf.mode,'graceDays',lf.grace_days,'amountMinor',lf.amount_minor,
+            'capMinor',lf.cap_minor,'active',lf.active
+          )
+          FROM late_fee_rules lf WHERE lf.schedule_id=s.id
+        ) AS late_fee
       FROM fee_schedules s
-      LEFT JOIN fee_installments i ON i.schedule_id=s.id
-      GROUP BY s.id
       ORDER BY s.created_at DESC
       LIMIT 200`,
     );
@@ -151,11 +175,63 @@ export class FeeOperationsController {
     return this.db.tx(async (c) => {
       const schedule = (
         await c.query(
-          `INSERT INTO fee_schedules(account_reference,payer_id,currency,total_amount_minor,note,created_by)
-           VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
-          [v.accountReference, v.payerId || null, v.currency, total, v.note, req.actor.id],
+          `INSERT INTO fee_schedules(
+             account_reference,payer_id,scope_type,scope_reference,currency,total_amount_minor,
+             gross_amount_minor,concession_amount_minor,note,created_by
+           ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+          [
+            v.accountReference,
+            v.payerId || null,
+            v.scopeType,
+            v.scopeReference,
+            v.currency,
+            total,
+            v.components.length ? v.components.reduce((sum, x) => sum + x.amountMinor, 0) : total,
+            v.concessions.reduce((sum, x) => sum + x.amountMinor, 0),
+            v.note,
+            req.actor.id,
+          ],
         )
       ).rows[0];
+      for (const component of v.components) {
+        await c.query(
+          `INSERT INTO fee_schedule_components(schedule_id,code,label,amount_minor,bank_route_key)
+           VALUES($1,$2,$3,$4,$5)`,
+          [
+            schedule.id,
+            component.code,
+            component.label,
+            component.amountMinor,
+            component.bankRouteKey || null,
+          ],
+        );
+      }
+      for (const concession of v.concessions) {
+        await c.query(
+          `INSERT INTO fee_schedule_concessions(schedule_id,code,label,amount_minor,reason)
+           VALUES($1,$2,$3,$4,$5)`,
+          [
+            schedule.id,
+            concession.code,
+            concession.label,
+            concession.amountMinor,
+            concession.reason,
+          ],
+        );
+      }
+      if (v.lateFee) {
+        await c.query(
+          `INSERT INTO late_fee_rules(schedule_id,mode,grace_days,amount_minor,cap_minor)
+           VALUES($1,$2,$3,$4,$5)`,
+          [
+            schedule.id,
+            v.lateFee.mode,
+            v.lateFee.graceDays,
+            v.lateFee.amountMinor,
+            v.lateFee.capMinor || null,
+          ],
+        );
+      }
       for (let n = 0; n < v.installments.length; n++) {
         const i = v.installments[n]!;
         await c.query(
@@ -170,6 +246,11 @@ export class FeeOperationsController {
         totalAmountMinor: total,
         installmentCount: v.installments.length,
         payerLinked: !!v.payerId,
+        scopeType: v.scopeType,
+        scopeReference: v.scopeReference,
+        componentCount: v.components.length,
+        concessionCount: v.concessions.length,
+        lateFeeConfigured: !!v.lateFee,
       });
       return schedule;
     });
@@ -206,6 +287,87 @@ export class FeeOperationsController {
       ).rows[0];
       await this.db.audit(c, req.actor.id, 'fees.schedule.activate', scheduleId);
       return updated;
+    });
+  }
+
+  @Get('analytics')
+  async analytics() {
+    const [byScope, byComponent, collectionTrend, lateFees] = await Promise.all([
+      this.db.query(
+        `SELECT scope_type,scope_reference,
+          count(*)::int AS schedules,
+          coalesce(sum(total_amount_minor),0)::bigint AS scheduled_minor,
+          coalesce(sum((
+            SELECT sum(i.paid_amount_minor) FROM fee_installments i WHERE i.schedule_id=s.id
+          )),0)::bigint AS paid_minor,
+          coalesce(sum((
+            SELECT sum(i.amount_minor-i.paid_amount_minor)
+            FROM fee_installments i
+            WHERE i.schedule_id=s.id AND i.status NOT IN('paid','cancelled')
+          )),0)::bigint AS outstanding_minor
+         FROM fee_schedules s
+         GROUP BY scope_type,scope_reference
+         ORDER BY scheduled_minor DESC,scope_reference
+         LIMIT 200`,
+      ),
+      this.db.query(
+        `SELECT code,label,coalesce(sum(amount_minor),0)::bigint AS configured_minor,
+          count(DISTINCT schedule_id)::int AS schedules
+         FROM fee_schedule_components
+         GROUP BY code,label
+         ORDER BY configured_minor DESC,code
+         LIMIT 100`,
+      ),
+      this.db.query(
+        `SELECT date_trunc('month',recorded_at)::date AS month,
+          coalesce(sum(amount_minor-refunded_amount_minor),0)::bigint AS net_collected_minor,
+          count(*)::int AS payments
+         FROM payment_records
+         GROUP BY 1 ORDER BY 1 DESC LIMIT 24`,
+      ),
+      this.db.query(
+        `SELECT status,count(*)::int AS count,coalesce(sum(amount_minor),0)::bigint AS amount_minor
+         FROM late_fee_assessments GROUP BY status ORDER BY status`,
+      ),
+    ]);
+    return { byScope, byComponent, collectionTrend, lateFees };
+  }
+
+  @Get('late-fees')
+  async lateFees() {
+    return this.db.query(
+      `SELECT a.id,a.schedule_id,a.installment_id,a.assessment_date,a.amount_minor,a.status,
+              a.waived_reason,s.account_reference,s.scope_type,s.scope_reference,i.sequence,i.due_date
+       FROM late_fee_assessments a
+       JOIN fee_schedules s ON s.id=a.schedule_id
+       JOIN fee_installments i ON i.id=a.installment_id
+       ORDER BY a.assessment_date DESC,a.created_at DESC
+       LIMIT 300`,
+    );
+  }
+
+  @Post('late-fees/:id/waive')
+  async waiveLateFee(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
+    const assessmentId = uuid(id);
+    const v = lateFeeWaiverSchema.parse(body);
+    return this.db.tx(async (c) => {
+      const row = (
+        await c.query(
+          `UPDATE late_fee_assessments
+           SET status='waived',waived_reason=$2
+           WHERE id=$1 AND status='assessed'
+           RETURNING *`,
+          [assessmentId, v.reason],
+        )
+      ).rows[0];
+      if (!row) throw new ConflictException('Late fee is missing or no longer assessable');
+      await this.db.audit(c, req.actor.id, 'fees.late_fee.waive', assessmentId, {
+        scheduleId: row.schedule_id,
+        installmentId: row.installment_id,
+        amountMinor: row.amount_minor,
+        reason: v.reason,
+      });
+      return row;
     });
   }
 

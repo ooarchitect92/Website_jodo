@@ -2561,3 +2561,17 @@ p {
     flex-direction: column;
   }
 }
+
+.fee-component-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.fee-component-list span {
+  border: 1px solid var(--line);
+  background: #f8fafc;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
