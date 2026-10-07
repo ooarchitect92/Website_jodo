@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS tenant_roles(
   explicit_denies jsonb NOT NULL DEFAULT '[]',
   status text NOT NULL DEFAULT 'draft' CHECK(status IN('draft','pending_approval','published','retired')),
   version integer NOT NULL DEFAULT 1,
-  created_by uuid NOT NULL REFERENCES users(id),
+  created_by uuid REFERENCES users(id),
   published_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -172,14 +172,13 @@ CROSS JOIN LATERAL (SELECT id FROM tenants ORDER BY created_at,id LIMIT 1) t
 ON CONFLICT(tenant_id,user_id) DO NOTHING;
 
 UPDATE sessions s
-SET tenant_id=m.tenant_id
-FROM LATERAL (
+SET tenant_id=(
   SELECT membership.tenant_id
   FROM memberships membership
   WHERE membership.user_id=s.user_id AND membership.status='active'
   ORDER BY membership.created_at
   LIMIT 1
-) m
+)
 WHERE s.tenant_id IS NULL;
 
 ALTER TABLE sessions ALTER COLUMN tenant_id SET NOT NULL;
@@ -195,17 +194,9 @@ SELECT
   seed.grants::jsonb,
   '[]'::jsonb,
   'published',
-  owner_user.id,
+  NULL,
   now()
 FROM tenants t
-JOIN LATERAL (
-  SELECT u.id
-  FROM users u
-  JOIN memberships m ON m.user_id=u.id AND m.tenant_id=t.id
-  WHERE m.status='active'
-  ORDER BY CASE WHEN u.role='owner' THEN 0 ELSE 1 END,u.created_at
-  LIMIT 1
-) owner_user ON true
 CROSS JOIN (
   VALUES
     ('owner','Tenant owner','Commercial onboarding and membership administration within platform bounds',
