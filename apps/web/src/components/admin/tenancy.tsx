@@ -182,7 +182,8 @@ export function TenancyStudio() {
         <p className="small">
           Workspace membership, organisation metadata and role releases are tenant-scoped. Existing
           business modules are still being migrated to full tenant isolation, so additional live
-          workspaces must remain disabled until those migrations and cross-tenant tests are complete.
+          workspaces must remain disabled until those migrations and cross-tenant tests are
+          complete.
         </p>
       </section>
 
@@ -231,7 +232,11 @@ export function TenancyStudio() {
         <div className="row">
           <label className="field">
             Intended collection model
-            <select name="intendedCollectionModel" defaultValue="one_time_and_recurring" disabled={!owner}>
+            <select
+              name="intendedCollectionModel"
+              defaultValue="one_time_and_recurring"
+              disabled={!owner}
+            >
               <option value="one_time">One-time payments</option>
               <option value="recurring">Recurring collections</option>
               <option value="one_time_and_recurring">One-time + recurring</option>
@@ -644,7 +649,11 @@ export function TenancyStudio() {
                   className="button outline"
                   onClick={async () => {
                     try {
-                      await request('admin/tenant/roles/' + role.id + '/request-publish', 'POST', {});
+                      await request(
+                        'admin/tenant/roles/' + role.id + '/request-publish',
+                        'POST',
+                        {},
+                      );
                       setMessage('Role release submitted for independent approval.');
                       await load();
                     } catch (error) {
@@ -672,11 +681,10 @@ export function TenancyStudio() {
                     className="button"
                     onClick={async () => {
                       try {
-                        await request(
-                          'admin/tenant/approvals/' + approval.id + '/decide',
-                          'POST',
-                          { decision: 'approve', reason: 'Independent tenant-owner approval' },
-                        );
+                        await request('admin/tenant/approvals/' + approval.id + '/decide', 'POST', {
+                          decision: 'approve',
+                          reason: 'Independent tenant-owner approval',
+                        });
                         setMessage('Role release approved.');
                         await load();
                       } catch (error) {
@@ -691,11 +699,10 @@ export function TenancyStudio() {
                     className="button outline"
                     onClick={async () => {
                       try {
-                        await request(
-                          'admin/tenant/approvals/' + approval.id + '/decide',
-                          'POST',
-                          { decision: 'reject', reason: 'Independent tenant-owner rejection' },
-                        );
+                        await request('admin/tenant/approvals/' + approval.id + '/decide', 'POST', {
+                          decision: 'reject',
+                          reason: 'Independent tenant-owner rejection',
+                        });
                         setMessage('Role release rejected.');
                         await load();
                       } catch (error) {
