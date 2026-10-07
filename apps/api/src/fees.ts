@@ -238,7 +238,7 @@ export class FeeOperationsController {
 
       const installment = (
         await c.query(
-          `SELECT i.*,s.status AS schedule_status,s.currency
+          `SELECT i.*,s.status AS schedule_status,s.currency,s.account_reference
            FROM fee_installments i
            JOIN fee_schedules s ON s.id=i.schedule_id
            WHERE i.id=$1
