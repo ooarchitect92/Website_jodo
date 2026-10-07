@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { notifyStaff } from './notifications';
+import { notifyFeePayer, notifyStaff } from './notifications';
 import { Pool, PoolClient } from 'pg';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { createHmac } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { Db } from '../../api/src/db';
 import { checkConfig } from '../../api/src/config';
 import { workflowSchema, pageSchema } from '../../../packages/core/src/contracts';
@@ -21,6 +21,8 @@ export async function tick(db: Db) {
     try {
       let delivery = 'disabled';
       if (job.type === 'lead.accepted') delivery = await notifyStaff(db, job.event_id);
+      if (job.type.startsWith('fee.reminder.') || job.type === 'payment.external_confirmed')
+        delivery = await notifyFeePayer(db, job.event_id);
       await db.tx(async (c) => {
         if (job.type === 'lead.accepted') {
           await c.query(
@@ -32,7 +34,11 @@ export async function tick(db: Db) {
             [job.aggregate_id],
           );
         }
-        const blocked = job.type.startsWith('lead.') && delivery !== 'provider_accepted';
+        const requiresDelivery =
+          job.type.startsWith('lead.') ||
+          job.type.startsWith('fee.reminder.') ||
+          (job.type === 'payment.external_confirmed' && job.payload?.payerCommunication === true);
+        const blocked = requiresDelivery && delivery !== 'provider_accepted';
         await c.query('UPDATE outbox SET status=$2,last_error=$3,lease_until=NULL WHERE id=$1', [
           job.id,
           blocked ? 'blocked' : 'completed',
@@ -55,6 +61,68 @@ export async function tick(db: Db) {
     }
   }
   await db.tx(async (c) => {
+    const reminderRows = (
+      await c.query(
+        `SELECT i.id AS installment_id,i.schedule_id,s.payer_id,p.preferred_channel,
+                CASE
+                  WHEN i.due_date=current_date+3 THEN 'upcoming_3d'
+                  WHEN i.due_date=current_date THEN 'due_today'
+                  WHEN i.due_date<current_date THEN 'overdue'
+                  ELSE NULL
+                END AS reminder_key
+         FROM fee_installments i
+         JOIN fee_schedules s ON s.id=i.schedule_id
+         JOIN fee_payers p ON p.id=s.payer_id
+         WHERE s.status='active'
+           AND p.active=true
+           AND p.preferred_channel<>'none'
+           AND i.status NOT IN('paid','cancelled')
+           AND (i.due_date=current_date+3 OR i.due_date=current_date OR i.due_date<current_date)
+         ORDER BY i.due_date
+         FOR UPDATE OF i SKIP LOCKED
+         LIMIT 100`,
+      )
+    ).rows;
+    for (const row of reminderRows) {
+      const eventId = randomUUID();
+      const inserted = await c.query(
+        `INSERT INTO fee_reminder_runs(installment_id,reminder_key,reminder_date,event_id)
+         VALUES($1,$2,current_date,$3)
+         ON CONFLICT(installment_id,reminder_key,reminder_date) DO NOTHING
+         RETURNING id`,
+        [row.installment_id, row.reminder_key, eventId],
+      );
+      if (!inserted.rowCount) continue;
+      await c.query(
+        `INSERT INTO fee_communication_log(
+           event_id,schedule_id,installment_id,payer_id,channel,kind,status
+         ) VALUES($1,$2,$3,$4,$5,$6,'pending')`,
+        [
+          eventId,
+          row.schedule_id,
+          row.installment_id,
+          row.payer_id,
+          row.preferred_channel,
+          row.reminder_key,
+        ],
+      );
+      await c.query(
+        `INSERT INTO outbox(event_id,type,aggregate_id,payload)
+         VALUES($1,$2,$3,$4)`,
+        [
+          eventId,
+          'fee.reminder.' + row.reminder_key,
+          row.installment_id,
+          { scheduleId: row.schedule_id, reminderKey: row.reminder_key },
+        ],
+      );
+      await db.audit(c, 'worker', 'fees.reminder.queued', row.installment_id, {
+        scheduleId: row.schedule_id,
+        reminderKey: row.reminder_key,
+        eventId,
+      });
+    }
+
     const due = (
       await c.query(
         "SELECT r.*,l.stage,w.active FROM workflow_runs r JOIN leads l ON l.id=r.lead_id JOIN workflows w ON w.id=r.workflow_id WHERE r.status='running' AND r.due_at<=now() ORDER BY r.due_at FOR UPDATE OF r SKIP LOCKED LIMIT 30",

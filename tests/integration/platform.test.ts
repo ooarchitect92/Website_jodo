@@ -652,6 +652,98 @@ test('fee schedule, payment evidence and refund remain auditable and balanced', 
   );
 });
 
+
+test('payer portal exposes only linked schedule data and queues reminders durably', async () => {
+  const ref = 'payer_' + randomUUID().slice(0, 8);
+  const payer = await call(
+    '/v1/admin/payers',
+    'POST',
+    {
+      accountReference: ref,
+      displayName: 'Synthetic Parent',
+      email: 'payer@example.invalid',
+      preferredChannel: 'email',
+      locale: 'en-IN',
+    },
+    {},
+    true,
+  );
+  assert.equal(payer.r.status, 201, JSON.stringify(payer.data));
+  const due = new Date();
+  due.setUTCDate(due.getUTCDate() + 3);
+  const dueDate = due.toISOString().slice(0, 10);
+  const schedule = await call(
+    '/v1/admin/fees/schedules',
+    'POST',
+    {
+      accountReference: ref,
+      payerId: payer.data.id,
+      currency: 'INR',
+      note: 'Synthetic payer portal schedule',
+      installments: [{ dueDate, amountMinor: 125000 }],
+    },
+    {},
+    true,
+  );
+  assert.equal(schedule.r.status, 201, JSON.stringify(schedule.data));
+  assert.equal(
+    (
+      await call(
+        '/v1/admin/fees/schedules/' + schedule.data.id + '/activate',
+        'POST',
+        { expectedVersion: 1 },
+        {},
+        true,
+      )
+    ).r.status,
+    201,
+  );
+  const link = await call(
+    '/v1/admin/fees/schedules/' + schedule.data.id + '/payer-link',
+    'POST',
+    { expiresHours: 1 },
+    {},
+    true,
+  );
+  assert.equal(link.r.status, 201, JSON.stringify(link.data));
+  const rawToken = String(link.data.path).split('/').filter(Boolean).pop()!;
+  const portal = await call('/v1/payer/' + rawToken);
+  assert.equal(portal.r.status, 200, JSON.stringify(portal.data));
+  assert.equal(portal.data.payer.accountReference, ref);
+  assert.equal(portal.data.installments.length, 1);
+  assert.ok(!JSON.stringify(portal.data).includes('payer@example.invalid'));
+
+  await tick(db);
+  const reminders = await db.query(
+    `SELECT c.status,c.kind,o.status AS outbox_status
+     FROM fee_communication_log c
+     JOIN outbox o ON o.event_id=c.event_id
+     WHERE c.schedule_id=$1 AND c.kind='upcoming_3d'`,
+    [schedule.data.id],
+  );
+  assert.equal(reminders.length, 1);
+  await tick(db);
+  assert.equal(
+    (
+      await db.query(
+        "SELECT count(*)::int AS count FROM fee_reminder_runs WHERE installment_id=(SELECT id FROM fee_installments WHERE schedule_id=$1 LIMIT 1) AND reminder_key='upcoming_3d'",
+        [schedule.data.id],
+      )
+    )[0]!.count,
+    1,
+  );
+
+  const revoked = await call(
+    '/v1/admin/fees/schedules/' + schedule.data.id + '/revoke-payer-links',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(revoked.r.status, 201);
+  assert.equal((await call('/v1/payer/' + rawToken)).r.status, 409);
+});
+
 test('session revocation invalidates subsequent access', async () => {
   await call('/v1/auth/logout', 'POST', {}, {}, true);
   assert.equal((await call('/v1/admin/content', 'GET', undefined, {}, true)).r.status, 401);

@@ -146,9 +146,9 @@ export class FeeOperationsController {
     return this.db.tx(async (c) => {
       const schedule = (
         await c.query(
-          `INSERT INTO fee_schedules(account_reference,currency,total_amount_minor,note,created_by)
-           VALUES($1,$2,$3,$4,$5) RETURNING *`,
-          [v.accountReference, v.currency, total, v.note, req.actor.id],
+          `INSERT INTO fee_schedules(account_reference,payer_id,currency,total_amount_minor,note,created_by)
+           VALUES($1,$2,$3,$4,$5,$6) RETURNING *`,
+          [v.accountReference, v.payerId || null, v.currency, total, v.note, req.actor.id],
         )
       ).rows[0];
       for (let n = 0; n < v.installments.length; n++) {
@@ -164,6 +164,7 @@ export class FeeOperationsController {
         currency: v.currency,
         totalAmountMinor: total,
         installmentCount: v.installments.length,
+        payerLinked: !!v.payerId,
       });
       return schedule;
     });
@@ -237,9 +238,11 @@ export class FeeOperationsController {
 
       const installment = (
         await c.query(
-          `SELECT i.*,s.status AS schedule_status,s.currency
+          `SELECT i.*,s.status AS schedule_status,s.currency,s.account_reference,s.payer_id,
+                  p.preferred_channel
            FROM fee_installments i
            JOIN fee_schedules s ON s.id=i.schedule_id
+           LEFT JOIN fee_payers p ON p.id=s.payer_id
            WHERE i.id=$1
            FOR UPDATE OF i,s`,
           [v.installmentId],
@@ -293,19 +296,67 @@ export class FeeOperationsController {
           `UPDATE fee_schedules SET status='completed',version=version+1,updated_at=now() WHERE id=$1`,
           [installment.schedule_id],
         );
+      const receiptNumber = 'RCP-' + randomUUID().slice(0, 8).toUpperCase();
+      const receipt = (
+        await c.query(
+          `INSERT INTO fee_receipts(payment_id,receipt_number,snapshot)
+           VALUES($1,$2,$3) RETURNING id,receipt_number,issued_at`,
+          [
+            payment.id,
+            receiptNumber,
+            {
+              scheduleId: installment.schedule_id,
+              accountReference: installment.account_reference || null,
+              installmentId: v.installmentId,
+              amountMinor: v.amountMinor,
+              currency: v.currency,
+              providerReference: v.providerReference,
+              recordedAt: payment.recorded_at,
+            },
+          ],
+        )
+      ).rows[0];
       const eventId = randomUUID();
       await c.query(
         `INSERT INTO outbox(event_id,type,aggregate_id,payload)
          VALUES($1,'payment.external_confirmed',$2,$3)`,
-        [eventId, payment.id, { scheduleId: installment.schedule_id, amountMinor: v.amountMinor }],
+        [
+          eventId,
+          payment.id,
+          {
+            scheduleId: installment.schedule_id,
+            amountMinor: v.amountMinor,
+            receiptId: receipt.id,
+            receiptNumber: receipt.receipt_number,
+            payerCommunication: Boolean(
+              installment.payer_id &&
+                installment.preferred_channel &&
+                installment.preferred_channel !== 'none',
+            ),
+          },
+        ],
       );
+      if (installment.payer_id && installment.preferred_channel && installment.preferred_channel !== 'none') {
+        await c.query(
+          `INSERT INTO fee_communication_log(
+             event_id,schedule_id,installment_id,payer_id,channel,kind,status
+           ) VALUES($1,$2,$3,$4,$5,'receipt','pending')`,
+          [
+            eventId,
+            installment.schedule_id,
+            v.installmentId,
+            installment.payer_id,
+            installment.preferred_channel,
+          ],
+        );
+      }
       await this.db.audit(c, req.actor.id, 'fees.payment.external_confirmed', payment.id, {
         scheduleId: installment.schedule_id,
         providerReference: v.providerReference,
         amountMinor: v.amountMinor,
         eventId,
       });
-      return { ...payment, replayed: false };
+      return { ...payment, receipt, replayed: false };
     });
   }
 
@@ -385,6 +436,18 @@ export class FeeOperationsController {
       });
       return { ...refund, replayed: false };
     });
+  }
+
+  @Get('communications')
+  communications() {
+    return this.db.query(
+      `SELECT c.id,c.event_id,c.schedule_id,c.installment_id,c.channel,c.kind,c.status,
+              c.provider_reference,c.last_error,c.created_at,c.updated_at,s.account_reference
+       FROM fee_communication_log c
+       JOIN fee_schedules s ON s.id=c.schedule_id
+       ORDER BY c.created_at DESC
+       LIMIT 300`,
+    );
   }
 
   @Get('mandates')

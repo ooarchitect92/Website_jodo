@@ -15,6 +15,8 @@ import {
   externalPaymentRecordSchema,
   refundRecordSchema,
   mandateRecordSchema,
+  feePayerProfileSchema,
+  payerLinkSchema,
 } from '../../packages/core/src/contracts';
 import { encrypt, decrypt, equal, bucket } from '../../packages/core/src/security';
 import { seedPages } from '../../packages/core/src/site';
@@ -232,3 +234,29 @@ test('mandate rail is restricted to supported autopay classes', () =>
     }).success,
     false,
   ));
+
+test('payer profile requires the destination for the selected reminder channel', () => {
+  assert.equal(
+    feePayerProfileSchema.safeParse({
+      accountReference: 'payer_001',
+      displayName: 'Synthetic Parent',
+      preferredChannel: 'email',
+      locale: 'en-IN',
+    }).success,
+    false,
+  );
+  assert.equal(
+    feePayerProfileSchema.safeParse({
+      accountReference: 'payer_001',
+      displayName: 'Synthetic Parent',
+      email: 'payer@example.invalid',
+      preferredChannel: 'email',
+      locale: 'en-IN',
+    }).success,
+    true,
+  );
+});
+test('payer portal links have bounded expiry', () => {
+  assert.equal(payerLinkSchema.safeParse({ expiresHours: 1 }).success, true);
+  assert.equal(payerLinkSchema.safeParse({ expiresHours: 24 * 31 }).success, false);
+});
