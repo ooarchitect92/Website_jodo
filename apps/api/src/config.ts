@@ -14,10 +14,12 @@ export function checkConfig() {
     throw Error('Secrets too short');
   if (process.env.BLOG_AUTO_DELETE_ENABLED !== 'false')
     throw Error('Automatic source-content deletion is prohibited');
-  if (process.env.NOTIFICATION_MODE === 'smtp' && process.env.SMTP_HOST) {
+  if ((process.env.NOTIFICATION_MODE === 'smtp' || process.env.PAYER_NOTIFICATION_MODE === 'smtp') && process.env.SMTP_HOST) {
     for (const key of ['SMTP_HOST', 'SMTP_FROM', 'NOTIFICATION_TO'])
       if (!process.env[key] || /[\r\n]/.test(process.env[key]!)) throw Error('Missing safe ' + key);
   }
+  if (!['disabled', 'smtp'].includes(process.env.PAYER_NOTIFICATION_MODE || 'disabled'))
+    throw Error('Unsupported payer notification mode');
   if (process.env.DEPLOYMENT_MODE === 'production') {
     if (!process.env.SITE_URL!.startsWith('https://') || process.env.SITE_APPROVED !== 'true')
       throw Error('Production requires HTTPS and owner approval');
