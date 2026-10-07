@@ -306,6 +306,43 @@ export const paymentProviderEventSchema = z.discriminatedUnion('type', [
     .strict(),
 ]);
 
+export const payerCheckoutAllocationSchema = z
+  .object({
+    componentCode: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,40}$/),
+    amountMinor: moneyMinor,
+  })
+  .strict();
+
+export const payerCheckoutRequestSchema = z
+  .object({
+    installmentId: z.uuid(),
+    amountMinor: moneyMinor,
+    idempotencyKey: z.uuid(),
+    allocations: z.array(payerCheckoutAllocationSchema).max(30).default([]),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const codes = value.allocations.map((i) => i.componentCode);
+    if (new Set(codes).size !== codes.length)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['allocations'],
+        message: 'Fee-head allocation codes must be unique',
+      });
+    if (
+      value.allocations.length &&
+      value.allocations.reduce((sum, item) => sum + item.amountMinor, 0) !== value.amountMinor
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['allocations'],
+        message: 'Fee-head allocations must equal the checkout amount',
+      });
+  });
+
 export const refundRecordSchema = z
   .object({
     paymentId: z.uuid(),

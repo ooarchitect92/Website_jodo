@@ -30,12 +30,16 @@ export class PaymentProviderController {
 
   @Get('status')
   status() {
-    const enabled = process.env.PAYMENT_PROVIDER_MODE === 'signed_hmac';
+    const webhookEnabled = process.env.PAYMENT_PROVIDER_MODE === 'signed_hmac';
+    const checkoutEnabled = process.env.PAYMENT_CHECKOUT_MODE === 'redirect_api';
     return {
-      provider: enabled ? process.env.PAYMENT_PROVIDER_NAME : null,
-      mode: enabled ? 'signed_hmac' : 'disabled',
-      moneyMovement: false,
-      note: 'This endpoint accepts signed, normalized provider callbacks. Hosted checkout/payment initiation remains provider-specific.',
+      provider: webhookEnabled || checkoutEnabled ? process.env.PAYMENT_PROVIDER_NAME : null,
+      webhookMode: webhookEnabled ? 'signed_hmac' : 'disabled',
+      checkoutMode: checkoutEnabled ? 'redirect_api' : 'disabled',
+      moneyMovement: checkoutEnabled,
+      note: checkoutEnabled
+        ? 'Hosted checkout is configured. Payment credentials remain with the selected provider; authoritative outcomes arrive through verified provider callbacks.'
+        : 'Signed provider callbacks can be enabled independently. Hosted checkout remains disabled until an approved provider endpoint is configured.',
     };
   }
 
@@ -98,6 +102,13 @@ export class PaymentProviderController {
       }
 
       if (event.type === 'payment_failed') {
+        await c.query(
+          `UPDATE payment_checkout_sessions
+           SET status='failed',failure_code=$3,updated_at=now()
+           WHERE provider=$1 AND provider_reference=$2
+             AND status IN('requested','created')`,
+          [provider, event.providerReference, event.reasonCode],
+        );
         await c.query(
           `UPDATE payment_provider_events
            SET status='applied',applied_at=now()
@@ -212,6 +223,16 @@ export class PaymentProviderController {
         )
       ).rows[0];
 
+      const checkout = (
+        await c.query(
+          `SELECT id,schedule_id,installment_id,amount_minor,status
+           FROM payment_checkout_sessions
+           WHERE provider=$1 AND provider_reference=$2
+           FOR UPDATE`,
+          [provider, event.providerReference],
+        )
+      ).rows[0];
+
       const fail = async (code: string) => {
         await c.query(
           `UPDATE payment_provider_events
@@ -219,9 +240,17 @@ export class PaymentProviderController {
            WHERE id=$1`,
           [inserted.id, code],
         );
+        if (checkout)
+          await c.query(
+            `UPDATE payment_checkout_sessions
+             SET status='failed',failure_code=$2,updated_at=now()
+             WHERE id=$1 AND status IN('requested','created')`,
+            [checkout.id, code],
+          );
         await this.db.audit(c, 'provider:' + provider, 'payment.provider_rejected', inserted.id, {
           providerEventId: event.eventId,
           code,
+          checkoutSessionId: checkout?.id || null,
         });
         return { accepted: false, duplicate: false, status: 'failed', code };
       };
@@ -230,6 +259,13 @@ export class PaymentProviderController {
       if (installment.schedule_status !== 'active') return fail('SCHEDULE_NOT_ACTIVE');
       if (installment.status === 'cancelled') return fail('INSTALLMENT_CANCELLED');
       if (installment.currency !== event.currency) return fail('CURRENCY_MISMATCH');
+      if (
+        checkout &&
+        (checkout.installment_id !== event.installmentId ||
+          Number(checkout.amount_minor) !== event.amountMinor ||
+          checkout.schedule_id !== installment.schedule_id)
+      )
+        return fail('CHECKOUT_MISMATCH');
 
       const existingPayment = (
         await c.query(
@@ -276,6 +312,23 @@ export class PaymentProviderController {
           ],
         )
       ).rows[0];
+
+      if (checkout) {
+        await c.query(
+          `INSERT INTO payment_component_allocations(payment_id,component_code,amount_minor)
+           SELECT $1,component_code,amount_minor
+           FROM payment_checkout_allocations
+           WHERE session_id=$2
+           ON CONFLICT(payment_id,component_code) DO NOTHING`,
+          [payment.id, checkout.id],
+        );
+        await c.query(
+          `UPDATE payment_checkout_sessions
+           SET status='completed',completed_payment_id=$2,failure_code=NULL,updated_at=now()
+           WHERE id=$1`,
+          [checkout.id, payment.id],
+        );
+      }
 
       const nextPaid = Number(installment.paid_amount_minor) + event.amountMinor;
       const nextStatus = nextPaid === Number(installment.amount_minor) ? 'paid' : 'part_paid';
@@ -382,6 +435,7 @@ export class PaymentProviderController {
           occurredAt: event.occurredAt,
           receiptNumber: receipt.receipt_number,
           outboxEventId,
+          checkoutSessionId: checkout?.id || null,
         },
       );
 

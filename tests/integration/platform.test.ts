@@ -9,6 +9,7 @@ import { tick, checkpoint } from '../../apps/worker/src/main';
 import { notifyStaff } from '../../apps/worker/src/notifications';
 import { encrypt } from '../../packages/core/src/security';
 import { createServer } from 'node:net';
+import { createServer as createHttpServer } from 'node:http';
 import { createHmac, randomUUID } from 'node:crypto';
 let app: any,
   base: string,
@@ -945,6 +946,215 @@ test('flexible fee components, concessions, analytics and late-fee assessment re
     )[0]!.count,
     1,
   );
+});
+
+test('hosted checkout is idempotent, provider-gated and reconciles to the fee ledger', async () => {
+  let providerCalls = 0;
+  let providerReturnUrl = '';
+  const providerReference = 'checkout_' + randomUUID().replaceAll('-', '');
+  const providerServer = createHttpServer(async (req, res) => {
+    providerCalls++;
+    assert.equal(req.method, 'POST');
+    assert.equal(req.headers.authorization, 'Bearer synthetic-checkout-api-key-123456789');
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(Buffer.from(chunk));
+    const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    providerReturnUrl = body.returnUrl;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        providerReference,
+        checkoutUrl: 'http://127.0.0.1:' + (providerServer.address() as any).port + '/checkout',
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      }),
+    );
+  });
+  await new Promise<void>((resolve) => providerServer.listen(0, '127.0.0.1', resolve));
+  const providerPort = (providerServer.address() as { port: number }).port;
+
+  const previous = {
+    checkoutMode: process.env.PAYMENT_CHECKOUT_MODE,
+    createUrl: process.env.PAYMENT_CHECKOUT_CREATE_URL,
+    allowedHosts: process.env.PAYMENT_CHECKOUT_ALLOWED_HOSTS,
+    checkoutKey: process.env.PAYMENT_CHECKOUT_API_KEY,
+    checkoutTimeout: process.env.PAYMENT_CHECKOUT_TIMEOUT_MS,
+    webhookMode: process.env.PAYMENT_PROVIDER_MODE,
+    providerName: process.env.PAYMENT_PROVIDER_NAME,
+    webhookSecret: process.env.PAYMENT_WEBHOOK_SECRET,
+  };
+  Object.assign(process.env, {
+    PAYMENT_CHECKOUT_MODE: 'redirect_api',
+    PAYMENT_CHECKOUT_CREATE_URL: 'http://127.0.0.1:' + providerPort + '/sessions',
+    PAYMENT_CHECKOUT_ALLOWED_HOSTS: '127.0.0.1',
+    PAYMENT_CHECKOUT_API_KEY: 'synthetic-checkout-api-key-123456789',
+    PAYMENT_CHECKOUT_TIMEOUT_MS: '5000',
+    PAYMENT_PROVIDER_MODE: 'signed_hmac',
+    PAYMENT_PROVIDER_NAME: 'qa_checkout_gateway',
+    PAYMENT_WEBHOOK_SECRET: 'checkout-webhook-secret-'.repeat(3),
+  });
+
+  try {
+    const reference = 'checkout_' + randomUUID().slice(0, 8);
+    const payer = await call(
+      '/v1/admin/payers',
+      'POST',
+      {
+        accountReference: reference,
+        displayName: 'Synthetic Checkout Parent',
+        email: 'checkout@example.invalid',
+        preferredChannel: 'email',
+        locale: 'en-IN',
+      },
+      {},
+      true,
+    );
+    assert.equal(payer.r.status, 201, JSON.stringify(payer.data));
+
+    const schedule = await call(
+      '/v1/admin/fees/schedules',
+      'POST',
+      {
+        accountReference: reference,
+        payerId: payer.data.id,
+        scopeType: 'student',
+        scopeReference: reference,
+        currency: 'INR',
+        components: [
+          { code: 'tuition', label: 'Tuition', amountMinor: 100000 },
+          { code: 'transport', label: 'Transport', amountMinor: 50000 },
+        ],
+        installments: [{ dueDate: '2027-09-10', amountMinor: 150000 }],
+        note: 'Synthetic hosted checkout schedule',
+      },
+      {},
+      true,
+    );
+    assert.equal(schedule.r.status, 201, JSON.stringify(schedule.data));
+    assert.equal(
+      (
+        await call(
+          '/v1/admin/fees/schedules/' + schedule.data.id + '/activate',
+          'POST',
+          { expectedVersion: 1 },
+          {},
+          true,
+        )
+      ).r.status,
+      201,
+    );
+
+    const list = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
+    const active = list.find((row: any) => row.id === schedule.data.id);
+    const installmentId = active.installments[0].id;
+    const link = await call(
+      '/v1/admin/fees/schedules/' + schedule.data.id + '/payer-link',
+      'POST',
+      { expiresHours: 1 },
+      {},
+      true,
+    );
+    assert.equal(link.r.status, 201, JSON.stringify(link.data));
+    const payerToken = String(link.data.path).split('/').filter(Boolean).pop()!;
+    const idempotencyKey = randomUUID();
+    const checkoutBody = {
+      installmentId,
+      amountMinor: 150000,
+      idempotencyKey,
+      allocations: [
+        { componentCode: 'tuition', amountMinor: 100000 },
+        { componentCode: 'transport', amountMinor: 50000 },
+      ],
+    };
+
+    const checkout = await call('/v1/payer/' + payerToken + '/checkout', 'POST', checkoutBody);
+    assert.equal(checkout.r.status, 201, JSON.stringify(checkout.data));
+    assert.equal(checkout.data.status, 'created');
+    assert.equal(providerCalls, 1);
+    assert.match(checkout.data.checkoutUrl, /^http:\/\/127\.0\.0\.1:/);
+
+    const retry = await call('/v1/payer/' + payerToken + '/checkout', 'POST', checkoutBody);
+    assert.equal(retry.r.status, 201, JSON.stringify(retry.data));
+    assert.equal(retry.data.sessionId, checkout.data.sessionId);
+    assert.equal(providerCalls, 1);
+
+    const sessions = await db.query('SELECT * FROM payment_checkout_sessions WHERE id=$1', [
+      checkout.data.sessionId,
+    ]);
+    assert.equal(sessions.length, 1);
+    assert.equal(sessions[0]!.status, 'created');
+    assert.equal(
+      (
+        await db.query('SELECT * FROM payment_checkout_allocations WHERE session_id=$1', [
+          checkout.data.sessionId,
+        ])
+      ).length,
+      2,
+    );
+
+    const event = {
+      eventId: 'evt_' + randomUUID(),
+      type: 'payment_confirmed',
+      installmentId,
+      providerReference,
+      amountMinor: 150000,
+      currency: 'INR',
+      occurredAt: new Date().toISOString(),
+    };
+    const raw = JSON.stringify(event);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET!)
+      .update(timestamp)
+      .update('.')
+      .update(raw)
+      .digest('hex');
+    const webhook = await fetch(base + '/v1/provider/payments/webhook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Payment-Timestamp': timestamp,
+        'X-Payment-Signature': signature,
+      },
+      body: raw,
+    });
+    assert.equal(webhook.status, 202, await webhook.text());
+
+    const completed = (
+      await db.query('SELECT * FROM payment_checkout_sessions WHERE id=$1', [
+        checkout.data.sessionId,
+      ])
+    )[0]!;
+    assert.equal(completed.status, 'completed');
+    assert.ok(completed.completed_payment_id);
+    assert.equal(
+      (
+        await db.query('SELECT * FROM payment_component_allocations WHERE payment_id=$1', [
+          completed.completed_payment_id,
+        ])
+      ).length,
+      2,
+    );
+
+    const returnToken = new URL(providerReturnUrl).pathname.split('/').filter(Boolean).pop()!;
+    const returned = await call('/v1/payment-return/' + returnToken);
+    assert.equal(returned.r.status, 200, JSON.stringify(returned.data));
+    assert.equal(returned.data.status, 'completed');
+    assert.ok(returned.data.receiptNumber);
+  } finally {
+    for (const [key, value] of Object.entries({
+      PAYMENT_CHECKOUT_MODE: previous.checkoutMode,
+      PAYMENT_CHECKOUT_CREATE_URL: previous.createUrl,
+      PAYMENT_CHECKOUT_ALLOWED_HOSTS: previous.allowedHosts,
+      PAYMENT_CHECKOUT_API_KEY: previous.checkoutKey,
+      PAYMENT_CHECKOUT_TIMEOUT_MS: previous.checkoutTimeout,
+      PAYMENT_PROVIDER_MODE: previous.webhookMode,
+      PAYMENT_PROVIDER_NAME: previous.providerName,
+      PAYMENT_WEBHOOK_SECRET: previous.webhookSecret,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    await new Promise<void>((resolve) => providerServer.close(() => resolve()));
+  }
 });
 
 test('session revocation invalidates subsequent access', async () => {

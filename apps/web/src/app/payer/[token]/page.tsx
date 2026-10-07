@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { randomUUID } from 'node:crypto';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +9,10 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true },
 };
 
-type Props = { params: Promise<{ token: string }> };
+type Props = {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ checkout?: string }>;
+};
 const money = (minor: number | string) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(
     Number(minor || 0) / 100,
@@ -25,8 +29,9 @@ async function load(token: string) {
   return r.json();
 }
 
-export default async function PayerPortal({ params }: Props) {
+export default async function PayerPortal({ params, searchParams }: Props) {
   const { token } = await params;
+  const query = await searchParams;
   const data = await load(token);
   if (!data) notFound();
   const paid = data.installments.reduce(
@@ -56,6 +61,13 @@ export default async function PayerPortal({ params }: Props) {
         <p className="lead">
           Review your installments, payments and receipts from one protected view.
         </p>
+        {query.checkout && (
+          <p className="admin-message" role="status">
+            {query.checkout === 'invalid'
+              ? 'The payment request was invalid and no checkout was created.'
+              : 'The payment provider is temporarily unavailable. No successful collection has been recorded.'}
+          </p>
+        )}
         <div className="dashboard-stats">
           <div className="dashboard-stat">
             <span>Schedule total</span>
@@ -88,15 +100,38 @@ export default async function PayerPortal({ params }: Props) {
             <span>Paid</span>
             <span>Status</span>
           </div>
-          {data.installments.map((i: any) => (
-            <div className="payer-row" role="row" key={i.id}>
-              <strong>#{i.sequence}</strong>
-              <span>{new Date(i.due_date).toLocaleDateString('en-IN')}</span>
-              <span>{money(i.amount_minor)}</span>
-              <span>{money(i.paid_amount_minor)}</span>
-              <span className="status-pill">{i.status}</span>
-            </div>
-          ))}
+          {data.installments.map((i: any) => {
+            const remaining = Math.max(
+              0,
+              Number(i.amount_minor || 0) - Number(i.paid_amount_minor || 0),
+            );
+            const payable =
+              data.providerConnected &&
+              data.schedule.status === 'active' &&
+              remaining > 0 &&
+              !['paid', 'cancelled'].includes(i.status);
+            return (
+              <div className="payer-row" role="row" key={i.id}>
+                <strong>#{i.sequence}</strong>
+                <span>{new Date(i.due_date).toLocaleDateString('en-IN')}</span>
+                <span>{money(i.amount_minor)}</span>
+                <span>{money(i.paid_amount_minor)}</span>
+                <div className="payer-installment-action">
+                  <span className="status-pill">{i.status}</span>
+                  {payable && (
+                    <form action={'/payer/' + encodeURIComponent(token) + '/pay/'} method="post">
+                      <input type="hidden" name="installmentId" value={i.id} />
+                      <input type="hidden" name="amountMinor" value={remaining} />
+                      <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+                      <button className="button" type="submit">
+                        Pay {money(remaining)}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -145,11 +180,34 @@ export default async function PayerPortal({ params }: Props) {
         </section>
       )}
 
+      {!!data.checkoutSessions?.length && (
+        <section className="payer-card">
+          <p className="eyebrow">Payment attempts</p>
+          <h2>Hosted checkout history</h2>
+          <div className="payer-receipts">
+            {data.checkoutSessions.map((session: any) => (
+              <article key={session.id}>
+                <div>
+                  <strong>{money(session.amount_minor)}</strong>
+                  <p>
+                    Created {new Date(session.created_at).toLocaleString('en-IN')} · installment{' '}
+                    {data.installments.find((i: any) => i.id === session.installment_id)
+                      ?.sequence || '—'}
+                  </p>
+                </div>
+                <span className="status-pill">{session.status}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       <aside className="payer-security-note">
         <strong>Security note</strong>
         <p>
-          This page never asks for card, bank, UPI PIN or OTP credentials. Payment actions remain
-          disabled until the platform owner connects and verifies an approved payment provider.
+          {data.providerConnected
+            ? 'Payment actions redirect to the approved hosted provider. This portal never asks for card numbers, bank credentials, UPI PINs or OTPs.'
+            : 'This page never asks for card, bank, UPI PIN or OTP credentials. Payment actions remain disabled until the platform owner connects and verifies an approved payment provider.'}
         </p>
       </aside>
     </main>

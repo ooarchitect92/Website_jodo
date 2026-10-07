@@ -21,6 +21,7 @@ import {
   feeComponentInputSchema,
   feeConcessionInputSchema,
   lateFeeRuleInputSchema,
+  payerCheckoutRequestSchema,
 } from '../../packages/core/src/contracts';
 import { encrypt, decrypt, equal, bucket } from '../../packages/core/src/security';
 import { seedPages } from '../../packages/core/src/site';
@@ -375,3 +376,39 @@ test('component and concession contracts reject invalid codes', () => {
     true,
   );
 });
+
+test('payer checkout request supports bounded fee-head allocations', () => {
+  const parsed = payerCheckoutRequestSchema.parse({
+    installmentId: crypto.randomUUID(),
+    amountMinor: 125000,
+    idempotencyKey: crypto.randomUUID(),
+    allocations: [
+      { componentCode: 'tuition', amountMinor: 100000 },
+      { componentCode: 'transport', amountMinor: 25000 },
+    ],
+  });
+  assert.equal(parsed.allocations.length, 2);
+});
+test('payer checkout rejects allocation totals that do not match the payment amount', () =>
+  assert.equal(
+    payerCheckoutRequestSchema.safeParse({
+      installmentId: crypto.randomUUID(),
+      amountMinor: 125000,
+      idempotencyKey: crypto.randomUUID(),
+      allocations: [{ componentCode: 'tuition', amountMinor: 100000 }],
+    }).success,
+    false,
+  ));
+test('payer checkout rejects duplicate fee-head allocation codes', () =>
+  assert.equal(
+    payerCheckoutRequestSchema.safeParse({
+      installmentId: crypto.randomUUID(),
+      amountMinor: 125000,
+      idempotencyKey: crypto.randomUUID(),
+      allocations: [
+        { componentCode: 'tuition', amountMinor: 100000 },
+        { componentCode: 'tuition', amountMinor: 25000 },
+      ],
+    }).success,
+    false,
+  ));

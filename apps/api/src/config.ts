@@ -27,6 +27,38 @@ export function checkConfig() {
     throw Error('Unsupported payer notification mode');
   if (!['disabled', 'signed_hmac'].includes(process.env.PAYMENT_PROVIDER_MODE || 'disabled'))
     throw Error('Unsupported payment provider mode');
+  if (!['disabled', 'redirect_api'].includes(process.env.PAYMENT_CHECKOUT_MODE || 'disabled'))
+    throw Error('Unsupported payment checkout mode');
+  if (process.env.PAYMENT_CHECKOUT_MODE === 'redirect_api') {
+    if (
+      !process.env.PAYMENT_PROVIDER_NAME ||
+      !/^[a-z0-9_-]{2,40}$/.test(process.env.PAYMENT_PROVIDER_NAME)
+    )
+      throw Error('Missing safe PAYMENT_PROVIDER_NAME');
+    if (!process.env.PAYMENT_CHECKOUT_CREATE_URL)
+      throw Error('Missing PAYMENT_CHECKOUT_CREATE_URL');
+    if (!process.env.PAYMENT_CHECKOUT_API_KEY || process.env.PAYMENT_CHECKOUT_API_KEY.length < 24)
+      throw Error('PAYMENT_CHECKOUT_API_KEY is too short');
+    const hosts = (process.env.PAYMENT_CHECKOUT_ALLOWED_HOSTS || '')
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (!hosts.length || hosts.some((host) => !/^[A-Za-z0-9.-]+$/.test(host)))
+      throw Error('Missing safe PAYMENT_CHECKOUT_ALLOWED_HOSTS');
+    const timeout = Number(process.env.PAYMENT_CHECKOUT_TIMEOUT_MS || 5000);
+    if (!Number.isInteger(timeout) || timeout < 1000 || timeout > 15000)
+      throw Error('Invalid PAYMENT_CHECKOUT_TIMEOUT_MS');
+    let createUrl: URL;
+    try {
+      createUrl = new URL(process.env.PAYMENT_CHECKOUT_CREATE_URL);
+    } catch {
+      throw Error('Invalid PAYMENT_CHECKOUT_CREATE_URL');
+    }
+    if (!hosts.map((h) => h.toLowerCase()).includes(createUrl.hostname.toLowerCase()))
+      throw Error('PAYMENT_CHECKOUT_CREATE_URL host is not allowlisted');
+    if (process.env.DEPLOYMENT_MODE === 'production' && createUrl.protocol !== 'https:')
+      throw Error('Production checkout provider requires HTTPS');
+  }
   if (process.env.PAYMENT_PROVIDER_MODE === 'signed_hmac') {
     if (
       !process.env.PAYMENT_PROVIDER_NAME ||
