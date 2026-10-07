@@ -213,8 +213,13 @@ export class OperationsController {
         implemented: false,
       },
       {
-        name: 'Payment / lending / KYC',
-        status: 'Not activated; official external portals only',
+        name: 'Fee schedules / payment evidence / reconciliation',
+        status: 'Core ledger implemented; live money movement provider not activated',
+        implemented: true,
+      },
+      {
+        name: 'Payment gateway / lending / KYC provider',
+        status: 'Not activated; requires provider contract, credentials and verified callbacks',
         implemented: false,
       },
       {
