@@ -563,6 +563,95 @@ test('audit checkpoint is signed without claiming independent storage', async ()
   assert.ok(r.count > 0);
   assert.match(r.filename, /^audit-/);
 });
+
+test('fee schedule, payment evidence and refund remain auditable and balanced', async () => {
+  const created = await call(
+    '/v1/admin/fees/schedules',
+    'POST',
+    {
+      accountReference: 'qa_' + randomUUID().slice(0, 8),
+      currency: 'INR',
+      note: 'Synthetic integration schedule',
+      installments: [
+        { dueDate: '2027-01-10', amountMinor: 100000 },
+        { dueDate: '2027-02-10', amountMinor: 100000 },
+      ],
+    },
+    {},
+    true,
+  );
+  assert.equal(created.r.status, 201, JSON.stringify(created.data));
+  const scheduleId = created.data.id;
+  const activated = await call(
+    '/v1/admin/fees/schedules/' + scheduleId + '/activate',
+    'POST',
+    { expectedVersion: 1 },
+    {},
+    true,
+  );
+  assert.equal(activated.r.status, 201, JSON.stringify(activated.data));
+  const schedules = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
+  const schedule = schedules.find((s: any) => s.id === scheduleId);
+  assert.equal(schedule.status, 'active');
+  const installmentId = schedule.installments[0].id;
+  const payment = await call(
+    '/v1/admin/fees/payments/external-confirmation',
+    'POST',
+    {
+      installmentId,
+      amountMinor: 100000,
+      currency: 'INR',
+      providerReference: 'QA:' + randomUUID(),
+      idempotencyKey: randomUUID(),
+      evidenceNote: 'Synthetic bank confirmation',
+    },
+    {},
+    true,
+  );
+  assert.equal(payment.r.status, 201, JSON.stringify(payment.data));
+  const refund = await call(
+    '/v1/admin/fees/refunds',
+    'POST',
+    {
+      paymentId: payment.data.id,
+      amountMinor: 25000,
+      idempotencyKey: randomUUID(),
+      reason: 'Synthetic partial refund',
+    },
+    {},
+    true,
+  );
+  assert.equal(refund.r.status, 201, JSON.stringify(refund.data));
+  const row = (
+    await db.query(
+      `SELECT i.paid_amount_minor,p.refunded_amount_minor,p.status
+       FROM fee_installments i
+       JOIN payment_records p ON p.installment_id=i.id
+       WHERE p.id=$1`,
+      [payment.data.id],
+    )
+  )[0]!;
+  assert.equal(Number(row.paid_amount_minor), 75000);
+  assert.equal(Number(row.refunded_amount_minor), 25000);
+  assert.equal(row.status, 'partially_refunded');
+  assert.ok(
+    (
+      await db.query(
+        "SELECT * FROM outbox WHERE aggregate_id=$1 AND type='payment.external_confirmed'",
+        [payment.data.id],
+      )
+    ).length === 1,
+  );
+  assert.ok(
+    (
+      await db.query(
+        "SELECT * FROM audit WHERE object_id=$1 AND action='fees.payment.external_confirmed'",
+        [payment.data.id],
+      )
+    ).length === 1,
+  );
+});
+
 test('session revocation invalidates subsequent access', async () => {
   await call('/v1/auth/logout', 'POST', {}, {}, true);
   assert.equal((await call('/v1/admin/content', 'GET', undefined, {}, true)).r.status, 401);
