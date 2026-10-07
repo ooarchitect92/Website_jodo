@@ -137,7 +137,10 @@ export const feeComponentInputSchema = z
 
 export const feeConcessionInputSchema = z
   .object({
-    code: z.string().trim().regex(/^[A-Za-z0-9_-]{2,40}$/),
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,40}$/),
     label: z.string().trim().min(2).max(100),
     amountMinor: moneyMinor,
     reason: z.string().trim().min(3).max(240),
