@@ -537,8 +537,8 @@ p {
   flex: 0 0 43px;
   height: 43px;
   border-radius: 14px;
-  background: #e0eaff;
-  color: var(--blue);
+  background: #c9d8ff;
+  color: #17396f;
   font-weight: 700;
 }
 .feature-section {
