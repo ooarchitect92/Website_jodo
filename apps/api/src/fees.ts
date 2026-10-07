@@ -60,9 +60,7 @@ const settlementSchema = z
       });
   });
 
-const lateFeeWaiverSchema = z
-  .object({ reason: z.string().trim().min(3).max(240) })
-  .strict();
+const lateFeeWaiverSchema = z.object({ reason: z.string().trim().min(3).max(240) }).strict();
 
 @Controller('v1/admin/fees')
 @UseGuards(AuthGuard)
@@ -199,14 +197,26 @@ export class FeeOperationsController {
         await c.query(
           `INSERT INTO fee_schedule_components(schedule_id,code,label,amount_minor,bank_route_key)
            VALUES($1,$2,$3,$4,$5)`,
-          [schedule.id, component.code, component.label, component.amountMinor, component.bankRouteKey || null],
+          [
+            schedule.id,
+            component.code,
+            component.label,
+            component.amountMinor,
+            component.bankRouteKey || null,
+          ],
         );
       }
       for (const concession of v.concessions) {
         await c.query(
           `INSERT INTO fee_schedule_concessions(schedule_id,code,label,amount_minor,reason)
            VALUES($1,$2,$3,$4,$5)`,
-          [schedule.id, concession.code, concession.label, concession.amountMinor, concession.reason],
+          [
+            schedule.id,
+            concession.code,
+            concession.label,
+            concession.amountMinor,
+            concession.reason,
+          ],
         );
       }
       if (v.lateFee) {
