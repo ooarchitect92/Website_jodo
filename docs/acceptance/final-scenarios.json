@@ -1,0 +1,626 @@
+[
+  {
+    "id": "FIN-66-01",
+    "setup_action": "Enable the relevant generative-search setting in an authorized test property, then change it.",
+    "expected_evidence": "Settings revision, owner and eligibility check update; ordinary page accessibility remains independent.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-66-02",
+    "setup_action": "Open a property with insufficient generative-report data.",
+    "expected_evidence": "Dashboard shows unavailable/insufficient evidence, not zero demand or a fabricated impression count.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-66-03",
+    "setup_action": "Import a provider report with canonical URLs and Pacific-time dates.",
+    "expected_evidence": "Original dimensions/timezone persist; conversion joins use declared boundaries without shifting dates silently.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-66-04",
+    "setup_action": "Configure a preferred-source link for a blog subdirectory.",
+    "expected_evidence": "Validation requires an eligible source identity and actual provider check; no unsupported badge promise.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-66-05",
+    "setup_action": "Select an unsupported region/business category for a specialized search unit.",
+    "expected_evidence": "Feature remains ineligible with an explanation; no false business address or schema is generated.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-66-06",
+    "setup_action": "Transform an AI-generated product image containing private EXIF and required provenance.",
+    "expected_evidence": "Private fields are removed and required provenance survives in the exported derivative; rights manifest retained.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-66-07",
+    "setup_action": "Submit a changed URL to a selected IndexNow adapter with a wrong ownership key.",
+    "expected_evidence": "Failure is recorded safely; no indexing success claim or fallback to an unsupported Google indexing API.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-66-08",
+    "setup_action": "Use an automated browser/agent to attempt a consequential action without authorization.",
+    "expected_evidence": "The ordinary business permission and confirmation rules apply; no agent-only bypass exists.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-01",
+    "setup_action": "A secondary download conversion is included in a campaign custom goal.",
+    "expected_evidence": "Effective-goal review flags its bidding use despite the secondary label; activation is blocked pending correction.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-02",
+    "setup_action": "A campaign inherits an account-default goal changed by another operator.",
+    "expected_evidence": "Goal snapshot drift alerts the owner and displays the effective action set, not only the local campaign draft.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-03",
+    "setup_action": "Choose absolute-top visibility with a low bid cap.",
+    "expected_evidence": "UI separates the requested visibility target from observed delivery and economics; no guaranteed top-position badge.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-04",
+    "setup_action": "Add an account-level negative keyword that conflicts with an intended offer.",
+    "expected_evidence": "Impact preview identifies affected campaign intent and requires approved correction.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-05",
+    "setup_action": "Enable automated URL expansion that includes a private or retired route.",
+    "expected_evidence": "Preflight rejects the route set; effective remote exclusions are checked after publication.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-06",
+    "setup_action": "Receive late-qualified leads after the reporting period.",
+    "expected_evidence": "Maturation/cohort rules place outcomes correctly; the report does not rewrite original click or conversion timestamps.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-07",
+    "setup_action": "Trigger a local budget alert while the provider's spend report is delayed.",
+    "expected_evidence": "Alert reports observation delay and remote-state uncertainty; it is not represented as a guaranteed hard cap.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-67-08",
+    "setup_action": "Change a goal or value policy during a running test.",
+    "expected_evidence": "Change is approved/versioned and the analysis marks the affected period; old results are not silently recomputed.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-01",
+    "setup_action": "Preview approved creative in each selected current placement and in-app browser.",
+    "expected_evidence": "Text, disclaimers, captions and CTA remain usable; source/derivative rights and approvals are linked.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-02",
+    "setup_action": "An automated creative edit changes a factual offer or price.",
+    "expected_evidence": "Changed claim fails approval; the original approved revision remains available for rollback.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-03",
+    "setup_action": "A campaign UI presents an audience suggestion as an input.",
+    "expected_evidence": "The effective configuration distinguishes suggestions from enforceable controls/exclusions.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-04",
+    "setup_action": "Receive a native-platform lead with no website visit.",
+    "expected_evidence": "Lead provenance stays native; no page view, website cookie or browser journey is fabricated.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-05",
+    "setup_action": "A click-to-message ad produces a click but no inbound message.",
+    "expected_evidence": "Only click intent is recorded; no accepted lead or human-response SLA is asserted.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-06",
+    "setup_action": "A provider resends the same native lead while a person makes a second genuine enquiry.",
+    "expected_evidence": "Retry is deduplicated by provider/action identity; the independent enquiry is preserved.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-07",
+    "setup_action": "An operator rejects a lead using a sensitive free-text reason.",
+    "expected_evidence": "Protected CRM retains only justified information; advertising receives no private reason text.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-68-08",
+    "setup_action": "Pause a restricted campaign and receive delayed remote confirmation.",
+    "expected_evidence": "Requested/pending/confirmed pause states remain distinct and spending-risk escalation is visible.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-01",
+    "setup_action": "Serialize a safe event using an SDK configured to auto-extract HTTP request context.",
+    "expected_evidence": "Final allowlist rejects any reintroduced IP, URL, referrer or click field outside the approved projection.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-02",
+    "setup_action": "Set a provider opt-out flag while the site's dispatch decision is no-send.",
+    "expected_evidence": "No request is transmitted; provider processing flags cannot override the application denial.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-03",
+    "setup_action": "Supply a JavaScript millisecond timestamp to the Meta adapter.",
+    "expected_evidence": "Unit validation rejects or correctly converts it from trusted occurrence time; fixture proves seconds at egress.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-04",
+    "setup_action": "Normalize mixed-case, plus-addressed, Unicode and already-hashed test identities.",
+    "expected_evidence": "Destination-specific fixtures pass; originals remain unchanged and double hashing is prevented.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-05",
+    "setup_action": "Migrate one server-event family between supported Google ingestion routes.",
+    "expected_evidence": "Isolated comparison and cutover preserve ownership; production does not receive duplicate competing senders.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-06",
+    "setup_action": "Use legacy authorization assumptions with a new Google integration.",
+    "expected_evidence": "Provider contract validation requires the current project/account access model and supported ingestion path.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-07",
+    "setup_action": "Receive a batch HTTP success containing item-level failures.",
+    "expected_evidence": "Each item records its actual result; only eligible failures retry with original IDs and timestamps.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-69-08",
+    "setup_action": "Withdraw permission between enqueue, serialization and dispatch.",
+    "expected_evidence": "The current dispatch check suppresses the action and records a safe reason; the business lead remains intact.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-01",
+    "setup_action": "Request an unknown slug through streamed rendering and the production CDN.",
+    "expected_evidence": "Actual response status and body match the route policy; a 200 soft-error is rejected.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-02",
+    "setup_action": "Forge Host or forwarded-host headers through each supported proxy path.",
+    "expected_evidence": "Canonical/redirect generation uses trusted configuration; no attacker domain is emitted.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-03",
+    "setup_action": "Return WAF challenges or failures at robots.txt.",
+    "expected_evidence": "Search-health monitoring detects the actual edge response and raises a policy/crawl incident.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-04",
+    "setup_action": "Use duplicate query names, malformed encoding and case-sensitive signed parameters.",
+    "expected_evidence": "Only deliberate normalization occurs; unsafe values are rejected without corrupting valid opaque identifiers.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-05",
+    "setup_action": "Manually unpublish a resource while sitemap and search jobs are delayed.",
+    "expected_evidence": "Public authorization/publication checks prevent stale exposure; derived updates reconcile without deleting source.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-06",
+    "setup_action": "Access a protected PDF directly rather than through its noindex landing page.",
+    "expected_evidence": "File authorization and headers enforce its own policy; the HTML page is not the security boundary.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-07",
+    "setup_action": "Navigate large filtered/paginated collections without client scripting.",
+    "expected_evidence": "Approved useful links remain discoverable and invalid combinations do not create unbounded crawlable routes.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-70-08",
+    "setup_action": "Cut over a site with subdomains, old downloads and signed-resource obligations.",
+    "expected_evidence": "Migration manifest, redirects, retained identities and customer obligations are tested; rollback preserves new leads.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-01",
+    "setup_action": "Publish an offer revision while ads, PDFs, chatbot sources and quotes reference the previous one.",
+    "expected_evidence": "Dependency preview distinguishes marketing updates from preserved accepted quotes; inconsistent claims block release.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-02",
+    "setup_action": "Launch a resource-delivery workflow for an enquiry without marketing subscription.",
+    "expected_evidence": "Requested service response works; unrelated nurture and audience uploads remain suppressed.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-03",
+    "setup_action": "Two workflows on separate channels schedule contact simultaneously.",
+    "expected_evidence": "Global recipient/purpose frequency policy is enforced transactionally, with visible suppressed actions.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-04",
+    "setup_action": "A refund removes eligibility for an affiliate reward or acquisition segment.",
+    "expected_evidence": "Reward reversal and audience/lifecycle updates follow trusted business state and preserve audit history.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-05",
+    "setup_action": "Import contacts containing an existing unsubscribe or complaint identity.",
+    "expected_evidence": "Import preview and dispatch preserve suppression; no silent resubscription occurs.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-06",
+    "setup_action": "Generate campaign claims from a competitor page or an AI draft.",
+    "expected_evidence": "Publication requires verified sources, rights and review; unsupported comparisons remain drafts.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-07",
+    "setup_action": "Request reviews from a mixed satisfaction cohort.",
+    "expected_evidence": "Workflow does not gate public review access on positive sentiment or fabricate endorsements.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-71-08",
+    "setup_action": "Add Google- and Meta-attributed revenue to a dashboard containing the same orders.",
+    "expected_evidence": "Business totals remain deduplicated; platform-attributed views are separate and clearly labeled.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-01",
+    "setup_action": "Prerender a campaign page and close it without activation.",
+    "expected_evidence": "No actual visit/exposure or business conversion is falsely recorded; no unauthorized persistent context appears.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-02",
+    "setup_action": "Restore a page from back/forward cache.",
+    "expected_evidence": "Declared page-view policy runs once; listeners, chat connections and timers are not duplicated.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-03",
+    "setup_action": "Keep the pricing marker intersecting while the document is hidden.",
+    "expected_evidence": "Hidden time does not satisfy qualifying visibility or count as reading.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-04",
+    "setup_action": "Withdraw analytics/ads in another same-origin tab, then restore an old tab.",
+    "expected_evidence": "Consent resynchronizes before collection/dispatch; stale state cannot restart prohibited tracking.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-05",
+    "setup_action": "Log out of a protected page, then use Back on a shared device.",
+    "expected_evidence": "Protected content/session state is cleared or reauthorized; previous private data is not left available.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-06",
+    "setup_action": "A link scanner sends GET requests to confirmation, unsubscribe and resource URLs.",
+    "expected_evidence": "No unintended irreversible action or false customer conversion occurs; action-specific proof is enforced.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-07",
+    "setup_action": "Mobile network drops after backend lead commit but before the browser receives confirmation.",
+    "expected_evidence": "Retry returns the original accepted result and does not create another lead or new conversion ID.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-72-08",
+    "setup_action": "Block storage and all optional tags, then use manual location and chat/form capture.",
+    "expected_evidence": "Core service succeeds without inferred earlier tracking or coercive consent requirements.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-01",
+    "setup_action": "Crash the editor after an acknowledged autosave and again before acknowledgment.",
+    "expected_evidence": "Committed revision recovers; unsaved local work is accurately labeled and never presented as published.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-02",
+    "setup_action": "Two editors update the same version, including a shared block.",
+    "expected_evidence": "Conflict resolution preserves both intentions without silent last-write overwrite; impact is visible.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-03",
+    "setup_action": "Change a custom collection field type used by published records.",
+    "expected_evidence": "Migration/compatibility preview blocks unsafe schema change; old published revisions remain readable.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-04",
+    "setup_action": "Perform page-builder ordering without a mouse.",
+    "expected_evidence": "Keyboard or equivalent controls support the same operation with visible focus and accessible feedback.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-05",
+    "setup_action": "Introduce a campaign popup while testing zoom, reduced motion and screen readers.",
+    "expected_evidence": "Essential content, consent and form controls remain operable; focus is restored correctly.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-06",
+    "setup_action": "Remove an author/category or replace a referenced media folder.",
+    "expected_evidence": "Protected posts/revisions survive restrictive relationship rules; permitted reassignment is audited.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-07",
+    "setup_action": "A chatbot extracts the wrong phone number from a conversation.",
+    "expected_evidence": "Visitor confirmation or approved structured validation precedes lead capture; AI text is not trusted identity.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-73-08",
+    "setup_action": "A second operator follows only the owner handbook.",
+    "expected_evidence": "Core content, campaign, lead, workflow, diagnostics and manual restore tasks succeed or become tracked usability defects.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-01",
+    "setup_action": "Change tenant/site IDs in public/admin requests, exports and queued jobs.",
+    "expected_evidence": "Trusted scoping and object checks prevent cross-site access at every boundary.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-02",
+    "setup_action": "A stored upload references internal URLs or contains active disguised content.",
+    "expected_evidence": "Isolation, type/size checks, outbound restrictions and quarantine prevent execution or private-network access.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-03",
+    "setup_action": "Disable local audit persistence before a privileged content mutation.",
+    "expected_evidence": "Protected mutation fails durably; no unaudited state change is acknowledged.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-04",
+    "setup_action": "Interrupt independent audit export, alter a batch and resume.",
+    "expected_evidence": "Lag and integrity alarms detect the problem; local evidence and idempotent export reconcile.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-05",
+    "setup_action": "Advance time past one year and execute all cleanup jobs/storage lifecycle checks.",
+    "expected_evidence": "Active and trashed blog source/revisions remain; permitted visitor-data retention still runs.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-06",
+    "setup_action": "Restore a backup taken before a lawful deletion and a completed external payment.",
+    "expected_evidence": "Suppression/deletion is reapplied and the payment is not charged again during replay.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-07",
+    "setup_action": "Lose the primary operator account and recover encrypted backups with approved access.",
+    "expected_evidence": "Independent account/key recovery works and measured restoration satisfies the approved objective.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-74-08",
+    "setup_action": "Stress message/OTP/AI/geo endpoints while legitimate leads arrive.",
+    "expected_evidence": "Budgets and isolation control cost/abuse without losing acknowledged enquiries or preserved content.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-01",
+    "setup_action": "Two customers purchase or reserve the last available unit/capacity.",
+    "expected_evidence": "Transaction rules prevent double allocation; the losing request receives an accurate recoverable state.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-02",
+    "setup_action": "Payment confirmation arrives after a booking hold expires.",
+    "expected_evidence": "Approved refund/rebook/manual-review policy runs without double capacity or false confirmation.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-03",
+    "setup_action": "Accept a B2B quote after the catalogue price changes.",
+    "expected_evidence": "Exact approved quote revision, organization and validity govern; historical terms are not rewritten.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-04",
+    "setup_action": "Receive out-of-order subscription cancellation and renewal webhooks.",
+    "expected_evidence": "Authoritative lifecycle ordering and entitlements remain correct; billing facts and decisions are audited.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-05",
+    "setup_action": "Refund a marketplace order after a pending seller settlement.",
+    "expected_evidence": "Settlement, fees, access and dispute/reversal handling reconcile according to the selected provider contract.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-06",
+    "setup_action": "Close a job or cancel an event while search/feed updates are delayed.",
+    "expected_evidence": "Public status and customer communication are correct; retained applications/content are not silently deleted.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-07",
+    "setup_action": "A guardian, partner or member requests another person's protected record.",
+    "expected_evidence": "Verified relationship and object authorization prevent disclosure even when identifiers are guessed.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-75-08",
+    "setup_action": "Cancel a recurring donation or paid membership.",
+    "expected_evidence": "Future eligible charges/communications stop, receipts remain appropriately retained and cancellation is evidenced.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-01",
+    "setup_action": "Activate a module without its declared provider, permission or data policy.",
+    "expected_evidence": "Startup/admin preflight rejects unsafe activation with actionable missing prerequisites.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-02",
+    "setup_action": "Disable Redis and run the supported native profile.",
+    "expected_evidence": "Durable business/outbox/audit behavior remains equivalent; only approved cache/coordination behavior changes.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-03",
+    "setup_action": "Upgrade a provider SDK while keeping the same application input schema.",
+    "expected_evidence": "Serialized egress and contract fixtures run in CI and expose changed defaults or fields.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-04",
+    "setup_action": "An imported configuration references a disconnected provider.",
+    "expected_evidence": "It cannot reactivate revoked credentials or silently send retained work.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-05",
+    "setup_action": "Invoke administrative use cases through an enabled alternate API transport.",
+    "expected_evidence": "REST/GraphQL/SOAP/agent adapters enforce the same domain authorization and invariants.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-06",
+    "setup_action": "Fetch owner-console configuration as an unauthenticated public client.",
+    "expected_evidence": "Public projection contains no private flags, unpublished content, secrets or internal customer IDs.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-07",
+    "setup_action": "A reporting query or export scans a large period during lead load.",
+    "expected_evidence": "Query/resource controls protect transactional service and the export remains permission-filtered.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-76-08",
+    "setup_action": "A second team installs and migrates from the business-owned repository.",
+    "expected_evidence": "Documented dependencies, native/Docker startup, tests, content publishing and lead acceptance work without the original laptop.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-01",
+    "setup_action": "Launch paid traffic with a failing primary form or known misleading goal.",
+    "expected_evidence": "Critical preflight blocks activation; approval cannot conceal the failed journey.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-02",
+    "setup_action": "Publish a new landing-page revision after campaign approval.",
+    "expected_evidence": "Relevant destination/claim/accessibility/tracking checks rerun or approval expires.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-03",
+    "setup_action": "An early dashboard uplift has little mature qualification data.",
+    "expected_evidence": "Scaling requires the predeclared maturity/economics guardrail, not a transient percentage.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-04",
+    "setup_action": "An ad account shows a permission or billing restriction during active spend.",
+    "expected_evidence": "Named operator receives a safe alert and tracks restriction, action and remote result.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-05",
+    "setup_action": "A staff inbox receives leads outside its support hours.",
+    "expected_evidence": "Approved routing/expectation/escalation rules apply; an automated greeting is not a human-response pass.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-06",
+    "setup_action": "An outage affects optional advertising delivery but not the business API.",
+    "expected_evidence": "Leads continue durably; reporting shows delayed/suppressed events rather than false success.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-07",
+    "setup_action": "Stop a compromised integration while asynchronous work is pending.",
+    "expected_evidence": "New external effects stop at dispatch; retained business obligations and audit remain recoverable.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-77-08",
+    "setup_action": "Complete the initial operating period and perform recovery/access review.",
+    "expected_evidence": "Measured evidence, unresolved tasks, permission changes and maintenance ownership are recorded.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-01",
+    "setup_action": "Review a capability with no applicability decision or accountable owner.",
+    "expected_evidence": "The row remains unresolved and cannot count toward approved scope coverage.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-02",
+    "setup_action": "A feature is implemented but intentionally disabled for provider/policy reasons.",
+    "expected_evidence": "Implementation, activation and verification statuses remain separate and truthful.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-03",
+    "setup_action": "An optional industry module becomes selected after the original scope approval.",
+    "expected_evidence": "Full lifecycle, data/permission, tests, costs and operating ownership become required work.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-04",
+    "setup_action": "A new provider rule contradicts an inherited sample contract.",
+    "expected_evidence": "A dated reviewed change identifies the governing source, migration and regression evidence.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-05",
+    "setup_action": "An experiment changes a form while a CRM/automation case remains active.",
+    "expected_evidence": "Pinned revisions and valid context references preserve the original submission and correct downstream actions.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-06",
+    "setup_action": "A blog is trashed while an AI index/cache still references it.",
+    "expected_evidence": "Authoritative publication checks prevent stale retrieval; source and attributable deletion history remain.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-07",
+    "setup_action": "Sign off using a test report from a different build, account or environment.",
+    "expected_evidence": "Evidence manifest detects mismatch and requires the correct current verification.",
+    "status": "Not executed"
+  },
+  {
+    "id": "FIN-78-08",
+    "setup_action": "Attempt final launch with a critical privacy, lead-integrity or restore failure.",
+    "expected_evidence": "Launch is blocked; a generic complete label or business waiver does not convert failure into a pass.",
+    "status": "Not executed"
+  }
+]

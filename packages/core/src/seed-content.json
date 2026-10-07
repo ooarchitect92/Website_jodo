@@ -1,0 +1,1788 @@
+[
+  {
+    "slug": "/",
+    "kind": "page",
+    "body": {
+      "title": "Jodo | Education payments, made simpler",
+      "description": "Explore Jodo’s fee collection products, institutional stories and payment-management resources in this independent website recreation.",
+      "blocks": [
+        {
+          "id": "b-ff8614fc-4",
+          "type": "hero",
+          "title": "collection, made simpler.",
+          "text": "Bring fee schedules, payment options and your team’s next steps into one clear experience.",
+          "items": [
+            {
+              "title": "5000+",
+              "text": "Institutes"
+            },
+            {
+              "title": "30000 Cr+",
+              "text": "Fees processed"
+            },
+            {
+              "title": "25 Lakh+",
+              "text": "Students"
+            }
+          ],
+          "tone": "gradient",
+          "accent": "Effortless fee",
+          "eyebrow": "Fees, done with ease!",
+          "image": "/reference/images/dashbord-home-page.png",
+          "imageAlt": "Reference Jodo dashboard and mobile payment schedule",
+          "href": "/contact-us/",
+          "label": "Book a demo"
+        },
+        {
+          "id": "b-543c96fe-5",
+          "type": "logos",
+          "title": "Jodo’s institute network",
+          "text": "Reference partners shown on jodo.in; not customers of this demo.",
+          "items": [
+            {
+              "title": "ALLEN",
+              "text": "",
+              "image": "/reference/images/school-logos/allen-logo.png"
+            },
+            {
+              "title": "be10x",
+              "text": "",
+              "image": "/reference/images/school-logos/be-10x-logo.png"
+            },
+            {
+              "title": "CHIREC",
+              "text": "",
+              "image": "/reference/images/school-logos/chirec-logo.png"
+            },
+            {
+              "title": "Delhi Public School",
+              "text": "",
+              "image": "/reference/images/school-logos/DPS-logo.png"
+            },
+            {
+              "title": "GEAR",
+              "text": "",
+              "image": "/reference/images/school-logos/gear-logo.png"
+            },
+            {
+              "title": "Physics Wallah",
+              "text": "",
+              "image": "/reference/images/school-logos/pw-logo.png"
+            },
+            {
+              "title": "National Public School",
+              "text": "",
+              "image": "/reference/images/school-logos/NPS-logo.png"
+            }
+          ],
+          "tone": "white"
+        },
+        {
+          "id": "b-8bd5f6c1-2",
+          "type": "stats",
+          "title": "Make room for predictable collections.",
+          "text": "Less chasing. More clarity for everyone.",
+          "items": [
+            {
+              "title": "Plan",
+              "text": "Agree payment schedules"
+            },
+            {
+              "title": "Collect",
+              "text": "Give families useful choices"
+            },
+            {
+              "title": "Track",
+              "text": "Keep teams in the picture"
+            }
+          ],
+          "tone": "white"
+        },
+        {
+          "id": "b-7d499f77-f",
+          "type": "products",
+          "title": "Payment options for different institute needs.",
+          "text": "Choose the collection approach that fits your institution.",
+          "items": [
+            {
+              "title": "Flex",
+              "text": "Recurring instalments with a one-time eNACH or UPI Autopay mandate.",
+              "image": "/reference/images/product/flex-phone.png",
+              "href": "/products/#flex",
+              "label": "Explore Flex"
+            },
+            {
+              "title": "Cred",
+              "text": "Upfront institute payouts, with monthly payments for eligible customers.",
+              "image": "/reference/images/product/cred-phone.png",
+              "href": "/products/#cred",
+              "label": "Explore Cred"
+            },
+            {
+              "title": "Pay",
+              "text": "Payment methods, links and collection schedules in one place.",
+              "image": "/reference/images/product/pay-phone.png",
+              "href": "/products/#pay",
+              "label": "Explore Pay"
+            }
+          ],
+          "tone": "white"
+        },
+        {
+          "id": "b-202f4062-5",
+          "type": "features",
+          "title": "Your fee operations, connected.",
+          "text": "From schedules to reconciliation, bring your everyday work into one view.",
+          "items": [
+            {
+              "title": "Flexible fee schedules",
+              "text": "Organise fees by course, cohort or student.",
+              "image": "/reference/images/icons/fee-schedule-icon.svg"
+            },
+            {
+              "title": "Timely communication",
+              "text": "Keep upcoming instalments visible to your team.",
+              "image": "/reference/images/icons/communication-icon.svg"
+            },
+            {
+              "title": "Collection visibility",
+              "text": "Understand dues, collections and settlements.",
+              "image": "/reference/images/icons/analytics-icon.svg"
+            },
+            {
+              "title": "Connected reconciliation",
+              "text": "Bring payment records and fee schedules together.",
+              "image": "/reference/images/icons/reconcillation-icon.svg"
+            }
+          ],
+          "tone": "lavender",
+          "image": "/reference/images/fee-management-section.svg",
+          "imageAlt": "Reference fee management interface"
+        },
+        {
+          "id": "b-5310d558-3",
+          "type": "security",
+          "title": "Trust starts with the details.",
+          "text": "Payment and security services belong to Jodo’s live platform. This demonstration does not accept payments or collect banking credentials.",
+          "items": [
+            {
+              "title": "Clear permissions",
+              "text": "Keep staff access scoped to their responsibilities."
+            },
+            {
+              "title": "Protected information",
+              "text": "Do not submit financial credentials in a demo."
+            },
+            {
+              "title": "Official assurance",
+              "text": "Read Jodo’s own compliance information on its official site.",
+              "href": "https://compliance.jodo.in",
+              "label": "Official compliance"
+            }
+          ],
+          "tone": "white",
+          "image": "/reference/images/featurecenter.svg",
+          "imageAlt": "Jodo security illustration"
+        },
+        {
+          "id": "b-78522591-0",
+          "type": "stories",
+          "title": "Institutes, in their own words.",
+          "text": "Explore the situations and results described in Jodo’s published case studies.",
+          "items": [],
+          "tone": "lavender"
+        },
+        {
+          "id": "b-bbc6de78-e",
+          "type": "steps",
+          "title": "A straightforward path to getting started.",
+          "text": "Discover the product, review your requirements and agree the next steps. Actual onboarding depends on the institute and provider.",
+          "items": [
+            {
+              "title": "01 · Discover",
+              "text": "Tell the team about your collection process."
+            },
+            {
+              "title": "02 · Configure",
+              "text": "Review fee schedules and integration needs."
+            },
+            {
+              "title": "03 · Get started",
+              "text": "Confirm readiness with your implementation team."
+            }
+          ],
+          "tone": "white"
+        },
+        {
+          "id": "b-1cd8670d-8",
+          "type": "articles",
+          "title": "Jodo Perspectives",
+          "text": "Ideas on education, payments and engineering.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-0bf48b73-1",
+          "type": "cta",
+          "title": "Give your team more time for education.",
+          "text": "Explore a simpler way to manage collections.",
+          "items": [],
+          "tone": "gradient",
+          "image": "/reference/images/business-man.png",
+          "imageAlt": "Education professional",
+          "href": "/contact-us/",
+          "label": "Book a demo"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/products/",
+    "kind": "page",
+    "body": {
+      "title": "Products | Flex, Cred and Pay",
+      "description": "A guide to Jodo’s education-focused payment products and fee management approach.",
+      "blocks": [
+        {
+          "id": "b-d36dfc72-8",
+          "type": "hero",
+          "title": "A connected approach to education payments.",
+          "text": "Explore software and payment tools designed around institute fee collection.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Jodo products",
+          "image": "/reference/images/product/product-hero-dashboard.png",
+          "imageAlt": "Jodo product dashboard and phone",
+          "href": "/contact-us/",
+          "label": "Book a demo"
+        },
+        {
+          "id": "b-4fa549e3-0",
+          "type": "product",
+          "title": "Flex",
+          "text": "Set up scheduled instalments using eNACH or UPI Autopay.",
+          "items": [
+            {
+              "title": "One mandate",
+              "text": "Plan the course’s scheduled instalments."
+            },
+            {
+              "title": "Automatic collections",
+              "text": "Due-date debits, reminders and retries."
+            },
+            {
+              "title": "Useful visibility",
+              "text": "See planned and completed collections."
+            }
+          ],
+          "tone": "lavender",
+          "eyebrow": "flex",
+          "image": "/reference/images/product/flex-phone.png",
+          "imageAlt": "Flex payment plan illustration"
+        },
+        {
+          "id": "b-4fd09fb5-d",
+          "type": "product",
+          "title": "Cred",
+          "text": "Let eligible customers pay monthly while the institute receives an upfront payout.",
+          "items": [
+            {
+              "title": "Upfront institute payment",
+              "text": "Review the agreed provider payout terms."
+            },
+            {
+              "title": "Customer instalments",
+              "text": "Monthly payment options subject to eligibility."
+            },
+            {
+              "title": "Provider-led process",
+              "text": "Credit and lending services are not part of this demo."
+            }
+          ],
+          "tone": "white",
+          "eyebrow": "cred",
+          "image": "/reference/images/product/cred-phone.png",
+          "imageAlt": "Cred illustration, not an application form",
+          "reverse": true
+        },
+        {
+          "id": "b-1e540c3a-3",
+          "type": "product",
+          "title": "Pay",
+          "text": "Collect through multiple payment methods and scheduled links.",
+          "items": [
+            {
+              "title": "Payment choice",
+              "text": "Cards, net banking, wallets and UPI."
+            },
+            {
+              "title": "Scheduled links",
+              "text": "Arrange collection requests before due dates."
+            },
+            {
+              "title": "Flexible workflows",
+              "text": "Share links or use payment pages."
+            }
+          ],
+          "tone": "lavender",
+          "eyebrow": "pay",
+          "image": "/reference/images/product/pay-phone.png",
+          "imageAlt": "Pay payment methods illustration"
+        },
+        {
+          "id": "b-83917a19-7",
+          "type": "features",
+          "title": "Fee management around your institute.",
+          "text": "Keep schedules and collection records connected.",
+          "items": [
+            {
+              "title": "Flexible fee schedules",
+              "text": "Organise fees by course, cohort or student.",
+              "image": "/reference/images/icons/fee-schedule-icon.svg"
+            },
+            {
+              "title": "Timely communication",
+              "text": "Keep upcoming instalments visible to your team.",
+              "image": "/reference/images/icons/communication-icon.svg"
+            },
+            {
+              "title": "Collection visibility",
+              "text": "Understand dues, collections and settlements.",
+              "image": "/reference/images/icons/analytics-icon.svg"
+            },
+            {
+              "title": "Connected reconciliation",
+              "text": "Bring payment records and fee schedules together.",
+              "image": "/reference/images/icons/reconcillation-icon.svg"
+            }
+          ],
+          "tone": "white",
+          "image": "/reference/images/product/product-dashboard.png",
+          "imageAlt": "Jodo fee management reference screen"
+        },
+        {
+          "id": "b-0bf48b73-1",
+          "type": "cta",
+          "title": "Give your team more time for education.",
+          "text": "Explore a simpler way to manage collections.",
+          "items": [],
+          "tone": "gradient",
+          "image": "/reference/images/business-man.png",
+          "imageAlt": "Education professional",
+          "href": "/contact-us/",
+          "label": "Book a demo"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/products/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/about-us/",
+    "kind": "page",
+    "body": {
+      "title": "About Jodo | The story behind the platform",
+      "description": "An attributed introduction to Jodo’s mission, founders and investor information.",
+      "blocks": [
+        {
+          "id": "b-81fd6ce8-6",
+          "type": "hero",
+          "title": "Education deserves a stronger financial foundation.",
+          "text": "Jodo’s story begins with simplifying how families and institutions manage education payments.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "About Jodo",
+          "image": "/reference/images/team-1.png",
+          "imageAlt": "Jodo team photograph from the reference website"
+        },
+        {
+          "id": "b-9e3766ba-f",
+          "type": "text",
+          "title": "Our story",
+          "text": "Founded in 2020, Jodo focuses on payment challenges faced by education providers and families. The reference website introduces its founders as Atulya Bhat, Raghav Nagarajan and Koustav Dey. This independent implementation reproduces the public information architecture, not the company’s private platform.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-39e28f2d-5",
+          "type": "team",
+          "title": "The founders",
+          "text": "Founder names as listed by Jodo.",
+          "items": [
+            {
+              "title": "Atulya Bhat",
+              "text": "Co-founder"
+            },
+            {
+              "title": "Raghav Nagarajan",
+              "text": "Co-founder"
+            },
+            {
+              "title": "Koustav Dey",
+              "text": "Co-founder"
+            }
+          ],
+          "tone": "white"
+        },
+        {
+          "id": "b-26f32b7f-6",
+          "type": "logos",
+          "title": "Investors named by Jodo",
+          "text": "Third-party relationships shown for reference only.",
+          "items": [
+            {
+              "title": "Tiger Global",
+              "text": "",
+              "image": "/reference/images/investor-logos/tigerglobal.png"
+            },
+            {
+              "title": "Elevation Capital",
+              "text": "",
+              "image": "/reference/images/investor-logos/elevation.png"
+            },
+            {
+              "title": "Z47",
+              "text": "",
+              "image": "/reference/images/investor-logos/z47.svg"
+            }
+          ],
+          "tone": "white"
+        },
+        {
+          "id": "b-0bf48b73-1",
+          "type": "cta",
+          "title": "Give your team more time for education.",
+          "text": "Explore a simpler way to manage collections.",
+          "items": [],
+          "tone": "gradient",
+          "image": "/reference/images/business-man.png",
+          "imageAlt": "Education professional",
+          "href": "/contact-us/",
+          "label": "Book a demo"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/about-us/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/contact-us/",
+    "kind": "page",
+    "body": {
+      "title": "Request a demo | Website Jodo",
+      "description": "Submit a demonstration enquiry to this installation’s owner. This form is not connected to Jodo’s live sales team.",
+      "blocks": [
+        {
+          "id": "b-65cff58d-3",
+          "type": "form",
+          "title": "Let’s make fee collection easier.",
+          "text": "Tell us a little about your institute. Demo enquiries are stored in this installation, not sent to Jodo. Use synthetic details when testing.",
+          "items": [],
+          "tone": "white",
+          "eyebrow": "Request a demo"
+        },
+        {
+          "id": "b-1dacc377-4",
+          "type": "faq",
+          "title": "A few things to know",
+          "text": "",
+          "items": [
+            {
+              "title": "Does this form contact Jodo?",
+              "text": "No. This recreation stores enquiries for the owner of this installation. To contact the actual company, follow the clearly labelled official website link."
+            },
+            {
+              "title": "Can I pay fees here?",
+              "text": "No. Use the official student or institute portal. Do not enter banking credentials, card information, OTPs or identity documents here."
+            },
+            {
+              "title": "Do I have to accept advertising?",
+              "text": "No. Your optional analytics and advertising choices do not affect the enquiry form."
+            }
+          ],
+          "tone": "white"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false
+    }
+  },
+  {
+    "slug": "/tools/hidden-cost-calculator/",
+    "kind": "page",
+    "body": {
+      "title": "Hidden Cost Calculator | Delayed Fee Collection",
+      "description": "Explore an illustrative cost model for delayed collections. Adjustable assumptions, no payment or credit decision.",
+      "blocks": [
+        {
+          "id": "b-e15ab37f-7",
+          "type": "calculator",
+          "title": "The less visible cost of late collections.",
+          "text": "Explore a transparent estimate using your own assumptions. This is not Jodo’s proprietary calculator or a financing quote.",
+          "items": [],
+          "tone": "white",
+          "eyebrow": "Hidden cost calculator"
+        },
+        {
+          "id": "b-0bf48b73-1",
+          "type": "cta",
+          "title": "Give your team more time for education.",
+          "text": "Explore a simpler way to manage collections.",
+          "items": [],
+          "tone": "gradient",
+          "image": "/reference/images/business-man.png",
+          "imageAlt": "Education professional",
+          "href": "/contact-us/",
+          "label": "Book a demo"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/tools/hidden-cost-calculator/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/careers/",
+    "kind": "page",
+    "body": {
+      "title": "Work with purpose | Website Jodo",
+      "description": "For current job availability and application instructions, visit Jodo’s official careers page. This demo does not list unverified openings or collect job applications.",
+      "blocks": [
+        {
+          "id": "b-9b93e79f-5",
+          "type": "hero",
+          "title": "Work with purpose",
+          "text": "For current job availability and application instructions, visit Jodo’s official careers page. This demo does not list unverified openings or collect job applications.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        },
+        {
+          "id": "b-73a0f141-9",
+          "type": "text",
+          "title": "Official source",
+          "text": "Read the current information directly on Jodo’s website.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/careers/",
+          "label": "Open Jodo’s official page"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/careers/"
+    }
+  },
+  {
+    "slug": "/lending-partners/",
+    "kind": "page",
+    "body": {
+      "title": "Lending partner information | Website Jodo",
+      "description": "This recreation is not a lender and does not provide eligibility decisions, credit offers or loan processing. Consult Jodo’s current official partner disclosures before using its live services.",
+      "blocks": [
+        {
+          "id": "b-54648be8-9",
+          "type": "hero",
+          "title": "Lending partner information",
+          "text": "This recreation is not a lender and does not provide eligibility decisions, credit offers or loan processing. Consult Jodo’s current official partner disclosures before using its live services.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        },
+        {
+          "id": "b-1885a58b-b",
+          "type": "text",
+          "title": "Official source",
+          "text": "Read the current information directly on Jodo’s website.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/lending-partners/",
+          "label": "Open Jodo’s official page"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/lending-partners/"
+    }
+  },
+  {
+    "slug": "/grievance-redressal/",
+    "kind": "page",
+    "body": {
+      "title": "Support and grievances | Website Jodo",
+      "description": "For concerns relating to Jodo’s actual services, use its official grievance process. For this demonstration, raise an issue in the repository without including personal or financial information.",
+      "blocks": [
+        {
+          "id": "b-19cc4177-9",
+          "type": "hero",
+          "title": "Support and grievances",
+          "text": "For concerns relating to Jodo’s actual services, use its official grievance process. For this demonstration, raise an issue in the repository without including personal or financial information.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        },
+        {
+          "id": "b-9b9698f1-a",
+          "type": "text",
+          "title": "Official source",
+          "text": "Read the current information directly on Jodo’s website.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/grievance-redressal/",
+          "label": "Open Jodo’s official page"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/grievance-redressal/"
+    }
+  },
+  {
+    "slug": "/terms-and-conditions/",
+    "kind": "page",
+    "body": {
+      "title": "Demonstration terms | Website Jodo",
+      "description": "This is an independent software recreation, not the official Jodo service. No financial transactions, contracts, loans or service guarantees are provided here. Reference images and brand identifiers remain their owners’ property. Production use requires the operator’s own reviewe",
+      "blocks": [
+        {
+          "id": "b-c0030d7b-f",
+          "type": "hero",
+          "title": "Demonstration terms",
+          "text": "This is an independent software recreation, not the official Jodo service. No financial transactions, contracts, loans or service guarantees are provided here. Reference images and brand identifiers remain their owners’ property. Production use requires the operator’s own reviewed terms and approved content rights.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        },
+        {
+          "id": "b-97ce0ada-2",
+          "type": "text",
+          "title": "Official source",
+          "text": "Read the current information directly on Jodo’s website.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/terms-and-conditions/",
+          "label": "Open Jodo’s official page"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/terms-and-conditions/"
+    }
+  },
+  {
+    "slug": "/privacy-policy/",
+    "kind": "page",
+    "body": {
+      "title": "Privacy for this demonstration | Website Jodo",
+      "description": "Enquiries are stored in this installation’s database with restricted access and encrypted contact fields. Optional analytics starts only after a choice; advertising integrations are disabled. Do not submit sensitive information. The operator must approve the real privacy notice, ",
+      "blocks": [
+        {
+          "id": "b-fcf3ed29-8",
+          "type": "hero",
+          "title": "Privacy for this demonstration",
+          "text": "Enquiries are stored in this installation’s database with restricted access and encrypted contact fields. Optional analytics starts only after a choice; advertising integrations are disabled. Do not submit sensitive information. The operator must approve the real privacy notice, retention and contact process before production. Use the privacy request form below to ask the installation owner to review access, correction or deletion.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        },
+        {
+          "id": "b-872c8ec7-2",
+          "type": "text",
+          "title": "Official source",
+          "text": "Read the current information directly on Jodo’s website.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/privacy-policy/",
+          "label": "Open Jodo’s official page"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/privacy-policy/"
+    }
+  },
+  {
+    "slug": "/accessibility/",
+    "kind": "page",
+    "body": {
+      "title": "Accessibility | Website Jodo",
+      "description": "The interface includes keyboard navigation, visible focus, labelled forms, reduced-motion support and responsive layouts. Automated checks are not a formal conformance certificate. Report a barrier to the installation owner through the contact page.",
+      "blocks": [
+        {
+          "id": "b-abcaa716-b",
+          "type": "hero",
+          "title": "Accessibility",
+          "text": "The interface includes keyboard navigation, visible focus, labelled forms, reduced-motion support and responsive layouts. Automated checks are not a formal conformance certificate. Report a barrier to the installation owner through the contact page.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false
+    }
+  },
+  {
+    "slug": "/login/",
+    "kind": "page",
+    "body": {
+      "title": "Choose the right portal | Website Jodo",
+      "description": "These links leave this demonstration and open Jodo’s official services. Only the owner console below belongs to this installation.",
+      "blocks": [
+        {
+          "id": "b-445797f0-f",
+          "type": "hero",
+          "title": "Choose the right portal",
+          "text": "These links leave this demonstration and open Jodo’s official services. Only the owner console below belongs to this installation.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false
+    }
+  },
+  {
+    "slug": "/thank-you/",
+    "kind": "page",
+    "body": {
+      "title": "Your next step | Website Jodo",
+      "description": "A visit to this page is not proof that an enquiry was received. Successful submissions show a server-issued receipt inside the form. Return to the contact page to submit an enquiry.",
+      "blocks": [
+        {
+          "id": "b-49c3fd35-c",
+          "type": "hero",
+          "title": "Your next step",
+          "text": "A visit to this page is not proof that an enquiry was received. Successful submissions show a server-issued receipt inside the form. Return to the contact page to submit an enquiry.",
+          "items": [],
+          "tone": "gradient",
+          "eyebrow": "Information"
+        }
+      ],
+      "category": "",
+      "cover": "",
+      "author": "Website recreation editorial",
+      "indexable": false
+    }
+  },
+  {
+    "slug": "/blog/insight/jodo-2025-wrapped/",
+    "kind": "post",
+    "body": {
+      "title": "A look back at Jodo in 2025",
+      "description": "A look back at Jodo in 2025. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-28213e3b-1",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "Jodo’s December 2025 review describes expansion in education payments and the launch of Collect for recurring payments in other businesses. The author connects the company’s education experience with wider needs for scheduled collections and reconciliation. This is an attributed overview, not the original article.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-2fdbba9c-a",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/jodo-2025-wrapped/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-12-29/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/jodo-2025-wrapped/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/campus-management-systems/",
+    "kind": "post",
+    "body": {
+      "title": "Campus software and fee automation, together",
+      "description": "Campus software and fee automation, together. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-a457bcf2-c",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "Jodo’s article argues that academic administration and payment automation address different operational needs. It contrasts student and teaching workflows with collection scheduling, payment retries and reconciliation. The comparison is the publisher’s perspective; evaluate specific software capabilities independently.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-35b5e1a4-7",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/campus-management-systems/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-12-22/banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/campus-management-systems/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/top-campus-management/",
+    "kind": "post",
+    "body": {
+      "title": "Choosing campus management software",
+      "description": "Choosing campus management software. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-bfaa11f6-2",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of choosing campus management software. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-294ab2f1-a",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/top-campus-management/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-12-04/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/top-campus-management/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/meet-jodo-at-didac/",
+    "kind": "post",
+    "body": {
+      "title": "Jodo at the 2025 DIDAC event",
+      "description": "Jodo at the 2025 DIDAC event. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-28d86509-6",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of jodo at the 2025 DIDAC event. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-dad9a1fb-9",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/meet-jodo-at-didac/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-11-03/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/meet-jodo-at-didac/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/scale-your-personal-coaching-revolution/",
+    "kind": "post",
+    "body": {
+      "title": "Growing an independent coaching business",
+      "description": "Growing an independent coaching business. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-4a9eda4b-3",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of growing an independent coaching business. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-b69e5b96-7",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/scale-your-personal-coaching-revolution/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-10-07/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/scale-your-personal-coaching-revolution/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/india's-personal-coaching-revolution/",
+    "kind": "post",
+    "body": {
+      "title": "The changing landscape of personal coaching",
+      "description": "The changing landscape of personal coaching. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-41cf4a7a-b",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of the changing landscape of personal coaching. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-2cb7cbbe-1",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/india's-personal-coaching-revolution/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-09-16/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/india's-personal-coaching-revolution/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/skilling-institute-in-2025/",
+    "kind": "post",
+    "body": {
+      "title": "Growth questions for skilling institutes",
+      "description": "Growth questions for skilling institutes. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-5d9cf37f-e",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of growth questions for skilling institutes. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-18752a07-9",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/skilling-institute-in-2025/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-08-24/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/skilling-institute-in-2025/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/skilling-institutes-are-winning-the-student-race/",
+    "kind": "post",
+    "body": {
+      "title": "Understanding demand for practical skills",
+      "description": "Understanding demand for practical skills. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-0e680547-4",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of understanding demand for practical skills. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-f8b83cb5-3",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/skilling-institutes-are-winning-the-student-race/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-08-19/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/skilling-institutes-are-winning-the-student-race/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/engineering/scaling-serverless-beyond-the-first-function/",
+    "kind": "post",
+    "body": {
+      "title": "Serverless systems beyond a first deployment",
+      "description": "Serverless systems beyond a first deployment. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-0080286a-5",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of serverless systems beyond a first deployment. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-3994c685-1",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/engineering/scaling-serverless-beyond-the-first-function/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Engineering",
+      "cover": "/reference/articles/2025-08-16/goto-con-lim.jpeg",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/engineering/scaling-serverless-beyond-the-first-function/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/fixing-school-fee-collection/",
+    "kind": "post",
+    "body": {
+      "title": "Smarter QR-based school collections",
+      "description": "Smarter QR-based school collections. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-28d43164-a",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of smarter QR-based school collections. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-02f64422-1",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/fixing-school-fee-collection/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-07-20/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/fixing-school-fee-collection/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/the-revenue-leak-in-every-institute/",
+    "kind": "post",
+    "body": {
+      "title": "Making non-tuition fees easier to track",
+      "description": "Making non-tuition fees easier to track. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-95a1da51-4",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of making non-tuition fees easier to track. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-7265bc57-9",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/the-revenue-leak-in-every-institute/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-07-09/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/the-revenue-leak-in-every-institute/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/solving-college-fee-collection-with-flex/",
+    "kind": "post",
+    "body": {
+      "title": "Recurring collections for college courses",
+      "description": "Recurring collections for college courses. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-8617fc67-5",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of recurring collections for college courses. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-07629dde-9",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/solving-college-fee-collection-with-flex/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-06-25/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/solving-college-fee-collection-with-flex/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/fixing-college-fee-collection/",
+    "kind": "post",
+    "body": {
+      "title": "Virtual accounts for college payments",
+      "description": "Virtual accounts for college payments. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-61b2f8c7-2",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of virtual accounts for college payments. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-bd42431c-b",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/fixing-college-fee-collection/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-05-29/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/fixing-college-fee-collection/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/engineering/recognized-as-winner-at-dine-with-devops-iii-2025/",
+    "kind": "post",
+    "body": {
+      "title": "A DevOps award and the work behind it",
+      "description": "A DevOps award and the work behind it. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-fb92efdc-9",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of a DevOps award and the work behind it. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-c8f5abf9-a",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/engineering/recognized-as-winner-at-dine-with-devops-iii-2025/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Engineering",
+      "cover": "/reference/articles/2025-05-24/IMG-20250516-1.jpeg",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/engineering/recognized-as-winner-at-dine-with-devops-iii-2025/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/problems-colleges-face-in-fee-collection/",
+    "kind": "post",
+    "body": {
+      "title": "Common college collection challenges",
+      "description": "Common college collection challenges. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-73b33565-7",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of common college collection challenges. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-1b283283-2",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/problems-colleges-face-in-fee-collection/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-05-22/blog-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/problems-colleges-face-in-fee-collection/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/a-modern-approach-to-fee-collection/",
+    "kind": "post",
+    "body": {
+      "title": "Building fee operations for a new school",
+      "description": "Building fee operations for a new school. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-fc016806-c",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of building fee operations for a new school. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-3b7201d4-5",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/a-modern-approach-to-fee-collection/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-04-14/a-modern-approach-to-fee-collection.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/a-modern-approach-to-fee-collection/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/making-fee-payments-easier/",
+    "kind": "post",
+    "body": {
+      "title": "Family-friendly instalment collection",
+      "description": "Family-friendly instalment collection. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-6bb0bae5-7",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of family-friendly instalment collection. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-bde571a4-e",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/making-fee-payments-easier/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-04-03/make-payments-easier.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/making-fee-payments-easier/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/engineering/scaling-devops-for-secure-cost-effective-automated-workflow/",
+    "kind": "post",
+    "body": {
+      "title": "Designing more reliable DevOps workflows",
+      "description": "Designing more reliable DevOps workflows. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-38999454-7",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of designing more reliable DevOps workflows. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-2ebb8306-b",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/engineering/scaling-devops-for-secure-cost-effective-automated-workflow/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Engineering",
+      "cover": "/reference/articles/2025-03-22/cover-devops.webp",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/engineering/scaling-devops-for-secure-cost-effective-automated-workflow/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/jodo-flex-vs-than-cred-part2/",
+    "kind": "post",
+    "body": {
+      "title": "Comparing instalments and autopay for EdTech",
+      "description": "Comparing instalments and autopay for EdTech. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-4060b1c2-9",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of comparing instalments and autopay for EdTech. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-ce27f441-a",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/jodo-flex-vs-than-cred-part2/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-03-18/autoFlex-vs-cred.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/jodo-flex-vs-than-cred-part2/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/the-hidden-crisis-in-india-education/",
+    "kind": "post",
+    "body": {
+      "title": "When delayed fees affect education",
+      "description": "When delayed fees affect education. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-7516513b-4",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of when delayed fees affect education. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-83177d21-c",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/the-hidden-crisis-in-india-education/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2025-03-11/the-hidden-crisis-in-india-education.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/the-hidden-crisis-in-india-education/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/product/is-flex-better-than-cred/",
+    "kind": "post",
+    "body": {
+      "title": "Choosing between EMI and autopay",
+      "description": "Choosing between EMI and autopay. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-9861023b-8",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of choosing between EMI and autopay. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-07c3a4ea-2",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/product/is-flex-better-than-cred/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Product",
+      "cover": "/reference/articles/2024-09-21/flex.webp",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/product/is-flex-better-than-cred/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/product/jodo-launches-upi-autopay/",
+    "kind": "post",
+    "body": {
+      "title": "UPI Autopay in education payments",
+      "description": "UPI Autopay in education payments. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-dc3386c9-8",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of uPI Autopay in education payments. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-4fcbfade-3",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/product/jodo-launches-upi-autopay/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Product",
+      "cover": "/reference/articles/2024-07-22/upi-autopay.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/product/jodo-launches-upi-autopay/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/engineering/jodo-infrastrcuture-revamp-journey-2024/",
+    "kind": "post",
+    "body": {
+      "title": "An infrastructure rebuild, 2021–2024",
+      "description": "An infrastructure rebuild, 2021–2024. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-db4ad576-e",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of an infrastructure rebuild, 2021–2024. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-68bb2d42-0",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/engineering/jodo-infrastrcuture-revamp-journey-2024/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Engineering",
+      "cover": "/reference/articles/2024-06-29/infra-journey.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/engineering/jodo-infrastrcuture-revamp-journey-2024/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/insight/from-cash-to-digital-payments-to-subscriptions/",
+    "kind": "post",
+    "body": {
+      "title": "How payment habits are changing",
+      "description": "How payment habits are changing. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-91ee1c1b-7",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of how payment habits are changing. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-d7cfc3a6-5",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/insight/from-cash-to-digital-payments-to-subscriptions/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Insight",
+      "cover": "/reference/articles/2024-06-28/india-payment-evolution.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/insight/from-cash-to-digital-payments-to-subscriptions/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/blog/engineering/streamlining-webhook-handling/",
+    "kind": "post",
+    "body": {
+      "title": "More dependable webhook processing",
+      "description": "More dependable webhook processing. An attributed reference overview with a link to the original Jodo article.",
+      "blocks": [
+        {
+          "id": "b-ce847993-9",
+          "type": "text",
+          "title": "Reference overview",
+          "text": "This reference entry introduces Jodo’s published discussion of more dependable webhook processing. Open the source article for the full explanation, its author’s perspective and original evidence.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-6a869343-d",
+          "type": "text",
+          "title": "Read the full source",
+          "text": "The complete article remains on Jodo’s website. Its publication date, named author and original claims belong to that source.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/blog/engineering/streamlining-webhook-handling/",
+          "label": "Read the original article"
+        }
+      ],
+      "category": "Engineering",
+      "cover": "/reference/articles/2024-06-20/developer-webhooks.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/blog/engineering/streamlining-webhook-handling/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/case-studies/how-a-maharashtra-based-academy-achieved-inr-150-cr/",
+    "kind": "case",
+    "body": {
+      "title": "A Maharashtra academy’s collection journey",
+      "description": "A Maharashtra academy’s collection journey. An attributed case-study overview linking to the original account.",
+      "blocks": [
+        {
+          "id": "b-f58612b2-0",
+          "type": "text",
+          "title": "The institutional story",
+          "text": "Explore the collection challenge and implementation account published by Jodo. Results reported by the source relate to that institution and are not a guarantee for this software or another customer.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-fc91b09e-2",
+          "type": "text",
+          "title": "Source and evidence",
+          "text": "Consult the original publication for customer context, dates and the basis of its reported outcomes.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/case-studies/how-a-maharashtra-based-academy-achieved-inr-150-cr/",
+          "label": "Read the original case study"
+        }
+      ],
+      "category": "Case study",
+      "cover": "/reference/case-studies/2025-09-07/case-study-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/case-studies/how-a-maharashtra-based-academy-achieved-inr-150-cr/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/case-studies/global-fee-collection/",
+    "kind": "case",
+    "body": {
+      "title": "International fee collection for an IIT",
+      "description": "International fee collection for an IIT. An attributed case-study overview linking to the original account.",
+      "blocks": [
+        {
+          "id": "b-09528b35-0",
+          "type": "text",
+          "title": "The institutional story",
+          "text": "Jodo describes an institute serving international postgraduate learners. The source discusses foreign-exchange and processing costs, local-currency invoicing, reconciliation and reminders. Its reported results are specific to that engagement, not a guarantee of savings for another institute.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-b173256e-1",
+          "type": "text",
+          "title": "Source and evidence",
+          "text": "Consult the original publication for customer context, dates and the basis of its reported outcomes.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/case-studies/global-fee-collection/",
+          "label": "Read the original case study"
+        }
+      ],
+      "category": "Case study",
+      "cover": "/reference/case-studies/2025-06-09/global-fee-collection-banner.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/case-studies/global-fee-collection/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/case-studies/fee-collected-in-a-day-with-zero-effort/",
+    "kind": "case",
+    "body": {
+      "title": "A school’s high-volume collection day",
+      "description": "A school’s high-volume collection day. An attributed case-study overview linking to the original account.",
+      "blocks": [
+        {
+          "id": "b-a3d986ec-e",
+          "type": "text",
+          "title": "The institutional story",
+          "text": "Explore the collection challenge and implementation account published by Jodo. Results reported by the source relate to that institution and are not a guarantee for this software or another customer.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-fcfc130e-3",
+          "type": "text",
+          "title": "Source and evidence",
+          "text": "Consult the original publication for customer context, dates and the basis of its reported outcomes.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/case-studies/fee-collected-in-a-day-with-zero-effort/",
+          "label": "Read the original case study"
+        }
+      ],
+      "category": "Case study",
+      "cover": "/reference/case-studies/2025-05-08/school.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/case-studies/fee-collected-in-a-day-with-zero-effort/",
+      "sourceDate": "2026-10-07"
+    }
+  },
+  {
+    "slug": "/case-studies/from-payment-chaos-to-digital-success/",
+    "kind": "case",
+    "body": {
+      "title": "Digitising a defence academy’s collections",
+      "description": "Digitising a defence academy’s collections. An attributed case-study overview linking to the original account.",
+      "blocks": [
+        {
+          "id": "b-54633248-6",
+          "type": "text",
+          "title": "The institutional story",
+          "text": "Explore the collection challenge and implementation account published by Jodo. Results reported by the source relate to that institution and are not a guarantee for this software or another customer.",
+          "items": [],
+          "tone": "white"
+        },
+        {
+          "id": "b-4dfcd884-6",
+          "type": "text",
+          "title": "Source and evidence",
+          "text": "Consult the original publication for customer context, dates and the basis of its reported outcomes.",
+          "items": [],
+          "tone": "white",
+          "href": "https://www.jodo.in/case-studies/from-payment-chaos-to-digital-success/",
+          "label": "Read the original case study"
+        }
+      ],
+      "category": "Case study",
+      "cover": "/reference/case-studies/2025-04-21/logo-defence-academy.png",
+      "author": "Website recreation editorial",
+      "indexable": false,
+      "sourceUrl": "https://www.jodo.in/case-studies/from-payment-chaos-to-digital-success/",
+      "sourceDate": "2026-10-07"
+    }
+  }
+]

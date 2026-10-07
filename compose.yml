@@ -1,0 +1,111 @@
+name: website-jodo
+x-runtime: &runtime
+  DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-demo}
+  SITE_URL: ${SITE_URL:-http://localhost:3000}
+  DATABASE_URL: postgresql://${APP_DB_USER}:${APP_DB_PASSWORD}@db:5432/${POSTGRES_DB}
+  SESSION_SECRET: ${SESSION_SECRET}
+  DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
+  AUDIT_CHECKPOINT_SECRET: ${AUDIT_CHECKPOINT_SECRET}
+  BLOG_AUTO_DELETE_ENABLED: 'false'
+  SITE_APPROVED: ${SITE_APPROVED:-false}
+  PUBLIC_INDEXING_ENABLED: ${PUBLIC_INDEXING_ENABLED:-false}
+  NOTIFICATION_MODE: ${NOTIFICATION_MODE:-disabled}
+  MEDIA_DIRECTORY: /app/.data/media
+  AUDIT_EXPORT_DIRECTORY: /app/.data/audit-export
+x-tools: &tools
+  <<: *runtime
+  MIGRATION_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+  APP_DB_USER: ${APP_DB_USER}
+  APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+services:
+  db:
+    image: postgres:17-trixie
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports: ['127.0.0.1:5432:5432']
+    volumes: ['postgres_data:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  api:
+    build: .
+    command: ['npm', 'run', 'start:api']
+    environment: *runtime
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ['127.0.0.1:4000:4000']
+    volumes: ['media_data:/app/.data/media']
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  worker:
+    build: .
+    command: ['npm', 'run', 'start:worker']
+    environment:
+      <<: *runtime
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      NOTIFICATION_TO: ${NOTIFICATION_TO:-}
+    volumes: ['audit_data:/app/.data/audit-export']
+    depends_on:
+      api: { condition: service_healthy }
+    restart: unless-stopped
+  web:
+    build: .
+    command: ['npm', 'run', 'start:web']
+    environment:
+      DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-demo}
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      API_INTERNAL_URL: http://api:4000
+      SITE_APPROVED: ${SITE_APPROVED:-false}
+      PUBLIC_INDEXING_ENABLED: ${PUBLIC_INDEXING_ENABLED:-false}
+    depends_on:
+      api: { condition: service_healthy }
+    ports: ['127.0.0.1:3000:3000']
+    restart: unless-stopped
+  migrate:
+    build: .
+    profiles: [tools]
+    command: ['npm', 'run', 'migrate']
+    environment: *tools
+    depends_on:
+      db: { condition: service_healthy }
+  seed:
+    build: .
+    profiles: [tools]
+    command: ['npm', 'run', 'seed:demo']
+    environment: *tools
+    depends_on:
+      db: { condition: service_healthy }
+  create-owner:
+    build: .
+    profiles: [tools]
+    command: ['npm', 'run', 'create:owner']
+    environment:
+      <<: *tools
+      OWNER_EMAIL: ${OWNER_EMAIL:-}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:-}
+      STAFF_ROLE: ${STAFF_ROLE:-owner}
+    depends_on:
+      db: { condition: service_healthy }
+volumes:
+  postgres_data:
+  media_data:
+  audit_data:

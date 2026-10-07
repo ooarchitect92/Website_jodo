@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-07",
+  "environment": "Debian 13 container, Node 22.16.0, PostgreSQL 17.11 on loopback; synthetic data only",
+  "unit": {
+    "passed": 27,
+    "failed": 0
+  },
+  "integration": {
+    "passed": 31,
+    "failed": 0
+  },
+  "build_api": "passed",
+  "build_web": "passed",
+  "database_restore": "passed; 44 content records, 44 revisions, 6 synthetic leads, 65 audit entries at snapshot",
+  "browser": "Local managed browser blocks localhost; GitHub CI pending",
+  "production": "not deployed; not accepted",
+  "boundaries": [
+    "SMTP tested against local synthetic SMTP server only",
+    "No live payment, lending, Google Ads, Meta or CRM integrations",
+    "Database restore is not full media/key-loss disaster recovery"
+  ]
+}

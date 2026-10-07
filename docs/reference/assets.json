@@ -1,0 +1,838 @@
+[
+  {
+    "url": "https://www.jodo.in/assets/images/jodo-logo-v2.svg",
+    "local": "/reference/images/jodo-logo-v2.svg",
+    "sha256": "46b3f9e90cbfb0cbc39ceeb14e704ac6a1058598e9d7e506b960e1f501ddae60",
+    "bytes": 1197,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.201Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/collect-logo-icon.svg",
+    "local": "/reference/images/icons/collect-logo-icon.svg",
+    "sha256": "d336f6ed3505aef4f51c812521c87a05c0421c0e13a52c4c9860fca67215c620",
+    "bytes": 533,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.208Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/product/product-dashboard.png",
+    "local": "/reference/images/product/product-dashboard.png",
+    "sha256": "aa138120128eea5e642abcc9de7d2ccd777cf959301ec8901ba81e3a336174e0",
+    "bytes": 360057,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.235Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/icon-easy-onboarding.svg",
+    "local": "/reference/images/icons/icon-easy-onboarding.svg",
+    "sha256": "367dc22524d047c08129d3917c32cec42f52b6659829a20989bb4fba51a9f2a8",
+    "bytes": 2852,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.243Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/icon-on-time.svg",
+    "local": "/reference/images/icons/icon-on-time.svg",
+    "sha256": "cd97faf0a489479e949122c23e1cf5c16d156c000df15d7420ace249a2306a76",
+    "bytes": 5332,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.250Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/icon-reminders.svg",
+    "local": "/reference/images/icons/icon-reminders.svg",
+    "sha256": "9db29b69afb65c1e74486f7acffa92eb9e0269ad255ba1a90f016fd7ad80bd93",
+    "bytes": 2364,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.255Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/dashbord-home-page.png",
+    "local": "/reference/images/dashbord-home-page.png",
+    "sha256": "d92da35921a99c635563b864a3400cd0684a939feb6515ec0a77ae4c10c30d99",
+    "bytes": 158239,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.266Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/aakash-logo.png",
+    "local": "/reference/images/school-logos/aakash-logo.png",
+    "sha256": "2f62720d120a3d6789588e57148aee4fa0a254efac40ec7e943e10fc624d654e",
+    "bytes": 58778,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.274Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/allen-logo.png",
+    "local": "/reference/images/school-logos/allen-logo.png",
+    "sha256": "ba5b9ebb1eba6c8c6e8bc904ae7a546bad09a91f2cc889aa80c11588b7bce9a8",
+    "bytes": 299913,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.288Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/be-10x-logo.png",
+    "local": "/reference/images/school-logos/be-10x-logo.png",
+    "sha256": "458091eebaa18ec31fefc8023a679089f2e80bbbd57eb8cd8692396c89819abb",
+    "bytes": 48988,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.296Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/chirec-logo.png",
+    "local": "/reference/images/school-logos/chirec-logo.png",
+    "sha256": "9719137c57daddcb6463e4949a078acbd084ce76004b96c131b37e6b8f3df96a",
+    "bytes": 222254,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.304Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/DPS-logo.png",
+    "local": "/reference/images/school-logos/DPS-logo.png",
+    "sha256": "86205d31a7cf3a271fb764e7dd2215d75c1f9dbcf0f7353d0bb32ebbec7085f4",
+    "bytes": 94311,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.311Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/gear-logo.png",
+    "local": "/reference/images/school-logos/gear-logo.png",
+    "sha256": "ebb82ea6efeb0bfea34a22fc4238e381d77e9d4477cf3a893ff6b499dd740a6e",
+    "bytes": 29498,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.317Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/guhati-logo.png",
+    "local": "/reference/images/school-logos/guhati-logo.png",
+    "sha256": "ba46e7666747372b7ce5d36ee81737971439d58c48ab8ae8b5d4a4d225507e49",
+    "bytes": 291560,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.328Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/JK-shah-logo.png",
+    "local": "/reference/images/school-logos/JK-shah-logo.png",
+    "sha256": "4ea4a604bd0e25f6f126355af907abf3d693615126b8599614e8871f2a053ae7",
+    "bytes": 327759,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.341Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/malla-reddy-logo.png",
+    "local": "/reference/images/school-logos/malla-reddy-logo.png",
+    "sha256": "db52719a21fb6068242281ee214aad928983dd899455f8a9b3e0d81b9de988c9",
+    "bytes": 515830,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.351Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/pw-logo.png",
+    "local": "/reference/images/school-logos/pw-logo.png",
+    "sha256": "8ffc7e8225e641ef93f68b8e00d16a259f634fb0b681263e48772146a8f725d2",
+    "bytes": 103509,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.358Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/NPS-logo.png",
+    "local": "/reference/images/school-logos/NPS-logo.png",
+    "sha256": "f053d2756bf8e914f9d19b9b5053fed4788972b72dd1b17443b27c583c06dbd4",
+    "bytes": 58586,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.365Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/NXT-logo.png",
+    "local": "/reference/images/school-logos/NXT-logo.png",
+    "sha256": "85af3af193b22a1249af954a00bff5421a70a4be9a6a8a5c2a14a25caaaeddf8",
+    "bytes": 24840,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.371Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/school-logos/orchids-logo.png",
+    "local": "/reference/images/school-logos/orchids-logo.png",
+    "sha256": "dd75bf1468dd37658ba31910c4729f918968a7c4fcdc1f7c1506db42a756f990",
+    "bytes": 261887,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.378Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/background/line-design.png",
+    "local": "/reference/images/background/line-design.png",
+    "sha256": "b89ed635b3613d9bab2238aea662c698f06146afcb4d8963315e1cb534531a3b",
+    "bytes": 1028065,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.409Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/Star.svg",
+    "local": "/reference/images/Star.svg",
+    "sha256": "c1c72ded92582ce70583466025fc0585da87e4ffb0ca60399e39c3416154ef5e",
+    "bytes": 4273,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.416Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/fee-schedule-icon.svg",
+    "local": "/reference/images/icons/fee-schedule-icon.svg",
+    "sha256": "156f7bcba37c1fa4800355deafa16f0c4f327eab03ae48bdb8439b68063e7465",
+    "bytes": 731,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.421Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/communication-icon.svg",
+    "local": "/reference/images/icons/communication-icon.svg",
+    "sha256": "e5f103940637b206b26f4e22809162e3b498856af6c0d1b161ef204566344dc3",
+    "bytes": 791,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.428Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/analytics-icon.svg",
+    "local": "/reference/images/icons/analytics-icon.svg",
+    "sha256": "b40ec36b64830c3d11dbc96a1d4b6d37e4687e58450d02d790331e4f3a5ef8d8",
+    "bytes": 978,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.434Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/reconcillation-icon.svg",
+    "local": "/reference/images/icons/reconcillation-icon.svg",
+    "sha256": "f52355c22f6233b6064f3c001563e4889c6acf5828bb34fabf227aa75bf72300",
+    "bytes": 3159,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.443Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/fee-management-section.svg",
+    "local": "/reference/images/fee-management-section.svg",
+    "sha256": "0425be35edca53b107891cb7e561ebcf20797f7a805a6ce08f4eaf65537b3a7b",
+    "bytes": 764554,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.462Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/featurecenter.svg",
+    "local": "/reference/images/featurecenter.svg",
+    "sha256": "d4dfef43c85e40674043ed41b081a38feaf5411ae0f4bdb77610e0e238b4a8c9",
+    "bytes": 10752,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.469Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/previous-icon.svg",
+    "local": "/reference/images/icons/previous-icon.svg",
+    "sha256": "db88d94085e608661ab15b9b30604465427a3b35c54134efb12f99747cda7540",
+    "bytes": 1063,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.475Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/next-icon.svg",
+    "local": "/reference/images/icons/next-icon.svg",
+    "sha256": "8474a2301911b69b83f02a8b8495909240ec7915ab45c613e3282b29f727349a",
+    "bytes": 1041,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.485Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/google.svg",
+    "local": "/reference/images/icons/google.svg",
+    "sha256": "ccc8738c124f5978609757daa46523134a3fcfa9c0bc099b508202b1b3331651",
+    "bytes": 1027,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.491Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/done.svg",
+    "local": "/reference/images/done.svg",
+    "sha256": "2928f847f41de163b1284e3d32114172f637d53c740bb8f454001b8315ce11c9",
+    "bytes": 250,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.496Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-12-29/blog-banner.png",
+    "local": "/reference/articles/2025-12-29/blog-banner.png",
+    "sha256": "dec66cd97d62a3b0c5e5af185ab3490c6184b6464c38c2d41da6b49eff5bb9c0",
+    "bytes": 1076948,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.528Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-12-22/banner.png",
+    "local": "/reference/articles/2025-12-22/banner.png",
+    "sha256": "a933d4fc479a7d4babb8b3432b4c79e63456db17d92a8c6c03f4cb6099c0a460",
+    "bytes": 703512,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.542Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/case-studies/2025-09-07/case-study-banner.png",
+    "local": "/reference/case-studies/2025-09-07/case-study-banner.png",
+    "sha256": "7528c75f7c810ecdaf091e0d1117cb6dc725a335a97d9ff18d05cefbf8cbe0fb",
+    "bytes": 64790,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.549Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/business-man.png",
+    "local": "/reference/images/business-man.png",
+    "sha256": "55e4a3e838425d2a4d38ce13de60aaff0ae0e21bc7f026ae2a00b146ab9b2a2d",
+    "bytes": 1518171,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.598Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/twitter.svg",
+    "local": "/reference/images/icons/twitter.svg",
+    "sha256": "6942bc66acdc6f99c3bee0ccc246e3edb1d422f2c3a5ccfb00bac01d65daef0b",
+    "bytes": 782,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.604Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/facebook.svg",
+    "local": "/reference/images/icons/facebook.svg",
+    "sha256": "f96c66b85d4ae63e1030968d26b60000cd8cf4cc13cb3327c9c816811dc80b8d",
+    "bytes": 905,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.609Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/linkedIn.svg",
+    "local": "/reference/images/icons/linkedIn.svg",
+    "sha256": "7f4369314b9cb558b3c8aedc0538beed02b420114ef1063e29ee522b16e27c40",
+    "bytes": 761,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.614Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/youtube.svg",
+    "local": "/reference/images/icons/youtube.svg",
+    "sha256": "dcf38cf032f6c4ff7474d1fc4bd54f7e5654f31998d9165d783ea5c4542c3944",
+    "bytes": 715,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.620Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/iso.svg",
+    "local": "/reference/images/icons/iso.svg",
+    "sha256": "8d3366dea3cad1d9bcaf9f61045bfe40d500f7c639d5dc485d70f7cd6a25a428",
+    "bytes": 5692,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.625Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/product/product-hero-dashboard.png",
+    "local": "/reference/images/product/product-hero-dashboard.png",
+    "sha256": "f5b2b6c45a35e1e3e4498a14369a32342a8c1feedaa97f50f64f81044fa7913b",
+    "bytes": 574391,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.635Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/product-label-icon.svg",
+    "local": "/reference/images/icons/product-label-icon.svg",
+    "sha256": "9a757b248b9b492cfb53fac0d9fc929c4bb11744d8c64bed51046b3dd48b35e7",
+    "bytes": 4151,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.641Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/mandate.svg",
+    "local": "/reference/images/icons/mandate.svg",
+    "sha256": "54508ff5a08c3144f0f89f571766cb44ead39a79791573f25d79ecf0b90f7db5",
+    "bytes": 466,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.647Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/automated-collections.svg",
+    "local": "/reference/images/icons/automated-collections.svg",
+    "sha256": "7330defdf168139fc11acb55129550cd61d02f690f11a1191e0a2354f22815ee",
+    "bytes": 326,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.652Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/predictable-inflows.svg",
+    "local": "/reference/images/icons/predictable-inflows.svg",
+    "sha256": "16547eed7038003eb087aa45b0e33a1bb64dfad93ea1eedb3363c508e4d7811b",
+    "bytes": 169,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.658Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/product/flex-phone.png",
+    "local": "/reference/images/product/flex-phone.png",
+    "sha256": "6db8511362633b68d0b7211a6126accd0a44911193824df164a6d8f8688e08b7",
+    "bytes": 373493,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.667Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/product/cred-phone.png",
+    "local": "/reference/images/product/cred-phone.png",
+    "sha256": "89de490260dd97283c5272a3e2e2800b06c991810613047f4ba1353072c8d3a1",
+    "bytes": 371453,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.679Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/upfront-payouts.svg",
+    "local": "/reference/images/icons/upfront-payouts.svg",
+    "sha256": "b35e3bb8833f53f2d8c463cba851582e458d635f2394d296db9446bc0009c797",
+    "bytes": 277,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.685Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/monthly-instalments.svg",
+    "local": "/reference/images/icons/monthly-instalments.svg",
+    "sha256": "31b067678808e0784102a1be73a916e05dce68ea5c483c7ddd83a3934f21d11d",
+    "bytes": 305,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.880Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/simple-credit.svg",
+    "local": "/reference/images/icons/simple-credit.svg",
+    "sha256": "f51a76d91e093df2fcac06a7dfc7ffbc8cbc58b7691971722c375f552ecd5b43",
+    "bytes": 272,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.886Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/payment-modes.svg",
+    "local": "/reference/images/icons/payment-modes.svg",
+    "sha256": "e841a6c82c11c592928985a7efc067d1ca819226f39a0eccab0eacae42d97c05",
+    "bytes": 345,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.891Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/payment-scheduler.svg",
+    "local": "/reference/images/icons/payment-scheduler.svg",
+    "sha256": "c3b334232a0c54aae192342d6e6b5ac253c6dc01dff6aa8eb94d44fe59babaa2",
+    "bytes": 405,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.897Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/collection-workflows.svg",
+    "local": "/reference/images/icons/collection-workflows.svg",
+    "sha256": "e216aceffe323413b93d32851572f41d933e126455ef78666c07d8a8e47da270",
+    "bytes": 189,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.903Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/product/pay-phone.png",
+    "local": "/reference/images/product/pay-phone.png",
+    "sha256": "163432983da40d303c787cddf46146718ec44f9822eb6261041e67c24385025a",
+    "bytes": 340391,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.912Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/flexible-fees.svg",
+    "local": "/reference/images/icons/flexible-fees.svg",
+    "sha256": "1194a0f1482d4fbd0d7a3cc42a5e11c6aace5d7650976f7b9305f96b589002d0",
+    "bytes": 204,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.917Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/fee-tracking.svg",
+    "local": "/reference/images/icons/fee-tracking.svg",
+    "sha256": "7efa3be632af942db6bb82e8b7eb5d8a5b5ce6542bdc070350fd9cbd8fb557c8",
+    "bytes": 458,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.923Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/payment-integration.svg",
+    "local": "/reference/images/icons/payment-integration.svg",
+    "sha256": "75cba736aa6705f536037488d229325fd97eda678ec35850036ec03e5bfef4f9",
+    "bytes": 1088,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.928Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/your-story.png",
+    "local": "/reference/images/your-story.png",
+    "sha256": "291aea6c49f31abedb5663edf82de948b13806e7e8476515f92be6bc85a6852d",
+    "bytes": 23683,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.934Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/vccircle.png",
+    "local": "/reference/images/vccircle.png",
+    "sha256": "47c51b95f534b66052c8208d728308220b62d43de6006c58e988aab2ca890231",
+    "bytes": 17555,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.940Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/cnbc.png",
+    "local": "/reference/images/cnbc.png",
+    "sha256": "1e5b92745315b68e66d486ce25f781096929612aa7244dbccc964fe52e36d2bf",
+    "bytes": 25119,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.945Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/money-control.png",
+    "local": "/reference/images/money-control.png",
+    "sha256": "fc9764637254bbc3675cb3751059cd7c4ec2eb5666d70a1260c252162238c53d",
+    "bytes": 26899,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.950Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/investor-logos/tigerglobal.png",
+    "local": "/reference/images/investor-logos/tigerglobal.png",
+    "sha256": "2b9fca03a9c5cbfcd9c660af11933598ab861159daca4259d674bab22ae1aa78",
+    "bytes": 15775,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.956Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/investor-logos/elevation.png",
+    "local": "/reference/images/investor-logos/elevation.png",
+    "sha256": "6f79926b3e2265c3e4d9f7af58c260485843d9ac13991e3632c4d7de33257816",
+    "bytes": 37476,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.961Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/investor-logos/z47.svg",
+    "local": "/reference/images/investor-logos/z47.svg",
+    "sha256": "46345b730c2a3f88714dae44b92cbe05cba2deafc9956607a1f3f6c45f237ebd",
+    "bytes": 8036,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.967Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/team-1.png",
+    "local": "/reference/images/team-1.png",
+    "sha256": "b39baacfb448889aa8b3de5823d732346b3ab1e12c79e9f53f1837f992030c8a",
+    "bytes": 156043,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.973Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/team-3.png",
+    "local": "/reference/images/team-3.png",
+    "sha256": "db2f66171ce272dae11db14f2483f15524acb8cd6b3f9e1ada5d5d39ba87cc39",
+    "bytes": 220866,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.981Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/team-2.png",
+    "local": "/reference/images/team-2.png",
+    "sha256": "1cf0d6b6753b789a312a63232167e3f0741a582214d6d39fdb2a9071ff985de5",
+    "bytes": 228806,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:33.989Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/founders/Atulya%20Bhat.jpg",
+    "error": "Error: unsafe path"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/founders/Raghav%20Nagarajan.jpeg",
+    "error": "Error: unsafe path"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/founders/Koustav%20dey.jpg",
+    "error": "Error: unsafe path"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/our-vision-icon.svg",
+    "local": "/reference/images/icons/our-vision-icon.svg",
+    "sha256": "774f27f44456207a16da4df445dd61cd4779dfc78d9ef52505016d597bca9fcc",
+    "bytes": 1191,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.015Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/our-mission-icon.svg",
+    "local": "/reference/images/icons/our-mission-icon.svg",
+    "sha256": "bd8b9f36e7e0fa6c538dad3d196ef1419dfaa54d9d40665e659557a43f5b213e",
+    "bytes": 1111,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.021Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/authors/rishabh-raj.jpeg",
+    "local": "/reference/images/authors/rishabh-raj.jpeg",
+    "sha256": "28ca65a2ffce8668f2470693b3afdebe97cc56400b698e7506af23109a526e68",
+    "bytes": 15937,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.027Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-12-04/blog-banner.png",
+    "local": "/reference/articles/2025-12-04/blog-banner.png",
+    "sha256": "0512a4080fcc4c5e6f1a7534d14c01de366fa6285bca7db86378e5f9756316bf",
+    "bytes": 724040,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.039Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-11-03/blog-banner.png",
+    "local": "/reference/articles/2025-11-03/blog-banner.png",
+    "sha256": "fdb900c95f295cf2cc7fe525c3acbd81d77bd46db3aded4b180a035cdafc2b99",
+    "bytes": 158959,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.047Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-10-07/blog-banner.png",
+    "local": "/reference/articles/2025-10-07/blog-banner.png",
+    "sha256": "b6e4d11169c72e660479d521ee79b56c0d631b38b45999728759098df5f74b0d",
+    "bytes": 95960,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.053Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-09-16/blog-banner.png",
+    "local": "/reference/articles/2025-09-16/blog-banner.png",
+    "sha256": "8dac8ea0ad6d8c00f3474a18a5b11597680a44f810181deae69b888c659c069e",
+    "bytes": 522025,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.062Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-08-24/blog-banner.png",
+    "local": "/reference/articles/2025-08-24/blog-banner.png",
+    "sha256": "d4d38b5e940393fbff19f912dc4060b1e53de4aaa5fd463bf1e67ef2a6bfce16",
+    "bytes": 604499,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.072Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-08-19/blog-banner.png",
+    "local": "/reference/articles/2025-08-19/blog-banner.png",
+    "sha256": "0a9bfbfec91374ce105834cebd93daff0f8f5711b2f1b9ae16a74a49187fed52",
+    "bytes": 394817,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.083Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/authors/ritesh.jpeg",
+    "local": "/reference/images/authors/ritesh.jpeg",
+    "sha256": "94a91382abeb7c0397ab0e4a80724622c3971316d8ec2a99b5d51db70f663164",
+    "bytes": 98432,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.089Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-08-16/goto-con-lim.jpeg",
+    "local": "/reference/articles/2025-08-16/goto-con-lim.jpeg",
+    "sha256": "df3956fd88861b8ce48cd32a95585bafc7c549df70105e9991bf5c50cf674c3d",
+    "bytes": 799754,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.099Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/authors/shruthi.jpeg",
+    "local": "/reference/images/authors/shruthi.jpeg",
+    "sha256": "c82945c59421476cad07da9341984761d77afb3fa911b5244e93d553ff0cde1f",
+    "bytes": 2115544,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.156Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-07-20/blog-banner.png",
+    "local": "/reference/articles/2025-07-20/blog-banner.png",
+    "sha256": "402333059edfee8f14021b179b3a3ffe6d4396184e10ab5458d6ade7512453b7",
+    "bytes": 955242,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.167Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/authors/ankit.jpeg",
+    "local": "/reference/images/authors/ankit.jpeg",
+    "sha256": "49ad5e20af2407425b92319d8e1d25fef97fe29062084fc42ebcb1bffb4da84d",
+    "bytes": 698540,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.183Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-07-09/blog-banner.png",
+    "local": "/reference/articles/2025-07-09/blog-banner.png",
+    "sha256": "6dff2b4812586d7e0edf3916f7d450b642de4996c539b864733928bc54bb03d0",
+    "bytes": 648639,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.199Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-06-25/blog-banner.png",
+    "local": "/reference/articles/2025-06-25/blog-banner.png",
+    "sha256": "020cbc5a96cb10f27dbe1554494373b40e3ea72532eae2303dd53382b5b1de51",
+    "bytes": 1372662,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.230Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-05-29/blog-banner.png",
+    "local": "/reference/articles/2025-05-29/blog-banner.png",
+    "sha256": "2242ef08ef9a109bdc57157cc1446c568c1ab22cb4da0721397e6b9c91529d3e",
+    "bytes": 97603,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.236Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-05-24/IMG-20250516-1.jpeg",
+    "local": "/reference/articles/2025-05-24/IMG-20250516-1.jpeg",
+    "sha256": "46519c17f9d7c471b978af82e4af733bf90296c09b7c08613f6c63d35ad6a607",
+    "bytes": 4819833,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.269Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-05-22/blog-banner.png",
+    "local": "/reference/articles/2025-05-22/blog-banner.png",
+    "sha256": "04fa6cfec702ad2c1cb3419eaa108244b3a0fbd9d9dfd9f12ceb2746042f5e7e",
+    "bytes": 139763,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.276Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-04-14/a-modern-approach-to-fee-collection.png",
+    "local": "/reference/articles/2025-04-14/a-modern-approach-to-fee-collection.png",
+    "sha256": "459d0fe9681295a6ceeb8a3f9f483094fe13458c6bea772c6906c84bf80c6448",
+    "bytes": 216081,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.284Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-04-03/make-payments-easier.png",
+    "local": "/reference/articles/2025-04-03/make-payments-easier.png",
+    "sha256": "e7ebd3268de323d084b4980ac5915c9122c695518440eba8ed73d199bf7c304d",
+    "bytes": 370551,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.294Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-03-22/cover-devops.webp",
+    "local": "/reference/articles/2025-03-22/cover-devops.webp",
+    "sha256": "0efb172f8135e5c7185b9c5b614e4bbeb13006765eab9aba3018369738f5aebf",
+    "bytes": 716938,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.313Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-03-18/autoFlex-vs-cred.png",
+    "local": "/reference/articles/2025-03-18/autoFlex-vs-cred.png",
+    "sha256": "ff73137f209e656ce1fc0c92123cfe09eb3cbab2f148e68e6eafd69844c34f64",
+    "bytes": 718473,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.330Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2025-03-11/the-hidden-crisis-in-india-education.png",
+    "local": "/reference/articles/2025-03-11/the-hidden-crisis-in-india-education.png",
+    "sha256": "d3cf1999553b7ac7b374f7a6084f7703cab15abb791a1ed7b5b83dfa6d368b3d",
+    "bytes": 1917066,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.345Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2024-09-21/flex.webp",
+    "local": "/reference/articles/2024-09-21/flex.webp",
+    "sha256": "8083dfb385a571db9582f830f1585b1565cd851729565003dbc077f639a324cd",
+    "bytes": 486542,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.353Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2024-07-22/upi-autopay.png",
+    "local": "/reference/articles/2024-07-22/upi-autopay.png",
+    "sha256": "a4efc277acf81fee2ac057efb5b1e4bd98ab8a2ddcaf01747bf9558395af45b8",
+    "bytes": 3739683,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.378Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2024-06-29/infra-journey.png",
+    "local": "/reference/articles/2024-06-29/infra-journey.png",
+    "sha256": "3af55eade22bfab4d699e37616c5d1289ca4fd5cdc689af0d8321786af2c6c9a",
+    "bytes": 3841740,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.454Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2024-06-28/india-payment-evolution.png",
+    "local": "/reference/articles/2024-06-28/india-payment-evolution.png",
+    "sha256": "84daf87d416d4f26b2024d5fd9734dca5cad3a26352c271bfcfa485da81a3589",
+    "bytes": 4547416,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.528Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/articles/2024-06-20/developer-webhooks.png",
+    "local": "/reference/articles/2024-06-20/developer-webhooks.png",
+    "sha256": "be791062c8f24b7b90c4bc83ad2939b81bb7152aa71d8b7f60f742746ab1c6a5",
+    "bytes": 4297116,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.553Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/icons/mail-icon.svg",
+    "local": "/reference/images/icons/mail-icon.svg",
+    "sha256": "4e3179ef5009b5a1389461ebcd9ed3b5a0798c1a9eb03fa304eae483d9f99ee8",
+    "bytes": 467,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.559Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/subscribe-post.svg",
+    "local": "/reference/images/subscribe-post.svg",
+    "sha256": "7cae47bcaf19ff86098fe208b415fa07d211889fb5bed45f2702cef73135aa4e",
+    "bytes": 1468764,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.581Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/images/authors/ankesh.jpeg",
+    "local": "/reference/images/authors/ankesh.jpeg",
+    "sha256": "2ee9fe675f130746448109268ebc2a25b0d68fe67e2dcd052a4bb248eba1e197",
+    "bytes": 488793,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.592Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/case-studies/2025-06-09/global-fee-collection-banner.png",
+    "local": "/reference/case-studies/2025-06-09/global-fee-collection-banner.png",
+    "sha256": "337946bd92e0e8dc53ef929f3a9d41ae27d3957fc00bc998763311c39508565c",
+    "bytes": 94202,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.599Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/case-studies/2025-05-08/school.png",
+    "local": "/reference/case-studies/2025-05-08/school.png",
+    "sha256": "9140e5f5d0e02a18b748f9cc602feed58888dcf760acaf36b5cfad1921096707",
+    "bytes": 258626,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.607Z"
+  },
+  {
+    "url": "https://www.jodo.in/assets/case-studies/2025-04-21/logo-defence-academy.png",
+    "local": "/reference/case-studies/2025-04-21/logo-defence-academy.png",
+    "sha256": "57de2bef3783ecf84214e88caab50938efd57eb39462e8dd98da9d5fe5910b0a",
+    "bytes": 1488564,
+    "rights": "Reference use only; production rights approval required",
+    "retrieved_at": "2026-10-07T06:18:34.638Z"
+  }
+]
