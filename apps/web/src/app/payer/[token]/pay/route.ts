@@ -23,7 +23,10 @@ export async function POST(
     amountMinor <= 0 ||
     !/^[0-9a-f-]{36}$/i.test(idempotencyKey)
   )
-    return NextResponse.redirect(siteBase() + '/payer/' + encodeURIComponent(token) + '/?checkout=invalid', 303);
+    return NextResponse.redirect(
+      siteBase() + '/payer/' + encodeURIComponent(token) + '/?checkout=invalid',
+      303,
+    );
 
   const api = process.env.API_INTERNAL_URL || 'http://127.0.0.1:4000';
   const response = await fetch(api + '/v1/payer/' + encodeURIComponent(token) + '/checkout', {
