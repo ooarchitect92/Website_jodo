@@ -151,6 +151,44 @@ export const externalPaymentRecordSchema = z
     evidenceNote: z.string().trim().min(3).max(300),
   })
   .strict();
+
+export const paymentProviderEventSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      eventId: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,160}$/),
+      type: z.literal('payment_confirmed'),
+      installmentId: z.uuid(),
+      providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+      amountMinor: moneyMinor,
+      currency: z.literal('INR'),
+      occurredAt: z.iso.datetime(),
+    })
+    .strict(),
+  z
+    .object({
+      eventId: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,160}$/),
+      type: z.literal('payment_failed'),
+      installmentId: z.uuid(),
+      providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+      amountMinor: moneyMinor,
+      currency: z.literal('INR'),
+      reasonCode: z.string().trim().regex(/^[A-Z0-9_-]{2,80}$/),
+      occurredAt: z.iso.datetime(),
+    })
+    .strict(),
+  z
+    .object({
+      eventId: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,160}$/),
+      type: z.literal('mandate_status'),
+      scheduleId: z.uuid(),
+      rail: z.enum(['upi_autopay', 'enach']),
+      providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+      status: z.enum(['pending', 'active', 'paused', 'revoked', 'failed']),
+      occurredAt: z.iso.datetime(),
+    })
+    .strict(),
+]);
+
 export const refundRecordSchema = z
   .object({
     paymentId: z.uuid(),
