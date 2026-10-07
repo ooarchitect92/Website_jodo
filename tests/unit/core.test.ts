@@ -412,3 +412,36 @@ test('payer checkout rejects duplicate fee-head allocation codes', () =>
     }).success,
     false,
   ));
+
+test('smart collection link policy accepts flexible custom/component payment', () => {
+  const parsed = payerLinkSchema.parse({
+    expiresHours: 72,
+    paymentMode: 'flexible',
+    allowCustomAmount: true,
+    allowComponentSelection: true,
+    minAmountMinor: 100,
+  });
+  assert.equal(parsed.paymentMode, 'flexible');
+  assert.equal(parsed.allowCustomAmount, true);
+  assert.equal(parsed.allowComponentSelection, true);
+});
+test('smart collection link rejects flexible mode with no flexible option', () =>
+  assert.equal(
+    payerLinkSchema.safeParse({
+      expiresHours: 72,
+      paymentMode: 'flexible',
+      allowCustomAmount: false,
+      allowComponentSelection: false,
+    }).success,
+    false,
+  ));
+test('full-balance collection link cannot silently enable partial-payment options', () =>
+  assert.equal(
+    payerLinkSchema.safeParse({
+      expiresHours: 72,
+      paymentMode: 'full_balance',
+      allowCustomAmount: true,
+      allowComponentSelection: false,
+    }).success,
+    false,
+  ));
