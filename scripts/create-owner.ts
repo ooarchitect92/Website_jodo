@@ -26,12 +26,16 @@ async function main() {
         ],
       )
     ).rows[0];
-    const tenant = (
-      await p.query('SELECT id FROM tenants ORDER BY created_at,id LIMIT 1')
-    ).rows[0];
+    const tenant = (await p.query('SELECT id FROM tenants ORDER BY created_at,id LIMIT 1')).rows[0];
     if (!tenant) throw Error('No tenant exists; run migrations before creating staff accounts');
     const tenantRole =
-      role === 'owner' ? 'owner' : role === 'editor' ? 'builder' : role === 'sales' ? 'support' : 'auditor';
+      role === 'owner'
+        ? 'owner'
+        : role === 'editor'
+          ? 'builder'
+          : role === 'sales'
+            ? 'support'
+            : 'auditor';
     await p.query(
       `INSERT INTO memberships(tenant_id,user_id,role_key,status)
        VALUES($1,$2,$3,'active')
@@ -39,7 +43,9 @@ async function main() {
       [tenant.id, user.id, tenantRole],
     );
     await p.query('COMMIT');
-    console.log('Staff account and workspace membership created. Existing accounts are never overwritten.');
+    console.log(
+      'Staff account and workspace membership created. Existing accounts are never overwritten.',
+    );
     if (!process.env.OWNER_TOTP_SECRET)
       console.log('Add this secret to your authenticator now; it is shown only once:', secret);
   } catch (error) {
