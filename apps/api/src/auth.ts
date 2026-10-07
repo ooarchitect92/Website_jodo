@@ -217,7 +217,8 @@ export class AuthController {
         [req.actor.id, input.tenantId],
       )
     )[0];
-    if (!membership) throw new ForbiddenException('That workspace is not available to this account');
+    if (!membership)
+      throw new ForbiddenException('That workspace is not available to this account');
     await this.db.tx(async (c) => {
       await c.query('UPDATE sessions SET tenant_id=$2 WHERE id=$1', [
         req.actor.sessionId,
