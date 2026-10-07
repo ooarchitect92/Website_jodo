@@ -61,6 +61,55 @@ export async function tick(db: Db) {
     }
   }
   await db.tx(async (c) => {
+    const lateFeeRows = (
+      await c.query(
+        `SELECT i.id AS installment_id,i.schedule_id,i.due_date,i.status,
+                r.id AS rule_id,r.mode,r.grace_days,r.amount_minor,r.cap_minor,
+                coalesce((
+                  SELECT sum(a.amount_minor) FROM late_fee_assessments a
+                  WHERE a.installment_id=i.id AND a.status<>'waived'
+                ),0)::bigint AS assessed_minor,
+                coalesce((
+                  SELECT count(*) FROM late_fee_assessments a
+                  WHERE a.installment_id=i.id
+                ),0)::int AS assessment_count
+         FROM fee_installments i
+         JOIN fee_schedules s ON s.id=i.schedule_id
+         JOIN late_fee_rules r ON r.schedule_id=s.id
+         WHERE s.status='active'
+           AND r.active=true
+           AND i.status NOT IN('paid','cancelled')
+           AND current_date > i.due_date + r.grace_days
+         ORDER BY i.due_date
+         FOR UPDATE OF i SKIP LOCKED
+         LIMIT 100`,
+      )
+    ).rows;
+    for (const row of lateFeeRows) {
+      if (row.mode === 'fixed_once' && Number(row.assessment_count) > 0) continue;
+      const already = Number(row.assessed_minor || 0);
+      const cap = row.cap_minor === null ? null : Number(row.cap_minor);
+      if (cap !== null && already >= cap) continue;
+      const amount =
+        cap === null ? Number(row.amount_minor) : Math.min(Number(row.amount_minor), cap - already);
+      if (amount <= 0) continue;
+      const assessed = await c.query(
+        `INSERT INTO late_fee_assessments(
+           schedule_id,installment_id,rule_id,assessment_date,amount_minor
+         ) VALUES($1,$2,$3,current_date,$4)
+         ON CONFLICT(installment_id,assessment_date) DO NOTHING
+         RETURNING id`,
+        [row.schedule_id, row.installment_id, row.rule_id, amount],
+      );
+      if (!assessed.rowCount) continue;
+      await db.audit(c, 'worker', 'fees.late_fee.assessed', assessed.rows[0].id, {
+        scheduleId: row.schedule_id,
+        installmentId: row.installment_id,
+        mode: row.mode,
+        amountMinor: amount,
+      });
+    }
+
     const reminderRows = (
       await c.query(
         `SELECT i.id AS installment_id,i.schedule_id,s.payer_id,p.preferred_channel,
