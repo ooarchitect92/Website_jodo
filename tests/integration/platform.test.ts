@@ -1060,16 +1060,12 @@ test('hosted checkout is idempotent, provider-gated and reconciles to the fee le
     );
     assert.equal(fullBalanceLink.r.status, 201, JSON.stringify(fullBalanceLink.data));
     const fullBalanceToken = String(fullBalanceLink.data.path).split('/').filter(Boolean).pop()!;
-    const rejectedPartial = await call(
-      '/v1/payer/' + fullBalanceToken + '/checkout',
-      'POST',
-      {
-        installmentId,
-        amountMinor: 50000,
-        idempotencyKey: randomUUID(),
-        allocations: [],
-      },
-    );
+    const rejectedPartial = await call('/v1/payer/' + fullBalanceToken + '/checkout', 'POST', {
+      installmentId,
+      amountMinor: 50000,
+      idempotencyKey: randomUUID(),
+      allocations: [],
+    });
     assert.equal(rejectedPartial.r.status, 409, JSON.stringify(rejectedPartial.data));
     assert.equal(providerCalls, 0);
 
