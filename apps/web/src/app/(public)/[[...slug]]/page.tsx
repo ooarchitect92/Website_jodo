@@ -22,21 +22,21 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     found?.body.title ||
     (
       {
-        '/blog/': 'Perspectives | Website Jodo',
-        '/case-studies/': 'Case studies | Website Jodo',
-        '/search/': 'Search | Website Jodo',
-        '/cookie-preferences/': 'Privacy choices | Website Jodo',
+        '/blog/': 'Perspectives | YourCompany',
+        '/case-studies/': 'Case studies | YourCompany',
+        '/search/': 'Search | YourCompany',
+        '/cookie-preferences/': 'Privacy choices | YourCompany',
       } as Record<string, string>
     )[path] ||
-    'Website Jodo';
+    (process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany');
   return {
     title,
-    description: found?.body.description || 'Browse the Jodo reference website.',
+    description: found?.body.description || 'Browse the education payments platform.',
     alternates: { canonical: new URL(path, baseUrl()).toString() },
     robots: { index: !!config.indexing && !!found?.body.indexable, follow: !!config.indexing },
     openGraph: {
       title,
-      description: found?.body.description || 'Website Jodo',
+      description: found?.body.description || (process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany'),
       url: new URL(path, baseUrl()).toString(),
       ...(found?.body.cover ? { images: [new URL(found.body.cover, baseUrl()).toString()] } : {}),
     },
@@ -65,7 +65,7 @@ export default async function Page({ params, searchParams }: Props) {
     return (
       <section className="wrap section listing">
         <div className="section-heading">
-          <p className="eyebrow">{isSearch ? 'Find your next step' : 'Jodo Perspectives'}</p>
+          <p className="eyebrow">{isSearch ? 'Find your next step' : 'Perspectives'}</p>
           <h1>
             {cases
               ? 'Stories from institutes.'
@@ -75,7 +75,7 @@ export default async function Page({ params, searchParams }: Props) {
           </h1>
           <p>
             {cases
-              ? 'Reference overviews of Jodo’s published case studies.'
+              ? 'Customer stories are published only after company approval and evidence review.'
               : 'Education, payments and the engineering behind them.'}
           </p>
         </div>
@@ -151,7 +151,7 @@ export default async function Page({ params, searchParams }: Props) {
           <h1>{p.body.title}</h1>
           <p className="lead">{p.body.description}</p>
           <p className="small">
-            Reference overview · Source checked {p.body.sourceDate || '7 October 2026'}
+            Editorial content · Reviewed {p.body.sourceDate || 'before publication'}
           </p>
           {p.body.cover && (
             <img src={p.body.cover} alt="Source publication cover" width={1100} height={650} />
@@ -163,17 +163,19 @@ export default async function Page({ params, searchParams }: Props) {
       {path === '/login/' && (
         <section className="wrap portal-grid">
           {[
-            ['Students and parents', 'https://app.jodo.in'],
-            ['Educational institutes', 'https://dashboard.jodo.in'],
-            ['Businesses', 'https://collect.jodo.in'],
-            ['This website’s owner console', '/admin/'],
+            ['Students and parents', process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || '/contact-us/'],
+            ['Educational institutes', process.env.NEXT_PUBLIC_INSTITUTE_PORTAL_URL || '/contact-us/'],
+            ['Businesses', process.env.NEXT_PUBLIC_BUSINESS_PORTAL_URL || '/contact-us/'],
+            ['Owner console', '/admin/'],
           ].map(([name, href]) => (
             <article key={name}>
               <h2>{name}</h2>
               <p>
                 {href!.startsWith('https')
-                  ? 'Official external Jodo portal'
-                  : 'Local staff authentication with MFA'}
+                  ? 'Configured secure external portal'
+                  : name === 'Owner console'
+                    ? 'Local staff authentication with MFA'
+                    : 'Portal integration is not configured yet; continue to contact.'}
               </p>
               <SmartLink className="button primary" href={href!}>
                 Continue
@@ -184,12 +186,11 @@ export default async function Page({ params, searchParams }: Props) {
       )}
       {p.body.sourceUrl && (
         <aside className="source-note wrap">
-          Reference information:{' '}
+          Source information:{' '}
           <SmartLink href={p.body.sourceUrl}>
-            Jodo’s original {p.kind === 'page' ? 'page' : 'publication'}
+            Original {p.kind === 'page' ? 'page' : 'publication'}
           </SmartLink>
-          . This recreation does not claim the publisher’s customers, certification or business
-          results as its own.
+          . External source material remains attributable to its publisher.
         </aside>
       )}
     </>

@@ -94,7 +94,7 @@ export function BlockRenderer({
                       ))}
                     </div>
                     <p className="source-caption">
-                      Figures shown by Jodo’s homepage on 7 October 2026; not metrics of this demo.
+                      Illustrative figures must be replaced with verified company metrics before production.
                     </p>
                   </>
                 )}
@@ -150,7 +150,7 @@ export function BlockRenderer({
               <div className="product-cards">
                 {b.items.map((i, n) => (
                   <article className={'product-card product-' + n} key={i.title}>
-                    <span className="eyebrow">Jodo {i.title}</span>
+                    <span className="eyebrow">Platform · {i.title}</span>
                     <h3>
                       {[
                         'Automate recurring fees.',
@@ -203,7 +203,7 @@ export function BlockRenderer({
             >
               <div className={'wrap split ' + (b.reverse ? 'reverse' : '')}>
                 <div>
-                  <p className="eyebrow">Jodo product</p>
+                  <p className="eyebrow">Platform product</p>
                   <h2>
                     {b.title}
                     <span className="yellow-dot">.</span>
@@ -326,17 +326,13 @@ export function BlockRenderer({
                 <h1>{b.title}</h1>
                 <p className="lead">{b.text}</p>
                 <div className="contact-proof">
-                  <img
-                    src="/reference/images/jodo-logo-v2.svg"
-                    alt="Jodo reference brand"
-                    width={150}
-                    height={50}
-                  />
+                  <div className="brand brand-wordmark">
+                    <span className="brand-mark" aria-hidden="true">◆</span>
+                    <strong>Education payments platform</strong>
+                  </div>
                   <h2>Built around your institute.</h2>
                   <p>Schools, colleges, universities, coaching centres and skilling providers.</p>
-                  <SmartLink href="https://www.jodo.in/contact-us/">
-                    Looking for the real Jodo team?
-                  </SmartLink>
+                  <SmartLink href="/products/">Explore platform capabilities</SmartLink>
                 </div>
               </div>
               <LeadForm />

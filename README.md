@@ -1,12 +1,12 @@
-# Website_jodo
+# Education Payments Website Platform
 
-A working, independently implemented recreation of Jodo's public marketing site with an owned CMS, secure staff console, enquiry management and a durable background worker. Built against **Website Master Blueprint v1.3, 7 October 2026**.
+A working, independently implemented education-payments website platform inspired by the feature class of modern fee-management products, with an owned CMS, secure staff console, enquiry management and a durable background worker. Built against **Website Master Blueprint v1.3, 7 October 2026**.
 
 **Delivery status:** working development/demo implementation; **not approved for production**, not a claim that every requirement in the 273-page blueprint is complete. See [release status](docs/acceptance/RELEASE.md), the 120-capability [register](docs/acceptance/blueprint-register.json), and [test evidence](docs/evidence/README.md).
 
 ## Included
 
-- Next.js / React / strict TypeScript / Tailwind CSS, responsive blue-and-lavender styling and locally stored reference images.
+- Next.js / React / strict TypeScript / Tailwind CSS, responsive original teal-and-coral branding, configurable company identity, and locally controlled media.
 - Home; Flex / Cred / Pay product sections; about; demo contact; calculator; searchable/paginated blog and case-study libraries; article overviews; careers/support/partner/legal/accessibility utility pages; explicit external login choices.
 - **42 seeded content records** plus dynamic listing, category, search, consent, sitemap, RSS and administration routes. Original article overviews link to the source publications; original full articles are not republished.
 - Owned block editor: edit, reorder, preview, autosave, undo/redo, conflict protection, review, owner approval, publish, schedule, rollback, manual trash and restore. No source-content expiry or permanent-delete API.
@@ -14,7 +14,7 @@ A working, independently implemented recreation of Jodo's public marketing site 
 - Database-committed enquiries, idempotency, staff tasks, stages and explainable declared-fit scores; consent-gated first-party observations; safe campaign links; guided product chat and handoff requests.
 - Durable task-workflow timers and simulations; delivery queue; optional SMTP staff notification adapter; local signed audit checkpoints; image validation/re-encoding; exports; SQL migrations; backup/isolated restore tools.
 
-This is **not Jodo's operational payment/lending service**. Student, parent, institute and business login actions point to official external services. The local admin login is solely for this installation. No Jodo passwords, card data, bank credentials or KYC documents are collected.
+This repository is **not a live payment or lending provider by itself**. Student, parent, institute and business portal URLs are explicit deployment configuration. The local admin login is solely for this installation. No Jodo passwords, card data, bank credentials or KYC documents are collected.
 
 ## Fast visual preview — no database
 
@@ -93,10 +93,15 @@ infra/native/      Reverse-proxy template
 
 SQL migrations and `pg` are the single persistence system in this build; Prisma is **not** claimed as implemented. The public site and admin share one Next deployment but have separate routes and API permissions. Redis, Python, GraphQL, SOAP, Kubernetes and live financial integrations are not required or activated.
 
-## Rights and launch boundaries
+## Productization and launch boundaries
 
-Jodo trademarks, public reference images and underlying product claims remain attributable to their respective owners. Reference availability does not establish a reuse licence. The site visibly identifies itself as a recreation and defaults to noindex. Obtain the necessary permissions and replace/review claims before public use; do not remove the notice to misrepresent affiliation.
+Production deployments must use the company's own brand name, logo, media, copy, customer evidence and legal claims. Competitor trademarks, proprietary visuals and copied marketing text are not required for feature parity and should not be published as company content. The reference/demo content remains non-indexed until replaced and approved.
 
-The website content snapshot was checked on 7 October 2026. It is not a promise that the referenced business's figures, policies or services remain current. External contact actions are explicitly labelled; local demonstration leads are stored in this installation, not submitted to Jodo.
+Reference/demo content is not a production claim. Local demonstration leads are stored only in this installation. Configure verified company identity, provider contracts, portal URLs, privacy decisions and operational ownership before launch.
 
 See [owner guide](docs/owner-guide.md), [architecture and decisions](docs/architecture.md), [API contract](docs/api.md), [privacy boundaries](docs/privacy.md), and [release gaps](docs/acceptance/RELEASE.md).
+
+
+### Brand configuration
+
+Set `NEXT_PUBLIC_BRAND_NAME` and `NEXT_PUBLIC_BRAND_PRIMARY` for the public identity. Optional `NEXT_PUBLIC_STUDENT_PORTAL_URL`, `NEXT_PUBLIC_INSTITUTE_PORTAL_URL`, and `NEXT_PUBLIC_BUSINESS_PORTAL_URL` values connect owned portals when they exist. In preview mode use `REFERENCE_READONLY_PREVIEW=true`.
