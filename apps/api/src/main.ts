@@ -27,6 +27,11 @@ import { FeeOperationsController } from './fees';
 import { PayerAdminController, PayerLinkAdminController, PayerPortalController } from './payer';
 import { PaymentProviderAdminController, PaymentProviderController } from './payment-provider';
 import { PayerCheckoutController, PaymentReturnController } from './payment-checkout';
+import {
+  AutopayAdminController,
+  MandateReturnController,
+  PayerMandateController,
+} from './mandate-autopay';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
 class SafeErrors implements ExceptionFilter {
@@ -86,6 +91,9 @@ class Health {
     PaymentProviderAdminController,
     PayerCheckoutController,
     PaymentReturnController,
+    PayerMandateController,
+    MandateReturnController,
+    AutopayAdminController,
   ],
   providers: [Db, AuthGuard, LeadsService],
 })
