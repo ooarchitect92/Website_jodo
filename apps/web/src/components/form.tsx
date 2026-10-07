@@ -158,7 +158,11 @@ export function LeadForm({ source = 'form' }: { source?: 'form' | 'chat' }) {
           max: 10000000,
           defaultValue: 500,
         })}
-        {label('city', 'City', 'text', {\n          autoComplete: 'address-level2',\n          maxLength: 100,\n          defaultValue: '',\n        })}
+        {label('city', 'City', 'text', {
+          autoComplete: 'address-level2',
+          maxLength: 100,
+          defaultValue: '',
+        })}
         <label className="field">
           <span>Interested in</span>
           <select name="interest" defaultValue="Not sure">
