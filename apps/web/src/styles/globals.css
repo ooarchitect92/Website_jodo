@@ -2575,3 +2575,23 @@ p {
   padding: 7px 10px;
   font-size: 12px;
 }
+
+.payer-installment-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.payer-installment-action form {
+  margin: 0;
+}
+.payer-installment-action .button {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .payer-installment-action {
+    justify-content: flex-start;
+  }
+}
