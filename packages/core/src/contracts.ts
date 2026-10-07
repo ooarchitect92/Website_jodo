@@ -421,7 +421,9 @@ export const payerLinkSchema = z
       });
     if (
       value.paymentMode === 'full_balance' &&
-      (value.allowCustomAmount || value.allowComponentSelection || value.minAmountMinor !== undefined)
+      (value.allowCustomAmount ||
+        value.allowComponentSelection ||
+        value.minAmountMinor !== undefined)
     )
       ctx.addIssue({
         code: 'custom',
