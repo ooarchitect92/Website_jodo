@@ -117,7 +117,7 @@ export function BlockRenderer({
                 <h2>{b.title}</h2>
                 <p className="small">{b.text}</p>
               </div>
-              <div className="logo-track">
+              <div className="logo-track" tabIndex={0} aria-label={b.title || 'Partner logos'}>
                 {b.items.map((i) => (
                   <div key={i.title}>
                     {i.image ? (
