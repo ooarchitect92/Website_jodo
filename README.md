@@ -11,6 +11,7 @@ A working, independently implemented education-payments website platform inspire
 - **42 seeded content records** plus dynamic listing, category, search, consent, sitemap, RSS and administration routes. Original article overviews link to the source publications; original full articles are not republished.
 - Owned block editor: edit, reorder, preview, autosave, undo/redo, conflict protection, review, owner approval, publish, schedule, rollback, manual trash and restore. No source-content expiry or permanent-delete API.
 - Authenticator MFA; Argon2id password hashes; HttpOnly sessions; role checks; CSRF and origin checks; encrypted submitted contacts; protected audit records.
+- Tenant foundation: explicit workspace memberships, safe workspace switching, legal entities, campuses/branches, academic years, resumable onboarding drafts, versioned tenant brand drafts, DNS ownership challenges, cloneable role templates and maker-checker role publishing with explicit-deny simulation. This is the first multi-tenant control-plane slice; the existing business-domain tables are not yet fully tenant-isolated, so additional live workspaces remain release-gated.
 - Database-committed enquiries, idempotency, staff tasks, stages and explainable declared-fit scores; consent-gated first-party observations; safe campaign links; guided product chat and handoff requests.
 - Audited fee-operations core: draft/active schedules, installments, course/batch/year/student fee scopes, multi-head fee components, concessions/scholarships, capped late-fee policies, optional logical bank-route keys, collection analytics, externally confirmed payment evidence, refunds, UPI AutoPay/eNACH mandate states, settlement allocation and reconciliation. Live payment/lending providers remain separately gated.
 - Encrypted payer profiles, expiring/revocable secure payer portal links, installment/payment/refund views, immutable receipt snapshots, and durable upcoming/due/overdue reminder jobs. Email delivery can be activated through SMTP; WhatsApp remains provider-gated.
@@ -46,7 +47,7 @@ npm run dev
 
 Before `create:owner`, set `OWNER_EMAIL` and a unique `OWNER_PASSWORD` (at least 16 characters) in your private `.env`. The command prints a one-time authenticator enrollment secret. Enroll it in an authenticator app; use its six-digit code when signing in. Do not put credentials in Git, screenshots, chat or this README. Remove `OWNER_PASSWORD` after provisioning. There is no shared/default admin password.
 
-Public site: `http://localhost:3000` · Owner console: `http://localhost:3000/admin/` · Development API docs: `http://localhost:4000/docs`.
+Public site: `http://localhost:3000` · Tenant/owner console: `http://localhost:3000/admin/` · Development API docs: `http://localhost:4000/docs`.
 
 For a fully native setup, create the PostgreSQL database/owner yourself and update `MIGRATION_DATABASE_URL`. Set a different restricted runtime account in `DATABASE_URL`, `APP_DB_USER` and `APP_DB_PASSWORD`; the migration command provisions it. PostgreSQL client tools are required for backups. See [deployment](docs/runbooks/deployment.md).
 
