@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ token: string }> },
-) {
+export async function POST(req: NextRequest, context: { params: Promise<{ token: string }> }) {
   const { token } = await context.params;
   if (!/^[A-Za-z0-9_-]{30,100}$/.test(token))
     return NextResponse.redirect(new URL('/?mandate=invalid', req.url), 303);
@@ -21,19 +18,16 @@ export async function POST(
 
   const base = process.env.API_INTERNAL_URL || 'http://127.0.0.1:4000';
   try {
-    const response = await fetch(
-      base + '/v1/payer/' + encodeURIComponent(token) + '/mandates',
-      {
-        method: 'POST',
-        headers: {
-          Origin: process.env.SITE_URL!,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ rail, idempotencyKey }),
-        cache: 'no-store',
-        signal: AbortSignal.timeout(7000),
+    const response = await fetch(base + '/v1/payer/' + encodeURIComponent(token) + '/mandates', {
+      method: 'POST',
+      headers: {
+        Origin: process.env.SITE_URL!,
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({ rail, idempotencyKey }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(7000),
+    });
     const data = await response.json();
     if (!response.ok || !data.authorizationUrl)
       return NextResponse.redirect(
