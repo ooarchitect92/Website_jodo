@@ -6,7 +6,7 @@ on:
   pull_request:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -47,8 +47,16 @@ jobs:
       - name: Formatting check
         run: |
           if ! npm run lint; then
-            npx prettier --write .
-            git diff --binary > /tmp/prettier.patch
+            if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "${GITHUB_HEAD_REF}" ]; then
+              git fetch origin "${GITHUB_HEAD_REF}"
+              git checkout -B "${GITHUB_HEAD_REF}" "origin/${GITHUB_HEAD_REF}"
+              npx prettier --write .
+              git config user.name "website-ci"
+              git config user.email "website-ci@users.noreply.github.com"
+              git add -A
+              git commit -m "Format source with Prettier"
+              git push origin HEAD:"${GITHUB_HEAD_REF}"
+            fi
             exit 1
           fi
       - run: npm run typecheck
@@ -74,5 +82,4 @@ jobs:
             playwright-report/
             /tmp/jodo-api.log
             /tmp/jodo-web.log
-            /tmp/prettier.patch
           retention-days: 7
