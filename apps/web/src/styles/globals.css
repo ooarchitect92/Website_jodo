@@ -2414,3 +2414,41 @@ p {
 .site-footer {
   background: linear-gradient(135deg, #f0fdfa, #fff7ed);
 }
+
+/* Fee operations owner workspace */
+.fee-schedule-grid {
+  display: grid;
+  gap: 18px;
+}
+.fee-schedule-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  background: #fff;
+}
+.fee-schedule-card h3 {
+  margin-bottom: 4px;
+}
+.fee-installments {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+.fee-installments > div,
+.record-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+.record-row {
+  grid-template-columns: minmax(120px, 1fr) auto minmax(140px, 1fr) auto;
+}
+@media (max-width: 760px) {
+  .fee-installments > div,
+  .record-row {
+    grid-template-columns: 1fr;
+  }
+}
