@@ -117,7 +117,8 @@ export async function createApp() {
       req.path.startsWith('/v1/chat') ||
       req.path.startsWith('/v1/provider/') ||
       req.path.startsWith('/v1/payer/') ||
-      req.path.startsWith('/v1/payment-return/')
+      req.path.startsWith('/v1/payment-return/') ||
+      req.path.startsWith('/v1/mandate-return/')
     )
       res.setHeader('Cache-Control', 'no-store');
     const providerWebhook = req.path.startsWith('/v1/provider/');
