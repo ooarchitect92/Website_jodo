@@ -12,9 +12,10 @@ A working, independently implemented education-payments website platform inspire
 - Owned block editor: edit, reorder, preview, autosave, undo/redo, conflict protection, review, owner approval, publish, schedule, rollback, manual trash and restore. No source-content expiry or permanent-delete API.
 - Authenticator MFA; Argon2id password hashes; HttpOnly sessions; role checks; CSRF and origin checks; encrypted submitted contacts; protected audit records.
 - Database-committed enquiries, idempotency, staff tasks, stages and explainable declared-fit scores; consent-gated first-party observations; safe campaign links; guided product chat and handoff requests.
+- Audited fee-operations core: draft/active schedules, installments, externally confirmed payment evidence, refunds, UPI AutoPay/eNACH mandate states, settlement allocation and reconciliation. Live payment/lending providers remain separately gated.
 - Durable task-workflow timers and simulations; delivery queue; optional SMTP staff notification adapter; local signed audit checkpoints; image validation/re-encoding; exports; SQL migrations; backup/isolated restore tools.
 
-This repository is **not a live payment or lending provider by itself**. Student, parent, institute and business portal URLs are explicit deployment configuration. The local admin login is solely for this installation. No Jodo passwords, card data, bank credentials or KYC documents are collected.
+This repository includes a fee-operations ledger but is **not a live payment or lending provider by itself**. Recording externally confirmed evidence never moves money. Student, parent, institute and business portal URLs are explicit deployment configuration. The local admin login is solely for this installation. No Jodo passwords, card data, bank credentials or KYC documents are collected.
 
 ## Fast visual preview — no database
 
