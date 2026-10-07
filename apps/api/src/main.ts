@@ -89,7 +89,11 @@ class Health {
 class AppModule {}
 export async function createApp() {
   checkConfig();
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'], bodyParser: true, rawBody: true });
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn'],
+    bodyParser: true,
+    rawBody: true,
+  });
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cookieParser());
   app.useGlobalFilters(new SafeErrors());

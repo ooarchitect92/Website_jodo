@@ -9,15 +9,17 @@ export default async function Layout({ children }: { children: React.ReactNode }
   return (
     <ConsentProvider>
       <div
-        style={{
-          '--blue': config.settings.brand.primary,
-          '--brand': config.settings.brand.primary,
-        } as React.CSSProperties}
+        style={
+          {
+            '--blue': config.settings.brand.primary,
+            '--brand': config.settings.brand.primary,
+          } as React.CSSProperties
+        }
       >
         <Header navigation={config.settings.navigation} name={config.settings.brand.name} />
         <div className="demo-strip">
-          Reference feature build · Live financial providers stay disabled until configured and approved{' '}
-          <a href="/terms-and-conditions/">Platform boundaries</a>
+          Reference feature build · Live financial providers stay disabled until configured and
+          approved <a href="/terms-and-conditions/">Platform boundaries</a>
         </div>
         <main id="main">{children}</main>
         <Footer name={config.settings.brand.name} />

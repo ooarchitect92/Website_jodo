@@ -104,7 +104,6 @@ Reference/demo content is not a production claim. Local demonstration leads are 
 
 See [owner guide](docs/owner-guide.md), [architecture and decisions](docs/architecture.md), [API contract](docs/api.md), [privacy boundaries](docs/privacy.md), and [release gaps](docs/acceptance/RELEASE.md).
 
-
 ### Brand configuration
 
 Set `NEXT_PUBLIC_BRAND_NAME` and `NEXT_PUBLIC_BRAND_PRIMARY` for the public identity. Optional `NEXT_PUBLIC_STUDENT_PORTAL_URL`, `NEXT_PUBLIC_INSTITUTE_PORTAL_URL`, and `NEXT_PUBLIC_BUSINESS_PORTAL_URL` values connect owned portals when they exist. In preview mode use `REFERENCE_READONLY_PREVIEW=true`.

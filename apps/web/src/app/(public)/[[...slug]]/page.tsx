@@ -28,7 +28,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
         '/cookie-preferences/': 'Privacy choices | YourCompany',
       } as Record<string, string>
     )[path] ||
-    (process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany');
+    process.env.NEXT_PUBLIC_BRAND_NAME ||
+    'YourCompany';
   return {
     title,
     description: found?.body.description || 'Browse the education payments platform.',
@@ -36,7 +37,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     robots: { index: !!config.indexing && !!found?.body.indexable, follow: !!config.indexing },
     openGraph: {
       title,
-      description: found?.body.description || (process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany'),
+      description: found?.body.description || process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany',
       url: new URL(path, baseUrl()).toString(),
       ...(found?.body.cover ? { images: [new URL(found.body.cover, baseUrl()).toString()] } : {}),
     },
@@ -164,7 +165,10 @@ export default async function Page({ params, searchParams }: Props) {
         <section className="wrap portal-grid">
           {[
             ['Students and parents', process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || '/contact-us/'],
-            ['Educational institutes', process.env.NEXT_PUBLIC_INSTITUTE_PORTAL_URL || '/contact-us/'],
+            [
+              'Educational institutes',
+              process.env.NEXT_PUBLIC_INSTITUTE_PORTAL_URL || '/contact-us/',
+            ],
             ['Businesses', process.env.NEXT_PUBLIC_BUSINESS_PORTAL_URL || '/contact-us/'],
             ['Owner console', '/admin/'],
           ].map(([name, href]) => (

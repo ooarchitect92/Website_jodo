@@ -42,7 +42,9 @@ export default async function PayerPortal({ params }: Props) {
     <main id="main" className="payer-portal">
       <header className="payer-portal-header">
         <div className="brand brand-wordmark">
-          <span className="brand-mark" aria-hidden="true">◆</span>
+          <span className="brand-mark" aria-hidden="true">
+            ◆
+          </span>
           <strong>{process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany'}</strong>
         </div>
         <span className="status-pill">Secure schedule view</span>

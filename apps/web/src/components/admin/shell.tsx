@@ -112,7 +112,9 @@ export function AdminShell() {
           }}
         >
           <div className="brand brand-wordmark" aria-label="Owner workspace">
-            <span className="brand-mark" aria-hidden="true">◆</span>
+            <span className="brand-mark" aria-hidden="true">
+              ◆
+            </span>
             <strong>Owner workspace</strong>
           </div>
           <h1>Your owner workspace.</h1>
@@ -216,7 +218,8 @@ export function AdminShell() {
           </div>
           <div className="admin-notice">
             Production-gated build. Fee schedules and external payment evidence are supported; live
-            payment, lending and advertising providers remain disabled until separately configured and verified.
+            payment, lending and advertising providers remain disabled until separately configured
+            and verified.
           </div>
           {error && (
             <p role="alert" className="error-card">

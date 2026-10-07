@@ -53,9 +53,7 @@ export function FeeOperations() {
   const [providerEvents, setProviderEvents] = useState<any[]>([]);
   const [providerStatus, setProviderStatus] = useState<any>(null);
   const [message, setMessage] = useState('');
-  const [installmentRows, setInstallmentRows] = useState([
-    { dueDate: '', amount: '' },
-  ]);
+  const [installmentRows, setInstallmentRows] = useState([{ dueDate: '', amount: '' }]);
 
   const load = async () => {
     try {
@@ -232,11 +230,13 @@ export function FeeOperations() {
             Payer profile
             <select name="payerId" defaultValue="">
               <option value="">No portal/reminders yet</option>
-              {payers.filter((p) => p.active).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.displayName} · {p.accountReference}
-                </option>
-              ))}
+              {payers
+                .filter((p) => p.active)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.displayName} · {p.accountReference}
+                  </option>
+                ))}
             </select>
           </label>
           <label className="field">
@@ -289,9 +289,7 @@ export function FeeOperations() {
           <button
             type="button"
             className="button outline"
-            onClick={() =>
-              setInstallmentRows((rows) => [...rows, { dueDate: '', amount: '' }])
-            }
+            onClick={() => setInstallmentRows((rows) => [...rows, { dueDate: '', amount: '' }])}
           >
             Add installment
           </button>
@@ -453,9 +451,7 @@ export function FeeOperations() {
         <div className="record-row">
           <strong>{providerStatus?.provider || 'No provider configured'}</strong>
           <span>{providerEvents.length} event(s)</span>
-          <span>
-            {providerEvents.filter((event) => event.status === 'applied').length} applied
-          </span>
+          <span>{providerEvents.filter((event) => event.status === 'applied').length} applied</span>
           <span className="status-pill">
             {providerStatus?.mode === 'signed_hmac' ? 'signature verification on' : 'blocked'}
           </span>
@@ -494,8 +490,8 @@ export function FeeOperations() {
           </p>
           <p className="small">
             Signed normalized payment and mandate callbacks can now update the internal ledger when
-            explicitly configured. Hosted checkout, raw card/UPI credential handling, bank settlement
-            ingestion and lending remain provider-specific and disabled until verified.
+            explicitly configured. Hosted checkout, raw card/UPI credential handling, bank
+            settlement ingestion and lending remain provider-specific and disabled until verified.
           </p>
         </div>
       </section>

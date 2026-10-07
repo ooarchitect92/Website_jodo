@@ -652,7 +652,6 @@ test('fee schedule, payment evidence and refund remain auditable and balanced', 
   );
 });
 
-
 test('payer portal exposes only linked schedule data and queues reminders durably', async () => {
   const ref = 'payer_' + randomUUID().slice(0, 8);
   const payer = await call(
@@ -743,7 +742,6 @@ test('payer portal exposes only linked schedule data and queues reminders durabl
   assert.equal(revoked.r.status, 201);
   assert.equal((await call('/v1/payer/' + rawToken)).r.status, 409);
 });
-
 
 test('signed provider webhooks verify authenticity and apply payment exactly once', async () => {
   const schedule = await call(

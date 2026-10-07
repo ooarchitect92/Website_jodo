@@ -23,7 +23,9 @@ export function Header({
     <header className="site-header" ref={ref}>
       <div className="header-inner">
         <Link className="brand brand-wordmark" href="/" aria-label={name + ' home'}>
-          <span className="brand-mark" aria-hidden="true">◆</span>
+          <span className="brand-mark" aria-hidden="true">
+            ◆
+          </span>
           <strong>{name}</strong>
         </Link>
         <button

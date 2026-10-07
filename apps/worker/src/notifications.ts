@@ -74,7 +74,6 @@ export async function notifyStaff(
   }
 }
 
-
 type FeePayerProfile = {
   displayName: string;
   email?: string;
@@ -139,7 +138,9 @@ export async function notifyFeePayer(
     return true;
   });
   if (!reserved) {
-    const row = (await db.query('SELECT status FROM notifications WHERE event_id=$1', [eventId]))[0];
+    const row = (
+      await db.query('SELECT status FROM notifications WHERE event_id=$1', [eventId])
+    )[0];
     return row?.status === 'provider_accepted' ? 'provider_accepted' : 'uncertain';
   }
 
@@ -190,7 +191,11 @@ export async function notifyFeePayer(
     await db.tx(async (c) => {
       await c.query(
         'UPDATE notifications SET status=$2,updated_at=now(),last_error=$3 WHERE event_id=$1',
-        [eventId, accepted ? 'provider_accepted' : 'failed', accepted ? null : 'NO_RECIPIENT_ACCEPTED'],
+        [
+          eventId,
+          accepted ? 'provider_accepted' : 'failed',
+          accepted ? null : 'NO_RECIPIENT_ACCEPTED',
+        ],
       );
       await c.query(
         `UPDATE fee_communication_log

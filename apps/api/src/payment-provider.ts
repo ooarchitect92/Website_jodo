@@ -35,8 +35,7 @@ export class PaymentProviderController {
       provider: enabled ? process.env.PAYMENT_PROVIDER_NAME : null,
       mode: enabled ? 'signed_hmac' : 'disabled',
       moneyMovement: false,
-      note:
-        'This endpoint accepts signed, normalized provider callbacks. Hosted checkout/payment initiation remains provider-specific.',
+      note: 'This endpoint accepts signed, normalized provider callbacks. Hosted checkout/payment initiation remains provider-specific.',
     };
   }
 
@@ -280,10 +279,11 @@ export class PaymentProviderController {
 
       const nextPaid = Number(installment.paid_amount_minor) + event.amountMinor;
       const nextStatus = nextPaid === Number(installment.amount_minor) ? 'paid' : 'part_paid';
-      await c.query(
-        'UPDATE fee_installments SET paid_amount_minor=$2,status=$3 WHERE id=$1',
-        [event.installmentId, nextPaid, nextStatus],
-      );
+      await c.query('UPDATE fee_installments SET paid_amount_minor=$2,status=$3 WHERE id=$1', [
+        event.installmentId,
+        nextPaid,
+        nextStatus,
+      ]);
 
       const open = (
         await c.query(
@@ -328,8 +328,8 @@ export class PaymentProviderController {
       const outboxEventId = randomUUID();
       const payerCommunication = Boolean(
         installment.payer_id &&
-          installment.preferred_channel &&
-          installment.preferred_channel !== 'none',
+        installment.preferred_channel &&
+        installment.preferred_channel !== 'none',
       );
       await c.query(
         `INSERT INTO outbox(event_id,type,aggregate_id,payload)
@@ -368,16 +368,22 @@ export class PaymentProviderController {
          WHERE id=$1`,
         [inserted.id],
       );
-      await this.db.audit(c, 'provider:' + provider, 'fees.payment.provider_confirmed', payment.id, {
-        providerEventId: event.eventId,
-        providerReference: event.providerReference,
-        installmentId: event.installmentId,
-        amountMinor: event.amountMinor,
-        currency: event.currency,
-        occurredAt: event.occurredAt,
-        receiptNumber: receipt.receipt_number,
-        outboxEventId,
-      });
+      await this.db.audit(
+        c,
+        'provider:' + provider,
+        'fees.payment.provider_confirmed',
+        payment.id,
+        {
+          providerEventId: event.eventId,
+          providerReference: event.providerReference,
+          installmentId: event.installmentId,
+          amountMinor: event.amountMinor,
+          currency: event.currency,
+          occurredAt: event.occurredAt,
+          receiptNumber: receipt.receipt_number,
+          outboxEventId,
+        },
+      );
 
       return {
         accepted: true,

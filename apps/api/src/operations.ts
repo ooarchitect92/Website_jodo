@@ -227,7 +227,8 @@ export class OperationsController {
       },
       {
         name: 'Hosted checkout / lending / KYC provider',
-        status: 'Not activated; requires provider contract, credentials and tested money-movement flows',
+        status:
+          'Not activated; requires provider contract, credentials and tested money-movement flows',
         implemented: false,
       },
       {

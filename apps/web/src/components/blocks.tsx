@@ -94,7 +94,8 @@ export function BlockRenderer({
                       ))}
                     </div>
                     <p className="source-caption">
-                      Illustrative figures must be replaced with verified company metrics before production.
+                      Illustrative figures must be replaced with verified company metrics before
+                      production.
                     </p>
                   </>
                 )}
@@ -327,7 +328,9 @@ export function BlockRenderer({
                 <p className="lead">{b.text}</p>
                 <div className="contact-proof">
                   <div className="brand brand-wordmark">
-                    <span className="brand-mark" aria-hidden="true">◆</span>
+                    <span className="brand-mark" aria-hidden="true">
+                      ◆
+                    </span>
                     <strong>Education payments platform</strong>
                   </div>
                   <h2>Built around your institute.</h2>

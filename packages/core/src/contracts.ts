@@ -126,7 +126,10 @@ export const feeInstallmentInputSchema = z
   .strict();
 export const feeScheduleCreateSchema = z
   .object({
-    accountReference: z.string().trim().regex(/^[A-Za-z0-9_-]{2,80}$/),
+    accountReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,80}$/),
     payerId: z.uuid().optional(),
     currency: z.literal('INR').default('INR'),
     installments: z.array(feeInstallmentInputSchema).min(1).max(60),
@@ -136,7 +139,11 @@ export const feeScheduleCreateSchema = z
   .superRefine((value, ctx) => {
     const dates = value.installments.map((i) => i.dueDate);
     if (new Set(dates).size !== dates.length)
-      ctx.addIssue({ code: 'custom', path: ['installments'], message: 'Installment due dates must be unique' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['installments'],
+        message: 'Installment due dates must be unique',
+      });
   });
 export const feeScheduleActivationSchema = z
   .object({ expectedVersion: z.number().int().positive() })
@@ -146,7 +153,10 @@ export const externalPaymentRecordSchema = z
     installmentId: z.uuid(),
     amountMinor: moneyMinor,
     currency: z.literal('INR'),
-    providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+    providerReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._:-]{3,120}$/),
     idempotencyKey: z.uuid(),
     evidenceNote: z.string().trim().min(3).max(300),
   })
@@ -155,10 +165,16 @@ export const externalPaymentRecordSchema = z
 export const paymentProviderEventSchema = z.discriminatedUnion('type', [
   z
     .object({
-      eventId: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,160}$/),
+      eventId: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9._:-]{3,160}$/),
       type: z.literal('payment_confirmed'),
       installmentId: z.uuid(),
-      providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+      providerReference: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9._:-]{3,120}$/),
       amountMinor: moneyMinor,
       currency: z.literal('INR'),
       occurredAt: z.iso.datetime(),
@@ -166,23 +182,38 @@ export const paymentProviderEventSchema = z.discriminatedUnion('type', [
     .strict(),
   z
     .object({
-      eventId: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,160}$/),
+      eventId: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9._:-]{3,160}$/),
       type: z.literal('payment_failed'),
       installmentId: z.uuid(),
-      providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+      providerReference: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9._:-]{3,120}$/),
       amountMinor: moneyMinor,
       currency: z.literal('INR'),
-      reasonCode: z.string().trim().regex(/^[A-Z0-9_-]{2,80}$/),
+      reasonCode: z
+        .string()
+        .trim()
+        .regex(/^[A-Z0-9_-]{2,80}$/),
       occurredAt: z.iso.datetime(),
     })
     .strict(),
   z
     .object({
-      eventId: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,160}$/),
+      eventId: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9._:-]{3,160}$/),
       type: z.literal('mandate_status'),
       scheduleId: z.uuid(),
       rail: z.enum(['upi_autopay', 'enach']),
-      providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+      providerReference: z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z0-9._:-]{3,120}$/),
       status: z.enum(['pending', 'active', 'paused', 'revoked', 'failed']),
       occurredAt: z.iso.datetime(),
     })
@@ -201,31 +232,53 @@ export const mandateRecordSchema = z
   .object({
     scheduleId: z.uuid(),
     rail: z.enum(['upi_autopay', 'enach']),
-    providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+    providerReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._:-]{3,120}$/),
     status: z.enum(['pending', 'active', 'paused', 'revoked', 'failed']),
   })
   .strict();
 
-
 export const feePayerProfileSchema = z
   .object({
-    accountReference: z.string().trim().regex(/^[A-Za-z0-9_-]{2,80}$/),
+    accountReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,80}$/),
     displayName: z.string().trim().min(2).max(120),
     email: z.email().max(200).optional(),
-    phone: z.string().trim().regex(/^\+?[\d ()-]{8,20}$/).optional(),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^\+?[\d ()-]{8,20}$/)
+      .optional(),
     preferredChannel: z.enum(['email', 'whatsapp', 'none']).default('email'),
     locale: z.enum(['en-IN']).default('en-IN'),
   })
   .strict()
   .superRefine((v, ctx) => {
     if (v.preferredChannel === 'email' && !v.email)
-      ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required for email reminders' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['email'],
+        message: 'Email is required for email reminders',
+      });
     if (v.preferredChannel === 'whatsapp' && !v.phone)
-      ctx.addIssue({ code: 'custom', path: ['phone'], message: 'Phone is required for WhatsApp reminders' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['phone'],
+        message: 'Phone is required for WhatsApp reminders',
+      });
   });
 export const payerLinkSchema = z
   .object({
-    expiresHours: z.number().int().min(1).max(24 * 30).default(72),
+    expiresHours: z
+      .number()
+      .int()
+      .min(1)
+      .max(24 * 30)
+      .default(72),
   })
   .strict();
 
