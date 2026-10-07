@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { PublicPage } from '@core/contracts';
 import { previewPages, defaultNavigation, formDefinition } from '@core/site';
 const readonly = () =>
-  process.env.JODO_READONLY_PREVIEW === 'true' && process.env.DEPLOYMENT_MODE !== 'production';
+  process.env.REFERENCE_READONLY_PREVIEW === 'true' && process.env.DEPLOYMENT_MODE !== 'production';
 export const pages = cache(async (): Promise<PublicPage[]> => {
   if (readonly()) return previewPages;
   const r = await fetch(
@@ -18,7 +18,10 @@ export const site = cache(async () => {
       mode: 'read-only preview',
       settings: {
         navigation: defaultNavigation,
-        brand: { name: 'Jodo', primary: '#2c67d3' },
+        brand: {
+          name: process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany',
+          primary: process.env.NEXT_PUBLIC_BRAND_PRIMARY || '#0f766e',
+        },
         form: formDefinition,
       },
       indexing: false,
