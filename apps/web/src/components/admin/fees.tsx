@@ -10,9 +10,20 @@ type Installment = {
   paidAmountMinor: number | string;
   status: string;
 };
+type Payer = {
+  id: string;
+  accountReference: string;
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  preferredChannel: 'email' | 'whatsapp' | 'none';
+  active: boolean;
+  schedules: number;
+};
 type Schedule = {
   id: string;
   account_reference: string;
+  payer_id?: string | null;
   currency: string;
   total_amount_minor: number | string;
   note: string;
@@ -37,6 +48,7 @@ export function FeeOperations() {
   const [payments, setPayments] = useState<any[]>([]);
   const [mandates, setMandates] = useState<any[]>([]);
   const [settlements, setSettlements] = useState<any[]>([]);
+  const [payers, setPayers] = useState<Payer[]>([]);
   const [message, setMessage] = useState('');
   const [installmentRows, setInstallmentRows] = useState([
     { dueDate: '', amount: '' },
@@ -44,18 +56,20 @@ export function FeeOperations() {
 
   const load = async () => {
     try {
-      const [o, s, p, m, st] = await Promise.all([
+      const [o, s, p, m, st, py] = await Promise.all([
         request('admin/fees/overview'),
         request<Schedule[]>('admin/fees/schedules'),
         request<any[]>('admin/fees/payments'),
         request<any[]>('admin/fees/mandates'),
         request<any[]>('admin/fees/settlements'),
+        request<Payer[]>('admin/payers'),
       ]);
       setOverview(o);
       setSchedules(s);
       setPayments(p);
       setMandates(m);
       setSettlements(st);
+      setPayers(py);
       setMessage('');
     } catch (e) {
       setMessage((e as Error).message);
@@ -84,6 +98,7 @@ export function FeeOperations() {
     try {
       await request('admin/fees/schedules', 'POST', {
         accountReference: String(f.get('accountReference') || ''),
+        ...(String(f.get('payerId') || '') ? { payerId: String(f.get('payerId')) } : {}),
         currency: 'INR',
         note: String(f.get('note') || ''),
         installments: installmentRows.map((row) => ({
@@ -134,6 +149,65 @@ export function FeeOperations() {
         )}
       </section>
 
+      <form
+        className="admin-panel admin-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const f = new FormData(form);
+          try {
+            await request('admin/payers', 'POST', {
+              accountReference: String(f.get('accountReference') || ''),
+              displayName: String(f.get('displayName') || ''),
+              ...(String(f.get('email') || '') ? { email: String(f.get('email')) } : {}),
+              ...(String(f.get('phone') || '') ? { phone: String(f.get('phone')) } : {}),
+              preferredChannel: String(f.get('preferredChannel') || 'email'),
+              locale: 'en-IN',
+            });
+            form.reset();
+            setMessage('Payer profile encrypted and saved.');
+            await load();
+          } catch (e) {
+            setMessage((e as Error).message);
+          }
+        }}
+      >
+        <h2>Create payer profile</h2>
+        <p>
+          Contact details are encrypted at rest. Choose only a communication channel you are
+          authorized to use.
+        </p>
+        <div className="row">
+          <label className="field">
+            Account reference
+            <input name="accountReference" required pattern="[A-Za-z0-9_-]{2,80}" />
+          </label>
+          <label className="field">
+            Display name
+            <input name="displayName" required minLength={2} maxLength={120} />
+          </label>
+        </div>
+        <div className="row">
+          <label className="field">
+            Email
+            <input type="email" name="email" />
+          </label>
+          <label className="field">
+            Phone
+            <input name="phone" placeholder="+91..." />
+          </label>
+          <label className="field">
+            Reminder channel
+            <select name="preferredChannel" defaultValue="email">
+              <option value="email">Email</option>
+              <option value="whatsapp">WhatsApp (provider required)</option>
+              <option value="none">No automated reminders</option>
+            </select>
+          </label>
+        </div>
+        <button className="button primary">Save payer profile</button>
+      </form>
+
       <form className="admin-panel admin-form" onSubmit={createSchedule}>
         <h2>Create fee schedule</h2>
         <p>
@@ -144,6 +218,17 @@ export function FeeOperations() {
           <label className="field">
             Account reference
             <input name="accountReference" required pattern="[A-Za-z0-9_-]{2,80}" />
+          </label>
+          <label className="field">
+            Payer profile
+            <select name="payerId" defaultValue="">
+              <option value="">No portal/reminders yet</option>
+              {payers.filter((p) => p.active).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.displayName} · {p.accountReference}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="field">
             Internal note
@@ -253,6 +338,27 @@ export function FeeOperations() {
                   }}
                 >
                   Activate schedule
+                </button>
+              )}
+              {s.payer_id && (
+                <button
+                  className="button outline"
+                  onClick={async () => {
+                    try {
+                      const result = await request<{ path: string; expiresHours: number }>(
+                        'admin/fees/schedules/' + s.id + '/payer-link',
+                        'POST',
+                        { expiresHours: 72 },
+                      );
+                      const url = window.location.origin + result.path;
+                      await navigator.clipboard.writeText(url);
+                      setMessage('Secure 72-hour payer portal link copied to clipboard.');
+                    } catch (e) {
+                      setMessage((e as Error).message);
+                    }
+                  }}
+                >
+                  Copy payer portal link
                 </button>
               )}
             </article>
