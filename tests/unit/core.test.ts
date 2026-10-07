@@ -17,6 +17,7 @@ import {
   mandateRecordSchema,
   feePayerProfileSchema,
   payerLinkSchema,
+  paymentProviderEventSchema,
 } from '../../packages/core/src/contracts';
 import { encrypt, decrypt, equal, bucket } from '../../packages/core/src/security';
 import { seedPages } from '../../packages/core/src/site';
@@ -259,4 +260,32 @@ test('payer profile requires the destination for the selected reminder channel',
 test('payer portal links have bounded expiry', () => {
   assert.equal(payerLinkSchema.safeParse({ expiresHours: 1 }).success, true);
   assert.equal(payerLinkSchema.safeParse({ expiresHours: 24 * 31 }).success, false);
+});
+
+test('normalized payment provider events allow only bounded authoritative states', () => {
+  assert.equal(
+    paymentProviderEventSchema.safeParse({
+      eventId: 'evt_123',
+      type: 'payment_confirmed',
+      installmentId: crypto.randomUUID(),
+      providerReference: 'pay_123',
+      amountMinor: 250000,
+      currency: 'INR',
+      occurredAt: new Date().toISOString(),
+    }).success,
+    true,
+  );
+  assert.equal(
+    paymentProviderEventSchema.safeParse({
+      eventId: 'evt_123',
+      type: 'payment_confirmed',
+      installmentId: crypto.randomUUID(),
+      providerReference: 'pay_123',
+      amountMinor: 250000,
+      currency: 'USD',
+      cardNumber: '4111111111111111',
+      occurredAt: new Date().toISOString(),
+    }).success,
+    false,
+  );
 });
