@@ -438,6 +438,18 @@ export class FeeOperationsController {
     });
   }
 
+  @Get('communications')
+  communications() {
+    return this.db.query(
+      `SELECT c.id,c.event_id,c.schedule_id,c.installment_id,c.channel,c.kind,c.status,
+              c.provider_reference,c.last_error,c.created_at,c.updated_at,s.account_reference
+       FROM fee_communication_log c
+       JOIN fee_schedules s ON s.id=c.schedule_id
+       ORDER BY c.created_at DESC
+       LIMIT 300`,
+    );
+  }
+
   @Get('mandates')
   mandates() {
     return this.db.query(
