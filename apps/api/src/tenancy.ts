@@ -281,7 +281,7 @@ export class TenancyController {
         await c.query(
           `UPDATE onboarding_cases
            SET current_step=$2,
-               draft=draft || jsonb_build_object($2,$3::jsonb),
+               draft=draft || jsonb_build_object($2::text,$3::jsonb),
                version=version+1,
                updated_at=now()
            WHERE tenant_id=$1
