@@ -139,6 +139,8 @@ export class FeeStructureController {
       if (!installment) throw new ConflictException('Installment does not exist');
       if (installment.status === 'cancelled')
         throw new ConflictException('Cancelled installments cannot be adjusted');
+      if (installment.schedule_status === 'draft')
+        throw new ConflictException('Activate the fee schedule before applying financial adjustments');
 
       const nextAmount = Number(installment.amount_minor) + direction * v.amountMinor;
       if (nextAmount <= 0 || nextAmount < Number(installment.paid_amount_minor))
@@ -279,8 +281,8 @@ export class CollectionPageAdminController {
         await c.query('SELECT id,status FROM fee_schedules WHERE id=$1', [v.scheduleId])
       ).rows[0];
       if (!schedule) throw new ConflictException('Fee schedule does not exist');
-      if (!['active', 'completed'].includes(schedule.status))
-        throw new ConflictException('Activate the fee schedule before publishing a collection page');
+      if (schedule.status !== 'active')
+        throw new ConflictException('Only active fee schedules can publish collection pages');
 
       const row = (
         await c.query(
