@@ -151,7 +151,9 @@ export class PayerCheckoutController {
         if (v.amountMinor < remaining && !v.allocations.length && !access.allow_custom_amount)
           throw new ConflictException('This collection link does not allow custom partial amounts');
         if (v.allocations.length && !access.allow_component_selection)
-          throw new ConflictException('This collection link does not allow fee-component selection');
+          throw new ConflictException(
+            'This collection link does not allow fee-component selection',
+          );
       }
 
       if (v.allocations.length) {
