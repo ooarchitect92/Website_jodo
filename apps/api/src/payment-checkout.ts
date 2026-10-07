@@ -133,7 +133,8 @@ export class PayerCheckoutController {
           [v.installmentId, access.schedule_id],
         )
       ).rows[0];
-      if (!installment) throw new ConflictException('Installment does not belong to this fee account');
+      if (!installment)
+        throw new ConflictException('Installment does not belong to this fee account');
       if (installment.status === 'paid' || installment.status === 'cancelled')
         throw new ConflictException('This installment is not payable');
       const remaining = Number(installment.amount_minor) - Number(installment.paid_amount_minor);
