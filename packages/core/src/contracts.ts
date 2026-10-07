@@ -167,6 +167,29 @@ export const mandateRecordSchema = z
   })
   .strict();
 
+
+export const feePayerProfileSchema = z
+  .object({
+    accountReference: z.string().trim().regex(/^[A-Za-z0-9_-]{2,80}$/),
+    displayName: z.string().trim().min(2).max(120),
+    email: z.email().max(200).optional(),
+    phone: z.string().trim().regex(/^\+?[\d ()-]{8,20}$/).optional(),
+    preferredChannel: z.enum(['email', 'whatsapp', 'none']).default('email'),
+    locale: z.enum(['en-IN']).default('en-IN'),
+  })
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.preferredChannel === 'email' && !v.email)
+      ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required for email reminders' });
+    if (v.preferredChannel === 'whatsapp' && !v.phone)
+      ctx.addIssue({ code: 'custom', path: ['phone'], message: 'Phone is required for WhatsApp reminders' });
+  });
+export const payerLinkSchema = z
+  .object({
+    expiresHours: z.number().int().min(1).max(24 * 30).default(72),
+  })
+  .strict();
+
 export const consentSchema = z
   .object({
     analytics: z.boolean(),
