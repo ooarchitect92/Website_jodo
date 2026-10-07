@@ -29,6 +29,45 @@ export function checkConfig() {
     throw Error('Unsupported payment provider mode');
   if (!['disabled', 'redirect_api'].includes(process.env.PAYMENT_CHECKOUT_MODE || 'disabled'))
     throw Error('Unsupported payment checkout mode');
+  if (!['disabled', 'mandate_api'].includes(process.env.AUTOPAY_PROVIDER_MODE || 'disabled'))
+    throw Error('Unsupported autopay provider mode');
+  if (process.env.AUTOPAY_PROVIDER_MODE === 'mandate_api') {
+    if (process.env.PAYMENT_PROVIDER_MODE !== 'signed_hmac')
+      throw Error('AUTOPAY_PROVIDER_MODE requires signed payment provider callbacks');
+    if (
+      !process.env.PAYMENT_PROVIDER_NAME ||
+      !/^[a-z0-9_-]{2,40}$/.test(process.env.PAYMENT_PROVIDER_NAME)
+    )
+      throw Error('Missing safe PAYMENT_PROVIDER_NAME');
+    for (const key of ['AUTOPAY_MANDATE_CREATE_URL', 'AUTOPAY_DEBIT_CREATE_URL'])
+      if (!process.env[key]) throw Error('Missing ' + key);
+    if (!process.env.AUTOPAY_API_KEY || process.env.AUTOPAY_API_KEY.length < 24)
+      throw Error('AUTOPAY_API_KEY is too short');
+    const hosts = (process.env.AUTOPAY_ALLOWED_HOSTS || '')
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (!hosts.length || hosts.some((host) => !/^[A-Za-z0-9.-]+$/.test(host)))
+      throw Error('Missing safe AUTOPAY_ALLOWED_HOSTS');
+    for (const key of ['AUTOPAY_MANDATE_CREATE_URL', 'AUTOPAY_DEBIT_CREATE_URL']) {
+      let url: URL;
+      try {
+        url = new URL(process.env[key]!);
+      } catch {
+        throw Error('Invalid ' + key);
+      }
+      if (!hosts.map((h) => h.toLowerCase()).includes(url.hostname.toLowerCase()))
+        throw Error(key + ' host is not allowlisted');
+      if (process.env.DEPLOYMENT_MODE === 'production' && url.protocol !== 'https:')
+        throw Error('Production autopay provider requires HTTPS');
+    }
+    const timeout = Number(process.env.AUTOPAY_TIMEOUT_MS || 5000);
+    if (!Number.isInteger(timeout) || timeout < 1000 || timeout > 15000)
+      throw Error('Invalid AUTOPAY_TIMEOUT_MS');
+    const attempts = Number(process.env.AUTOPAY_MAX_ATTEMPTS || 3);
+    if (!Number.isInteger(attempts) || attempts < 1 || attempts > 10)
+      throw Error('Invalid AUTOPAY_MAX_ATTEMPTS');
+  }
   if (process.env.PAYMENT_CHECKOUT_MODE === 'redirect_api') {
     if (
       !process.env.PAYMENT_PROVIDER_NAME ||
