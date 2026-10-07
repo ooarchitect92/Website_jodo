@@ -231,9 +231,7 @@ export default async function PayerPortal({ params, searchParams }: Props) {
             <p className="eyebrow">Automatic collections</p>
             <h2>UPI AutoPay / eNACH mandate</h2>
           </div>
-          {data.mandates?.[0] && (
-            <span className="status-pill">{data.mandates[0].status}</span>
-          )}
+          {data.mandates?.[0] && <span className="status-pill">{data.mandates[0].status}</span>}
         </div>
         {data.mandates?.some((m: any) => m.status === 'active') ? (
           <p>
@@ -249,8 +247,8 @@ export default async function PayerPortal({ params, searchParams }: Props) {
         ) : data.autopayProviderConnected ? (
           <>
             <p>
-              Authorize the full fee schedule once with the approved provider. Bank credentials,
-              UPI PINs and OTPs stay on the provider-hosted authorization page.
+              Authorize the full fee schedule once with the approved provider. Bank credentials, UPI
+              PINs and OTPs stay on the provider-hosted authorization page.
             </p>
             <div className="admin-toolbar">
               <form action={'/payer/' + encodeURIComponent(token) + '/autopay/'} method="post">
