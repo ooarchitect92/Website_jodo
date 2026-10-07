@@ -26,11 +26,17 @@ import {
 
 const settlementSchema = z
   .object({
-    providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+    providerReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._:-]{3,120}$/),
     currency: z.literal('INR'),
     amountMinor: moneyMinor,
     status: z.enum(['pending', 'settled', 'failed']).default('pending'),
-    expectedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    expectedOn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
     allocations: z
       .array(
         z
@@ -101,8 +107,7 @@ export class FeeOperationsController {
       reconciliation,
       providerMode: 'external-evidence-recording',
       moneyMovement: false,
-      note:
-        'This module manages fee schedules and records externally confirmed payment evidence. It does not move money or perform lending.',
+      note: 'This module manages fee schedules and records externally confirmed payment evidence. It does not move money or perform lending.',
     };
   }
 
@@ -171,11 +176,7 @@ export class FeeOperationsController {
   }
 
   @Post('schedules/:id/activate')
-  async activate(
-    @Param('id') id: string,
-    @Body() body: unknown,
-    @Req() req: AuthedRequest,
-  ) {
+  async activate(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
     const scheduleId = uuid(id);
     const v = feeScheduleActivationSchema.parse(body);
     return this.db.tx(async (c) => {
@@ -226,13 +227,9 @@ export class FeeOperationsController {
   async recordPayment(@Body() body: unknown, @Req() req: AuthedRequest) {
     const v = externalPaymentRecordSchema.parse(body);
     return this.db.tx(async (c) => {
-      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
-        'payment:' + v.idempotencyKey,
-      ]);
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['payment:' + v.idempotencyKey]);
       const replay = (
-        await c.query('SELECT * FROM payment_records WHERE idempotency_key=$1', [
-          v.idempotencyKey,
-        ])
+        await c.query('SELECT * FROM payment_records WHERE idempotency_key=$1', [v.idempotencyKey])
       ).rows[0];
       if (replay) return { ...replay, replayed: true };
 
@@ -250,7 +247,9 @@ export class FeeOperationsController {
       ).rows[0];
       if (!installment) throw new ConflictException('Installment does not exist');
       if (installment.schedule_status !== 'active')
-        throw new ConflictException('Fee schedule must be active before payment evidence is recorded');
+        throw new ConflictException(
+          'Fee schedule must be active before payment evidence is recorded',
+        );
       if (installment.status === 'cancelled')
         throw new ConflictException('Cancelled installment cannot accept payment evidence');
       if (installment.currency !== v.currency)
@@ -280,10 +279,11 @@ export class FeeOperationsController {
       ).rows[0];
       const nextPaid = Number(installment.paid_amount_minor) + v.amountMinor;
       const nextStatus = nextPaid === Number(installment.amount_minor) ? 'paid' : 'part_paid';
-      await c.query(
-        'UPDATE fee_installments SET paid_amount_minor=$2,status=$3 WHERE id=$1',
-        [v.installmentId, nextPaid, nextStatus],
-      );
+      await c.query('UPDATE fee_installments SET paid_amount_minor=$2,status=$3 WHERE id=$1', [
+        v.installmentId,
+        nextPaid,
+        nextStatus,
+      ]);
       const open = (
         await c.query(
           `SELECT count(*)::int AS count FROM fee_installments
@@ -330,13 +330,17 @@ export class FeeOperationsController {
             receiptNumber: receipt.receipt_number,
             payerCommunication: Boolean(
               installment.payer_id &&
-                installment.preferred_channel &&
-                installment.preferred_channel !== 'none',
+              installment.preferred_channel &&
+              installment.preferred_channel !== 'none',
             ),
           },
         ],
       );
-      if (installment.payer_id && installment.preferred_channel && installment.preferred_channel !== 'none') {
+      if (
+        installment.payer_id &&
+        installment.preferred_channel &&
+        installment.preferred_channel !== 'none'
+      ) {
         await c.query(
           `INSERT INTO fee_communication_log(
              event_id,schedule_id,installment_id,payer_id,channel,kind,status
@@ -364,13 +368,9 @@ export class FeeOperationsController {
   async refund(@Body() body: unknown, @Req() req: AuthedRequest) {
     const v = refundRecordSchema.parse(body);
     return this.db.tx(async (c) => {
-      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
-        'refund:' + v.idempotencyKey,
-      ]);
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['refund:' + v.idempotencyKey]);
       const replay = (
-        await c.query('SELECT * FROM payment_refunds WHERE idempotency_key=$1', [
-          v.idempotencyKey,
-        ])
+        await c.query('SELECT * FROM payment_refunds WHERE idempotency_key=$1', [v.idempotencyKey])
       ).rows[0];
       if (replay) return { ...replay, replayed: true };
       const payment = (
@@ -412,10 +412,11 @@ export class FeeOperationsController {
           : newPaid === Number(installment.amount_minor)
             ? 'paid'
             : 'part_paid';
-      await c.query(
-        'UPDATE fee_installments SET paid_amount_minor=$2,status=$3 WHERE id=$1',
-        [installment.id, newPaid, status],
-      );
+      await c.query('UPDATE fee_installments SET paid_amount_minor=$2,status=$3 WHERE id=$1', [
+        installment.id,
+        newPaid,
+        status,
+      ]);
       await c.query(
         `UPDATE fee_schedules
          SET status=CASE WHEN status='completed' THEN 'active' ELSE status END,

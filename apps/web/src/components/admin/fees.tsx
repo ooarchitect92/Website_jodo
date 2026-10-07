@@ -50,14 +50,14 @@ export function FeeOperations() {
   const [settlements, setSettlements] = useState<any[]>([]);
   const [payers, setPayers] = useState<Payer[]>([]);
   const [communications, setCommunications] = useState<any[]>([]);
+  const [providerEvents, setProviderEvents] = useState<any[]>([]);
+  const [providerStatus, setProviderStatus] = useState<any>(null);
   const [message, setMessage] = useState('');
-  const [installmentRows, setInstallmentRows] = useState([
-    { dueDate: '', amount: '' },
-  ]);
+  const [installmentRows, setInstallmentRows] = useState([{ dueDate: '', amount: '' }]);
 
   const load = async () => {
     try {
-      const [o, s, p, m, st, py, cm] = await Promise.all([
+      const [o, s, p, m, st, py, cm, pe, ps] = await Promise.all([
         request('admin/fees/overview'),
         request<Schedule[]>('admin/fees/schedules'),
         request<any[]>('admin/fees/payments'),
@@ -65,6 +65,8 @@ export function FeeOperations() {
         request<any[]>('admin/fees/settlements'),
         request<Payer[]>('admin/payers'),
         request<any[]>('admin/fees/communications'),
+        request<any[]>('admin/fees/provider-events'),
+        request<any>('provider/payments/status'),
       ]);
       setOverview(o);
       setSchedules(s);
@@ -73,6 +75,8 @@ export function FeeOperations() {
       setSettlements(st);
       setPayers(py);
       setCommunications(cm);
+      setProviderEvents(pe);
+      setProviderStatus(ps);
       setMessage('');
     } catch (e) {
       setMessage((e as Error).message);
@@ -226,11 +230,13 @@ export function FeeOperations() {
             Payer profile
             <select name="payerId" defaultValue="">
               <option value="">No portal/reminders yet</option>
-              {payers.filter((p) => p.active).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.displayName} · {p.accountReference}
-                </option>
-              ))}
+              {payers
+                .filter((p) => p.active)
+                .map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.displayName} · {p.accountReference}
+                  </option>
+                ))}
             </select>
           </label>
           <label className="field">
@@ -283,9 +289,7 @@ export function FeeOperations() {
           <button
             type="button"
             className="button outline"
-            onClick={() =>
-              setInstallmentRows((rows) => [...rows, { dueDate: '', amount: '' }])
-            }
+            onClick={() => setInstallmentRows((rows) => [...rows, { dueDate: '', amount: '' }])}
           >
             Add installment
           </button>
@@ -432,6 +436,36 @@ export function FeeOperations() {
         <button className="button primary">Record confirmation</button>
       </form>
 
+      <section className="admin-panel">
+        <div className="admin-toolbar">
+          <div>
+            <p className="eyebrow">Provider integrity</p>
+            <h2>Signed payment callbacks</h2>
+          </div>
+          <span className="status-pill">{providerStatus?.mode || 'disabled'}</span>
+        </div>
+        <p>
+          Browser redirects never mark an installment paid. Only staff-confirmed evidence or a
+          verified, replay-safe provider event can update the ledger.
+        </p>
+        <div className="record-row">
+          <strong>{providerStatus?.provider || 'No provider configured'}</strong>
+          <span>{providerEvents.length} event(s)</span>
+          <span>{providerEvents.filter((event) => event.status === 'applied').length} applied</span>
+          <span className="status-pill">
+            {providerStatus?.mode === 'signed_hmac' ? 'signature verification on' : 'blocked'}
+          </span>
+        </div>
+        {providerEvents.slice(0, 8).map((event) => (
+          <div className="record-row" key={event.id}>
+            <strong>{event.event_type}</strong>
+            <span>{event.provider_event_id}</span>
+            <span>{event.failure_code || event.provider}</span>
+            <span className="status-pill">{event.status}</span>
+          </div>
+        ))}
+      </section>
+
       <section className="admin-grid">
         <div className="admin-panel">
           <h2>Recent payment evidence</h2>
@@ -455,8 +489,9 @@ export function FeeOperations() {
             {communications.length} communication record(s).
           </p>
           <p className="small">
-            Provider callbacks and money movement remain provider-specific integrations. The core
-            ledger is ready to receive verified states without inventing them.
+            Signed normalized payment and mandate callbacks can now update the internal ledger when
+            explicitly configured. Hosted checkout, raw card/UPI credential handling, bank
+            settlement ingestion and lending remain provider-specific and disabled until verified.
           </p>
         </div>
       </section>

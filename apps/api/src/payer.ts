@@ -81,13 +81,7 @@ export class PayerAdminController {
              account_reference,encrypted_profile,preferred_channel,locale,created_by
            ) VALUES($1,$2,$3,$4,$5)
            RETURNING id,account_reference,preferred_channel,locale,active,created_at`,
-          [
-            v.accountReference,
-            encrypt(v),
-            v.preferredChannel,
-            v.locale,
-            req.actor.id,
-          ],
+          [v.accountReference, encrypt(v), v.preferredChannel, v.locale, req.actor.id],
         )
       ).rows[0];
       await this.db.audit(c, req.actor.id, 'fees.payer.create', row.id, {
@@ -137,11 +131,7 @@ export class PayerLinkAdminController {
   constructor(@Inject(Db) private db: Db) {}
 
   @Post('schedules/:id/payer-link')
-  async link(
-    @Param('id') id: string,
-    @Body() body: unknown,
-    @Req() req: AuthedRequest,
-  ) {
+  async link(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
     const scheduleId = uuid(id);
     const v = payerLinkSchema.parse(body);
     const raw = token();
@@ -159,8 +149,7 @@ export class PayerLinkAdminController {
       if (!schedule) throw new ConflictException('Fee schedule does not exist');
       if (!schedule.payer_id)
         throw new ConflictException('Link a payer profile before creating portal access');
-      if (!schedule.active)
-        throw new ConflictException('Payer profile is inactive');
+      if (!schedule.active) throw new ConflictException('Payer profile is inactive');
 
       await c.query(
         `INSERT INTO payer_access_tokens(schedule_id,token_hash,expires_at,created_by)
@@ -259,16 +248,12 @@ export class PayerPortalController {
       payments,
       refunds,
       providerConnected: false,
-      note:
-        'This portal shows the platform ledger. Payment actions are enabled only after a verified payment provider is configured.',
+      note: 'This portal shows the platform ledger. Payment actions are enabled only after a verified payment provider is configured.',
     };
   }
 
   @Get(':token/receipts/:receiptNumber')
-  async receipt(
-    @Param('token') rawToken: string,
-    @Param('receiptNumber') receiptNumber: string,
-  ) {
+  async receipt(@Param('token') rawToken: string, @Param('receiptNumber') receiptNumber: string) {
     const access = await this.access(rawToken);
     if (!/^RCP-[A-Z0-9]{8}$/.test(receiptNumber))
       throw new ConflictException('Receipt does not exist');

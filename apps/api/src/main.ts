@@ -25,6 +25,7 @@ import { ChatController } from './chat';
 import { MediaController } from './media';
 import { FeeOperationsController } from './fees';
 import { PayerAdminController, PayerLinkAdminController, PayerPortalController } from './payer';
+import { PaymentProviderAdminController, PaymentProviderController } from './payment-provider';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
 class SafeErrors implements ExceptionFilter {
@@ -80,13 +81,19 @@ class Health {
     PayerAdminController,
     PayerLinkAdminController,
     PayerPortalController,
+    PaymentProviderController,
+    PaymentProviderAdminController,
   ],
   providers: [Db, AuthGuard, LeadsService],
 })
 class AppModule {}
 export async function createApp() {
   checkConfig();
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'], bodyParser: true });
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn'],
+    bodyParser: true,
+    rawBody: true,
+  });
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cookieParser());
   app.useGlobalFilters(new SafeErrors());
@@ -96,10 +103,13 @@ export async function createApp() {
     if (
       req.path.startsWith('/v1/admin') ||
       req.path.startsWith('/v1/auth') ||
-      req.path.startsWith('/v1/chat')
+      req.path.startsWith('/v1/chat') ||
+      req.path.startsWith('/v1/provider/')
     )
       res.setHeader('Cache-Control', 'no-store');
+    const providerWebhook = req.path.startsWith('/v1/provider/');
     if (
+      !providerWebhook &&
       !['GET', 'HEAD', 'OPTIONS'].includes(req.method) &&
       req.headers.origin !== process.env.SITE_URL
     )

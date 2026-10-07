@@ -6,12 +6,15 @@ export function Footer({ name = 'YourCompany' }: { name?: string }) {
       <div className="footer-grid wrap">
         <div>
           <div className="brand brand-wordmark footer-brand" aria-label={name}>
-            <span className="brand-mark" aria-hidden="true">◆</span>
+            <span className="brand-mark" aria-hidden="true">
+              ◆
+            </span>
             <strong>{name}</strong>
           </div>
           <p>
             Education fee operations.
-            <br />Clearer collections for institutes and families.
+            <br />
+            Clearer collections for institutes and families.
           </p>
           <p className="small">
             Independent product implementation with original branding and content controls.
@@ -29,7 +32,9 @@ export function Footer({ name = 'YourCompany' }: { name?: string }) {
             ['Contact', '/contact-us/'],
             ['Careers', '/careers/'],
           ].map(([a, b]) => (
-            <SmartLink key={a} href={b!}>{a}</SmartLink>
+            <SmartLink key={a} href={b!}>
+              {a}
+            </SmartLink>
           ))}
         </div>
         <div>
@@ -41,7 +46,9 @@ export function Footer({ name = 'YourCompany' }: { name?: string }) {
             ['Accessibility', '/accessibility/'],
             ['Search', '/search/'],
           ].map(([a, b]) => (
-            <SmartLink key={a} href={b!}>{a}</SmartLink>
+            <SmartLink key={a} href={b!}>
+              {a}
+            </SmartLink>
           ))}
         </div>
         <div>

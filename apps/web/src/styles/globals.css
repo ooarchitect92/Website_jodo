@@ -2400,16 +2400,35 @@ p {
 }
 
 /* Original company theme layer. Keep layout behavior while differentiating brand expression. */
-.brand-wordmark { display:flex; align-items:center; gap:10px; color:var(--ink); }
-.brand-wordmark strong { font-size:22px; letter-spacing:-0.03em; }
-.brand-mark { width:30px; height:30px; display:grid; place-items:center; border-radius:10px;
-  background:linear-gradient(135deg,var(--blue),#14b8a6); color:white; font-size:13px; transform:rotate(8deg); }
-.footer-brand { margin-bottom:20px; }
+.brand-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+}
+.brand-wordmark strong {
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+.brand-mark {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--blue), #14b8a6);
+  color: white;
+  font-size: 13px;
+  transform: rotate(8deg);
+}
+.footer-brand {
+  margin-bottom: 20px;
+}
 .tone-gradient {
   background:
     radial-gradient(ellipse at 12% 18%, #ccfbf1, transparent 35%),
     radial-gradient(ellipse at 86% 22%, #ffedd5, transparent 34%),
-    linear-gradient(145deg,#ffffff,#f8fafc);
+    linear-gradient(145deg, #ffffff, #f8fafc);
 }
 .site-footer {
   background: linear-gradient(135deg, #f0fdfa, #fff7ed);
@@ -2469,7 +2488,9 @@ p {
 .payer-hero {
   padding: 70px 0 36px;
 }
-.payer-hero h1 { max-width: 720px; }
+.payer-hero h1 {
+  max-width: 720px;
+}
 .payer-card,
 .payer-security-note {
   background: #fff;
@@ -2479,10 +2500,12 @@ p {
   margin-top: 22px;
   box-shadow: 0 12px 34px #0f172a0a;
 }
-.payer-table { display: grid; }
+.payer-table {
+  display: grid;
+}
 .payer-row {
   display: grid;
-  grid-template-columns: .7fr 1fr 1fr 1fr .7fr;
+  grid-template-columns: 0.7fr 1fr 1fr 1fr 0.7fr;
   gap: 14px;
   align-items: center;
   padding: 14px 4px;
@@ -2494,7 +2517,10 @@ p {
   font-size: 13px;
   font-weight: 700;
 }
-.payer-receipts { display: grid; gap: 10px; }
+.payer-receipts {
+  display: grid;
+  gap: 10px;
+}
 .payer-receipts article {
   display: flex;
   justify-content: space-between;
@@ -2503,15 +2529,35 @@ p {
   padding: 16px 0;
   border-top: 1px solid var(--line);
 }
-.payer-receipts article:first-child { border-top: 0; }
-.payer-security-note { background: #fff7ed; border-color: #fed7aa; }
-.payer-security-note p { margin: 6px 0 0; }
+.payer-receipts article:first-child {
+  border-top: 0;
+}
+.payer-security-note {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+.payer-security-note p {
+  margin: 6px 0 0;
+}
 @media (max-width: 760px) {
-  .payer-portal { padding-inline: 18px; }
-  .payer-portal-header { align-items: flex-start; }
-  .payer-hero { padding-top: 42px; }
+  .payer-portal {
+    padding-inline: 18px;
+  }
+  .payer-portal-header {
+    align-items: flex-start;
+  }
+  .payer-hero {
+    padding-top: 42px;
+  }
   .payer-row,
-  .payer-row-head { grid-template-columns: 1fr 1fr; }
-  .payer-row-head { display: none; }
-  .payer-receipts article { align-items: flex-start; flex-direction: column; }
+  .payer-row-head {
+    grid-template-columns: 1fr 1fr;
+  }
+  .payer-row-head {
+    display: none;
+  }
+  .payer-receipts article {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

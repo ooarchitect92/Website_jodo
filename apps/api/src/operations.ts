@@ -218,8 +218,17 @@ export class OperationsController {
         implemented: true,
       },
       {
-        name: 'Payment gateway / lending / KYC provider',
-        status: 'Not activated; requires provider contract, credentials and verified callbacks',
+        name: 'Signed payment provider callbacks',
+        status:
+          process.env.PAYMENT_PROVIDER_MODE === 'signed_hmac'
+            ? 'Configured; verify provider-side mapping and end-to-end evidence'
+            : 'Implemented but disabled until provider secret and mapping are approved',
+        implemented: true,
+      },
+      {
+        name: 'Hosted checkout / lending / KYC provider',
+        status:
+          'Not activated; requires provider contract, credentials and tested money-movement flows',
         implemented: false,
       },
       {

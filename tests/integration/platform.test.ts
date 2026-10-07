@@ -9,7 +9,7 @@ import { tick, checkpoint } from '../../apps/worker/src/main';
 import { notifyStaff } from '../../apps/worker/src/notifications';
 import { encrypt } from '../../packages/core/src/security';
 import { createServer } from 'node:net';
-import { randomUUID } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 let app: any,
   base: string,
   db: Db,
@@ -652,7 +652,6 @@ test('fee schedule, payment evidence and refund remain auditable and balanced', 
   );
 });
 
-
 test('payer portal exposes only linked schedule data and queues reminders durably', async () => {
   const ref = 'payer_' + randomUUID().slice(0, 8);
   const payer = await call(
@@ -742,6 +741,114 @@ test('payer portal exposes only linked schedule data and queues reminders durabl
   );
   assert.equal(revoked.r.status, 201);
   assert.equal((await call('/v1/payer/' + rawToken)).r.status, 409);
+});
+
+test('signed provider webhooks verify authenticity and apply payment exactly once', async () => {
+  const schedule = await call(
+    '/v1/admin/fees/schedules',
+    'POST',
+    {
+      accountReference: 'provider_' + randomUUID().slice(0, 8),
+      currency: 'INR',
+      note: 'Synthetic signed-provider schedule',
+      installments: [{ dueDate: '2027-06-10', amountMinor: 175000 }],
+    },
+    {},
+    true,
+  );
+  assert.equal(schedule.r.status, 201, JSON.stringify(schedule.data));
+  await call(
+    '/v1/admin/fees/schedules/' + schedule.data.id + '/activate',
+    'POST',
+    { expectedVersion: 1 },
+    {},
+    true,
+  );
+  const schedules = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
+  const active = schedules.find((s: any) => s.id === schedule.data.id);
+  const installmentId = active.installments[0].id;
+
+  const previous = {
+    mode: process.env.PAYMENT_PROVIDER_MODE,
+    name: process.env.PAYMENT_PROVIDER_NAME,
+    secret: process.env.PAYMENT_WEBHOOK_SECRET,
+  };
+  Object.assign(process.env, {
+    PAYMENT_PROVIDER_MODE: 'signed_hmac',
+    PAYMENT_PROVIDER_NAME: 'qa_gateway',
+    PAYMENT_WEBHOOK_SECRET: 'provider-webhook-test-secret-'.repeat(3),
+  });
+
+  const send = async (body: any, signatureOverride?: string) => {
+    const raw = JSON.stringify(body);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature =
+      signatureOverride ||
+      createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET!)
+        .update(timestamp)
+        .update('.')
+        .update(raw)
+        .digest('hex');
+    const r = await fetch(base + '/v1/provider/payments/webhook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Payment-Timestamp': timestamp,
+        'X-Payment-Signature': signature,
+      },
+      body: raw,
+    });
+    return { r, data: await r.json() };
+  };
+
+  try {
+    const event = {
+      eventId: 'evt_' + randomUUID(),
+      type: 'payment_confirmed',
+      installmentId,
+      providerReference: 'pay_' + randomUUID(),
+      amountMinor: 175000,
+      currency: 'INR',
+      occurredAt: new Date().toISOString(),
+    };
+    const invalid = await send({ ...event, eventId: 'evt_' + randomUUID() }, '0'.repeat(64));
+    assert.equal(invalid.r.status, 403);
+
+    const first = await send(event);
+    assert.equal(first.r.status, 202, JSON.stringify(first.data));
+    assert.equal(first.data.status, 'applied');
+    const second = await send(event);
+    assert.equal(second.r.status, 202, JSON.stringify(second.data));
+    assert.equal(second.data.duplicate, true);
+
+    const payments = await db.query(
+      "SELECT * FROM payment_records WHERE provider='qa_gateway' AND provider_reference=$1",
+      [event.providerReference],
+    );
+    assert.equal(payments.length, 1);
+    assert.equal(payments[0]!.recorded_via, 'provider');
+    assert.equal(Number(payments[0]!.amount_minor), 175000);
+
+    const providerEvents = await db.query(
+      "SELECT * FROM payment_provider_events WHERE provider='qa_gateway' AND provider_event_id=$1",
+      [event.eventId],
+    );
+    assert.equal(providerEvents.length, 1);
+    assert.equal(providerEvents[0]!.status, 'applied');
+
+    const adminEvents = await call('/v1/admin/fees/provider-events', 'GET', undefined, {}, true);
+    assert.equal(adminEvents.r.status, 200);
+    assert.ok(adminEvents.data.some((row: any) => row.provider_event_id === event.eventId));
+  } finally {
+    for (const [key, value] of Object.entries({
+      PAYMENT_PROVIDER_MODE: previous.mode,
+      PAYMENT_PROVIDER_NAME: previous.name,
+      PAYMENT_WEBHOOK_SECRET: previous.secret,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 test('session revocation invalidates subsequent access', async () => {
