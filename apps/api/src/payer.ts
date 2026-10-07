@@ -153,16 +153,38 @@ export class PayerLinkAdminController {
       if (!schedule.active) throw new ConflictException('Payer profile is inactive');
 
       await c.query(
-        `INSERT INTO payer_access_tokens(schedule_id,token_hash,expires_at,created_by)
-         VALUES($1,$2,now()+($3::int*interval '1 hour'),$4)`,
-        [scheduleId, hash, v.expiresHours, req.actor.id],
+        `INSERT INTO payer_access_tokens(
+           schedule_id,token_hash,expires_at,created_by,payment_mode,
+           allow_custom_amount,allow_component_selection,min_amount_minor
+         )
+         VALUES($1,$2,now()+($3::int*interval '1 hour'),$4,$5,$6,$7,$8)`,
+        [
+          scheduleId,
+          hash,
+          v.expiresHours,
+          req.actor.id,
+          v.paymentMode,
+          v.allowCustomAmount,
+          v.allowComponentSelection,
+          v.minAmountMinor || null,
+        ],
       );
       await this.db.audit(c, req.actor.id, 'fees.payer_link.create', scheduleId, {
         expiresHours: v.expiresHours,
+        paymentMode: v.paymentMode,
+        allowCustomAmount: v.allowCustomAmount,
+        allowComponentSelection: v.allowComponentSelection,
+        minAmountMinor: v.minAmountMinor || null,
       });
       return {
         path: '/payer/' + raw + '/',
         expiresHours: v.expiresHours,
+        paymentPolicy: {
+          mode: v.paymentMode,
+          allowCustomAmount: v.allowCustomAmount,
+          allowComponentSelection: v.allowComponentSelection,
+          minAmountMinor: v.minAmountMinor || null,
+        },
       };
     });
   }
@@ -192,7 +214,8 @@ export class PayerPortalController {
     if (!/^[A-Za-z0-9_-]{30,100}$/.test(rawToken))
       throw new ConflictException('Portal link is invalid or expired');
     const rows = await this.db.query(
-      `SELECT t.schedule_id,s.account_reference,s.currency,s.total_amount_minor,s.status,
+      `SELECT t.schedule_id,t.payment_mode,t.allow_custom_amount,t.allow_component_selection,
+              t.min_amount_minor,s.account_reference,s.currency,s.total_amount_minor,s.status,
               p.id AS payer_id,p.encrypted_profile,p.active
        FROM payer_access_tokens t
        JOIN fee_schedules s ON s.id=t.schedule_id
@@ -208,7 +231,8 @@ export class PayerPortalController {
   @Get(':token')
   async portal(@Param('token') rawToken: string) {
     const access = await this.access(rawToken);
-    const [installments, payments, refunds, checkoutSessions] = await Promise.all([
+    const [installments, payments, refunds, checkoutSessions, components, allocationCoverage] =
+      await Promise.all([
       this.db.query(
         `SELECT id,sequence,due_date,amount_minor,paid_amount_minor,
           CASE
@@ -248,6 +272,32 @@ export class PayerPortalController {
          LIMIT 20`,
         [access.schedule_id],
       ),
+      this.db.query(
+        `SELECT fc.code,fc.label,fc.amount_minor,fc.bank_route_key,
+                coalesce(sum(pa.amount_minor),0)::bigint AS allocated_minor
+         FROM fee_schedule_components fc
+         LEFT JOIN payment_records pr ON pr.schedule_id=fc.schedule_id
+         LEFT JOIN payment_component_allocations pa
+           ON pa.payment_id=pr.id AND pa.component_code=fc.code
+         WHERE fc.schedule_id=$1
+         GROUP BY fc.id
+         ORDER BY fc.created_at,fc.code`,
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT
+           count(*) FILTER (
+             WHERE coalesce(alloc.allocated_minor,0)<>pr.amount_minor
+           )::int AS unallocated_payments
+         FROM payment_records pr
+         LEFT JOIN LATERAL (
+           SELECT sum(pa.amount_minor)::bigint AS allocated_minor
+           FROM payment_component_allocations pa
+           WHERE pa.payment_id=pr.id
+         ) alloc ON true
+         WHERE pr.schedule_id=$1`,
+        [access.schedule_id],
+      ),
     ]);
     const profile = decrypt<PayerProfile>(access.encrypted_profile);
     return {
@@ -262,6 +312,30 @@ export class PayerPortalController {
       payments,
       refunds,
       checkoutSessions,
+      components: components.map((component) => ({
+        code: component.code,
+        label: component.label,
+        amountMinor: component.amount_minor,
+        allocatedMinor: component.allocated_minor,
+        remainingMinor: Math.max(
+          0,
+          Number(component.amount_minor) - Number(component.allocated_minor || 0),
+        ),
+      })),
+      paymentPolicy: {
+        mode: access.payment_mode,
+        allowCustomAmount: access.allow_custom_amount,
+        allowComponentSelection:
+          access.allow_component_selection &&
+          Number(allocationCoverage[0]?.unallocated_payments || 0) === 0 &&
+          refunds.length === 0,
+        minAmountMinor: access.min_amount_minor,
+        componentSelectionBlockedReason:
+          access.allow_component_selection &&
+          (Number(allocationCoverage[0]?.unallocated_payments || 0) > 0 || refunds.length > 0)
+            ? 'Component selection is disabled because earlier payment/refund history cannot be allocated safely by fee head.'
+            : null,
+      },
       providerConnected: checkoutProviderEnabled(),
       note: checkoutProviderEnabled()
         ? 'Hosted checkout is activated. The selected provider collects payment credentials; this platform records only validated payment outcomes.'
