@@ -9,10 +9,12 @@ import {
   Post,
   Req,
   ServiceUnavailableException,
+  UseGuards,
 } from '@nestjs/common';
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { Request } from 'express';
 import { Db } from './db';
+import { AuthGuard, Roles } from './auth';
 import { paymentProviderEventSchema } from '../../../packages/core/src/contracts';
 
 function safeEqualHex(a: string, b: string) {
@@ -369,6 +371,8 @@ export class PaymentProviderController {
 }
 
 @Controller('v1/admin/fees/provider-events')
+@UseGuards(AuthGuard)
+@Roles('owner')
 export class PaymentProviderAdminController {
   constructor(@Inject(Db) private db: Db) {}
 
