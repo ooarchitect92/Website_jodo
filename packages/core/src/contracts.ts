@@ -363,6 +363,13 @@ export const mandateRecordSchema = z
   })
   .strict();
 
+export const payerMandateSetupSchema = z
+  .object({
+    rail: z.enum(['upi_autopay', 'enach']),
+    idempotencyKey: z.uuid(),
+  })
+  .strict();
+
 export const feePayerProfileSchema = z
   .object({
     accountReference: z
