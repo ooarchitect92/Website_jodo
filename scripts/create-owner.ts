@@ -14,15 +14,37 @@ async function main() {
     connectionString: process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL,
   });
   try {
-    await p.query('INSERT INTO users(email,password_hash,totp_secret,role) VALUES($1,$2,$3,$4)', [
-      email.toLowerCase(),
-      await argon2.hash(password, { type: argon2.argon2id }),
-      encrypt(secret),
-      role,
-    ]);
-    console.log('Staff account created. Existing accounts are never overwritten.');
+    await p.query('BEGIN');
+    const user = (
+      await p.query(
+        'INSERT INTO users(email,password_hash,totp_secret,role) VALUES($1,$2,$3,$4) RETURNING id',
+        [
+          email.toLowerCase(),
+          await argon2.hash(password, { type: argon2.argon2id }),
+          encrypt(secret),
+          role,
+        ],
+      )
+    ).rows[0];
+    const tenant = (
+      await p.query('SELECT id FROM tenants ORDER BY created_at,id LIMIT 1')
+    ).rows[0];
+    if (!tenant) throw Error('No tenant exists; run migrations before creating staff accounts');
+    const tenantRole =
+      role === 'owner' ? 'owner' : role === 'editor' ? 'builder' : role === 'sales' ? 'support' : 'auditor';
+    await p.query(
+      `INSERT INTO memberships(tenant_id,user_id,role_key,status)
+       VALUES($1,$2,$3,'active')
+       ON CONFLICT(tenant_id,user_id) DO NOTHING`,
+      [tenant.id, user.id, tenantRole],
+    );
+    await p.query('COMMIT');
+    console.log('Staff account and workspace membership created. Existing accounts are never overwritten.');
     if (!process.env.OWNER_TOTP_SECRET)
       console.log('Add this secret to your authenticator now; it is shown only once:', secret);
+  } catch (error) {
+    await p.query('ROLLBACK').catch(() => undefined);
+    throw error;
   } finally {
     await p.end();
   }
