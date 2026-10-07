@@ -2561,3 +2561,33 @@ p {
     flex-direction: column;
   }
 }
+
+.collection-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 8px 0 18px;
+}
+.collection-modes label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+.collection-form {
+  display: grid;
+  gap: 18px;
+}
+.collection-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.collection-form legend {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
