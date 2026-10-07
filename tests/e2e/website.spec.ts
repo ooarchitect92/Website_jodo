@@ -96,7 +96,9 @@ test('unknown route has a true 404', async ({ page }) => {
   expect(r?.status()).toBe(404);
   await expect(page.getByRole('heading', { name: 'Let’s get you back on track.' })).toBeVisible();
 });
-test('customer portals do not capture credentials before provider configuration', async ({ page }) => {
+test('customer portals do not capture credentials before provider configuration', async ({
+  page,
+}) => {
   await page.goto('/login/');
   await expect(page.locator('input[type="password"]')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Continue' })).toHaveCount(4);
