@@ -851,6 +851,99 @@ test('signed provider webhooks verify authenticity and apply payment exactly onc
   }
 });
 
+
+test('flexible fee components, concessions, analytics and late-fee assessment remain consistent', async () => {
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const reference = 'structure_' + randomUUID().slice(0, 8);
+  const created = await call(
+    '/v1/admin/fees/schedules',
+    'POST',
+    {
+      accountReference: reference,
+      scopeType: 'course',
+      scopeReference: 'qa_course',
+      currency: 'INR',
+      components: [
+        { code: 'tuition', label: 'Tuition', amountMinor: 120000 },
+        { code: 'transport', label: 'Transport', amountMinor: 30000, bankRouteKey: 'transport_route' },
+      ],
+      concessions: [
+        {
+          code: 'merit',
+          label: 'Merit scholarship',
+          amountMinor: 20000,
+          reason: 'Synthetic approved concession',
+        },
+      ],
+      lateFee: { mode: 'fixed_once', graceDays: 0, amountMinor: 5000, capMinor: 5000 },
+      installments: [{ dueDate: yesterday, amountMinor: 130000 }],
+      note: 'Synthetic flexible fee schedule',
+    },
+    {},
+    true,
+  );
+  assert.equal(created.r.status, 201, JSON.stringify(created.data));
+  assert.equal(
+    (
+      await call(
+        '/v1/admin/fees/schedules/' + created.data.id + '/activate',
+        'POST',
+        { expectedVersion: 1 },
+        {},
+        true,
+      )
+    ).r.status,
+    201,
+  );
+
+  await tick(db);
+  await tick(db);
+
+  const schedules = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
+  const schedule = schedules.find((s: any) => s.id === created.data.id);
+  assert.equal(schedule.scope_type, 'course');
+  assert.equal(schedule.scope_reference, 'qa_course');
+  assert.equal(Number(schedule.gross_amount_minor), 150000);
+  assert.equal(Number(schedule.concession_amount_minor), 20000);
+  assert.equal(schedule.components.length, 2);
+  assert.equal(schedule.concessions.length, 1);
+  assert.equal(schedule.late_fee.mode, 'fixed_once');
+
+  const assessments = await db.query(
+    'SELECT * FROM late_fee_assessments WHERE schedule_id=$1',
+    [created.data.id],
+  );
+  assert.equal(assessments.length, 1);
+  assert.equal(Number(assessments[0]!.amount_minor), 5000);
+
+  const analytics = await call('/v1/admin/fees/analytics', 'GET', undefined, {}, true);
+  assert.equal(analytics.r.status, 200);
+  assert.ok(
+    analytics.data.byScope.some(
+      (row: any) => row.scope_type === 'course' && row.scope_reference === 'qa_course',
+    ),
+  );
+
+  const waived = await call(
+    '/v1/admin/fees/late-fees/' + assessments[0]!.id + '/waive',
+    'POST',
+    { reason: 'Synthetic operator-approved waiver' },
+    {},
+    true,
+  );
+  assert.equal(waived.r.status, 201, JSON.stringify(waived.data));
+  assert.equal(waived.data.status, 'waived');
+  assert.equal(
+    (
+      await db.query(
+        "SELECT count(*)::int AS count FROM audit WHERE object_id=$1 AND action='fees.late_fee.waive'",
+        [assessments[0]!.id],
+      )
+    )[0]!.count,
+    1,
+  );
+});
+
 test('session revocation invalidates subsequent access', async () => {
   await call('/v1/auth/logout', 'POST', {}, {}, true);
   assert.equal((await call('/v1/admin/content', 'GET', undefined, {}, true)).r.status, 401);
