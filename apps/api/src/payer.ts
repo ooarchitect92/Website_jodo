@@ -242,8 +242,8 @@ export class PayerPortalController {
       mandates,
       mandateSetups,
     ] = await Promise.all([
-        this.db.query(
-          `SELECT id,sequence,due_date,amount_minor,paid_amount_minor,
+      this.db.query(
+        `SELECT id,sequence,due_date,amount_minor,paid_amount_minor,
           CASE
             WHEN status='paid' THEN 'paid'
             WHEN due_date<current_date AND status NOT IN('paid','cancelled') THEN 'overdue'
@@ -251,25 +251,25 @@ export class PayerPortalController {
             ELSE status
           END AS status
          FROM fee_installments WHERE schedule_id=$1 ORDER BY sequence`,
-          [access.schedule_id],
-        ),
-        this.db.query(
-          `SELECT p.id,p.installment_id,p.amount_minor,p.refunded_amount_minor,p.currency,
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT p.id,p.installment_id,p.amount_minor,p.refunded_amount_minor,p.currency,
                 p.status,p.recorded_at,r.receipt_number,r.issued_at
          FROM payment_records p
          LEFT JOIN fee_receipts r ON r.payment_id=p.id
          WHERE p.schedule_id=$1 ORDER BY p.recorded_at DESC`,
-          [access.schedule_id],
-        ),
-        this.db.query(
-          `SELECT f.id,f.payment_id,f.amount_minor,f.reason,f.created_at
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT f.id,f.payment_id,f.amount_minor,f.reason,f.created_at
          FROM payment_refunds f
          JOIN payment_records p ON p.id=f.payment_id
          WHERE p.schedule_id=$1 ORDER BY f.created_at DESC`,
-          [access.schedule_id],
-        ),
-        this.db.query(
-          `SELECT id,installment_id,amount_minor,currency,
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT id,installment_id,amount_minor,currency,
                 CASE
                   WHEN status='created' AND expires_at<now() THEN 'expired'
                   ELSE status
@@ -279,10 +279,10 @@ export class PayerPortalController {
          WHERE schedule_id=$1
          ORDER BY created_at DESC
          LIMIT 20`,
-          [access.schedule_id],
-        ),
-        this.db.query(
-          `SELECT fc.code,fc.label,fc.amount_minor,fc.bank_route_key,
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT fc.code,fc.label,fc.amount_minor,fc.bank_route_key,
                 coalesce(sum(pa.amount_minor),0)::bigint AS allocated_minor
          FROM fee_schedule_components fc
          LEFT JOIN payment_records pr ON pr.schedule_id=fc.schedule_id
@@ -291,10 +291,10 @@ export class PayerPortalController {
          WHERE fc.schedule_id=$1
          GROUP BY fc.id
          ORDER BY fc.created_at,fc.code`,
-          [access.schedule_id],
-        ),
-        this.db.query(
-          `SELECT
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT
            count(*) FILTER (
              WHERE coalesce(alloc.allocated_minor,0)<>pr.amount_minor
            )::int AS unallocated_payments
@@ -305,25 +305,25 @@ export class PayerPortalController {
            WHERE pa.payment_id=pr.id
          ) alloc ON true
          WHERE pr.schedule_id=$1`,
-          [access.schedule_id],
-        ),
-        this.db.query(
-          `SELECT id,rail,provider,provider_reference,status,last_event_at
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT id,rail,provider,provider_reference,status,last_event_at
            FROM payment_mandates
            WHERE schedule_id=$1
            ORDER BY last_event_at DESC
            LIMIT 20`,
-          [access.schedule_id],
-        ),
-        this.db.query(
-          `SELECT id,rail,status,failure_code,expires_at,created_at,updated_at
+        [access.schedule_id],
+      ),
+      this.db.query(
+        `SELECT id,rail,status,failure_code,expires_at,created_at,updated_at
            FROM payment_mandate_setup_requests
            WHERE schedule_id=$1
            ORDER BY created_at DESC
            LIMIT 20`,
-          [access.schedule_id],
-        ),
-      ]);
+        [access.schedule_id],
+      ),
+    ]);
     const profile = decrypt<PayerProfile>(access.encrypted_profile);
     return {
       payer: { displayName: profile.displayName, accountReference: access.account_reference },
