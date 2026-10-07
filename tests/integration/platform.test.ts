@@ -23,7 +23,8 @@ let app: any,
   eventId = '',
   leadId = '',
   consentCookie = '',
-  chatCookie = '';
+  chatCookie = '',
+  primaryTenantId = '';
 const input = {
   name: 'Synthetic Visitor',
   email: 'synthetic@example.invalid',
@@ -114,7 +115,191 @@ test('MFA staff login returns secure session contract', async () => {
   assert.match(r.r.headers.getSetCookie()[0]!, /HttpOnly/);
   assert.match(r.r.headers.getSetCookie()[0]!, /SameSite=Strict/i);
   assert.ok(csrf);
+  assert.ok(r.data.tenant?.id);
+  assert.equal(r.data.tenant.role, 'owner');
+  assert.ok(Array.isArray(r.data.workspaces));
+  primaryTenantId = r.data.tenant.id;
 });
+test('workspace membership context is explicit and tenant switching is membership-bound', async () => {
+  const second = (
+    await owner.query(
+      `INSERT INTO tenants(slug,display_name,legal_name,status)
+       VALUES($1,$2,$2,'profile_draft')
+       RETURNING id`,
+      ['qa-' + randomUUID().slice(0, 8), 'Synthetic Second Workspace'],
+    )
+  ).rows[0]!;
+  await owner.query('INSERT INTO onboarding_cases(tenant_id) VALUES($1)', [second.id]);
+  const user = (
+    await owner.query('SELECT id FROM users WHERE lower(email)=lower($1)', [
+      process.env.OWNER_EMAIL,
+    ])
+  ).rows[0]!;
+  await owner.query(
+    `INSERT INTO memberships(tenant_id,user_id,role_key,status)
+     VALUES($1,$2,'owner','active')`,
+    [second.id, user.id],
+  );
+
+  const switched = await call('/v1/auth/switch-tenant', 'POST', { tenantId: second.id }, {}, true);
+  assert.equal(switched.r.status, 201, JSON.stringify(switched.data));
+  assert.equal(switched.data.tenant.id, second.id);
+
+  const me = await call('/v1/auth/me', 'GET', undefined, {}, true);
+  assert.equal(me.r.status, 200, JSON.stringify(me.data));
+  assert.equal(me.data.tenant.id, second.id);
+  assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === primaryTenantId));
+  assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === second.id));
+
+  const back = await call(
+    '/v1/auth/switch-tenant',
+    'POST',
+    { tenantId: primaryTenantId },
+    {},
+    true,
+  );
+  assert.equal(back.r.status, 201, JSON.stringify(back.data));
+  assert.equal(back.data.tenant.id, primaryTenantId);
+});
+
+test('tenant organisation, brand and maker-checker role controls are functional', async () => {
+  const overview = await call('/v1/admin/tenant/overview', 'GET', undefined, {}, true);
+  assert.equal(overview.r.status, 200, JSON.stringify(overview.data));
+  assert.equal(overview.data.tenant.id, primaryTenantId);
+  assert.equal(overview.data.workspaceRole, 'owner');
+  assert.ok(overview.data.permissionCatalogue.includes('role.publish'));
+
+  const onboarding = await call(
+    '/v1/admin/tenant/onboarding',
+    'POST',
+    {
+      section: 'organisation',
+      data: {
+        legalName: 'Synthetic Education Trust',
+        institutionType: 'school',
+        intendedCollectionModel: 'one_time_and_recurring',
+        supportEmail: 'support@example.invalid',
+      },
+    },
+    {},
+    true,
+  );
+  assert.equal(onboarding.r.status, 201, JSON.stringify(onboarding.data));
+  assert.equal(onboarding.data.current_step, 'organisation');
+
+  const entity = await call(
+    '/v1/admin/tenant/organisation/entities',
+    'POST',
+    {
+      name: 'Synthetic Education Trust',
+      registrationReference: 'SYNTH-REG-001',
+      taxReferenceMasked: 'GST-***001',
+    },
+    {},
+    true,
+  );
+  assert.equal(entity.r.status, 201, JSON.stringify(entity.data));
+
+  const branch = await call(
+    '/v1/admin/tenant/organisation/branches',
+    'POST',
+    {
+      legalEntityId: entity.data.id,
+      code: 'MAIN',
+      name: 'Main Campus',
+      city: 'Test City',
+      state: 'Test State',
+    },
+    {},
+    true,
+  );
+  assert.equal(branch.r.status, 201, JSON.stringify(branch.data));
+  assert.equal(branch.data.tenant_id, primaryTenantId);
+
+  const year = await call(
+    '/v1/admin/tenant/organisation/academic-years',
+    'POST',
+    {
+      label: '2026-27',
+      startsOn: '2026-04-01',
+      endsOn: '2027-03-31',
+    },
+    {},
+    true,
+  );
+  assert.equal(year.r.status, 201, JSON.stringify(year.data));
+
+  const brand = await call(
+    '/v1/admin/tenant/brand',
+    'POST',
+    {
+      name: 'Synthetic Academy Payments',
+      primaryColour: '#0f766e',
+      accentColour: '#f97316',
+      supportEmail: 'support@example.invalid',
+      locale: 'en-IN',
+    },
+    {},
+    true,
+  );
+  assert.equal(brand.r.status, 201, JSON.stringify(brand.data));
+  assert.equal(brand.data.status, 'draft');
+
+  const domain = await call(
+    '/v1/admin/tenant/domains',
+    'POST',
+    { hostname: 'fees.synthetic-example.invalid' },
+    {},
+    true,
+  );
+  assert.equal(domain.r.status, 201, JSON.stringify(domain.data));
+  assert.equal(domain.data.status, 'pending');
+  assert.equal(domain.data.dns.type, 'TXT');
+  assert.match(domain.data.dns.value, /^platform-verify=/);
+
+  const role = await call(
+    '/v1/admin/tenant/roles',
+    'POST',
+    {
+      roleKey: 'qa_reconciler',
+      name: 'QA Reconciler',
+      description: 'Synthetic restricted reconciliation role',
+      grants: ['tenant.read', 'fee.read', 'reconciliation.read'],
+      explicitDenies: ['refund.approve'],
+    },
+    {},
+    true,
+  );
+  assert.equal(role.r.status, 201, JSON.stringify(role.data));
+  assert.equal(role.data.status, 'draft');
+
+  const requested = await call(
+    '/v1/admin/tenant/roles/' + role.data.id + '/request-publish',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(requested.r.status, 201, JSON.stringify(requested.data));
+  assert.equal(requested.data.status, 'pending');
+
+  const selfApproval = await call(
+    '/v1/admin/tenant/approvals/' + requested.data.id + '/decide',
+    'POST',
+    { decision: 'approve', reason: 'Synthetic self approval must be rejected' },
+    {},
+    true,
+  );
+  assert.equal(selfApproval.r.status, 403);
+
+  const latest = await call('/v1/admin/tenant/overview', 'GET', undefined, {}, true);
+  assert.equal(latest.r.status, 200, JSON.stringify(latest.data));
+  assert.ok(latest.data.entities.some((row: any) => row.id === entity.data.id));
+  assert.ok(latest.data.branches.some((row: any) => row.id === branch.data.id));
+  assert.ok(latest.data.roles.some((row: any) => row.id === role.data.id));
+  assert.ok(latest.data.approvals.some((row: any) => row.id === requested.data.id));
+});
+
 test('CSRF prevents authenticated writes', async () => {
   const r = await call('/v1/admin/campaigns', 'POST', {}, { Cookie: cookie });
   assert.equal(r.r.status, 403);

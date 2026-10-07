@@ -8,11 +8,13 @@ import { Leads } from './leads';
 import { Workflows } from './workflows';
 import { Dashboard, Campaigns, Media, Settings, Records } from './panels';
 import { FeeOperations } from './fees';
+import { TenancyStudio } from './tenancy';
 const sections = [
   ['overview', 'Overview'],
   ['content', 'Content & publishing'],
   ['leads', 'Leads'],
   ['fees', 'Fee operations'],
+  ['tenant', 'Organisation & access'],
   ['tasks', 'Staff tasks'],
   ['media', 'Media library'],
   ['campaigns', 'Campaign links'],
@@ -170,6 +172,8 @@ export function AdminShell() {
         return <Workflows />;
       case 'fees':
         return <FeeOperations />;
+      case 'tenant':
+        return <TenancyStudio />;
       case 'media':
         return <Media />;
       case 'settings':
@@ -185,7 +189,7 @@ export function AdminShell() {
           <Link href="/" className="admin-logo">
             Platform<span className="yellow-dot">.</span> studio
           </Link>
-          <p>OWNER CONSOLE · BLUEPRINT 1.3</p>
+          <p>TENANT CONSOLE · SAAS BLUEPRINT 2.0</p>
           <nav className="admin-nav" aria-label="Owner navigation">
             {sections
               .filter(([key]) => allowed[session.user.role]?.includes(key!))
@@ -208,10 +212,39 @@ export function AdminShell() {
             <div>
               <h1>{sections.find((s) => s[0] === area)?.[1]}</h1>
               <p>
-                {session.user.email} · {session.user.role}
+                {session.user.email} · {session.tenant.name} · {session.tenant.role}
               </p>
             </div>
             <div className="admin-top-actions">
+              {session.workspaces.length > 1 && (
+                <label className="small">
+                  Workspace
+                  <select
+                    aria-label="Active workspace"
+                    value={session.tenant.id}
+                    onChange={async (event) => {
+                      try {
+                        await api('/v1/auth/switch-tenant', {
+                          method: 'POST',
+                          headers: { 'X-CSRF-Token': session.csrf },
+                          body: JSON.stringify({ tenantId: event.target.value }),
+                        });
+                        setArea('overview');
+                        setLoading(true);
+                        await sync();
+                      } catch (error) {
+                        setError((error as Error).message);
+                      }
+                    }}
+                  >
+                    {session.workspaces.map((workspace) => (
+                      <option value={workspace.id} key={workspace.id}>
+                        {workspace.name} · {workspace.role}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <span className="status-pill">MFA session</span>
               <button onClick={logout}>Sign out</button>
             </div>

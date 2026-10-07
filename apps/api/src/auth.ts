@@ -25,6 +25,9 @@ export interface Actor {
   id: string;
   email: string;
   role: string;
+  tenantId: string;
+  tenantName: string;
+  tenantRole: string;
   sessionId: string;
   csrf: string;
 }
@@ -47,13 +50,33 @@ export class AuthGuard implements CanActivate {
     const sid = req.cookies?.jodo_session;
     if (typeof sid !== 'string') throw new UnauthorizedException('Sign in to the owner console');
     const rows = await this.db.query(
-      'SELECT u.id,u.email,u.role,s.id AS session_id,s.csrf_hash FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND s.revoked_at IS NULL AND u.active=true',
+      `SELECT u.id,u.email,u.role,s.id AS session_id,s.csrf_hash,s.tenant_id,
+              t.display_name AS tenant_name,m.role_key AS tenant_role,m.status AS membership_status
+       FROM sessions s
+       JOIN users u ON u.id=s.user_id
+       JOIN tenants t ON t.id=s.tenant_id
+       JOIN memberships m ON m.user_id=u.id AND m.tenant_id=s.tenant_id
+       WHERE s.token_hash=$1
+         AND s.expires_at>now()
+         AND s.revoked_at IS NULL
+         AND u.active=true
+         AND m.status='active'
+         AND t.status NOT IN('archived')`,
       [digest(sid)],
     );
     const row = rows[0];
     if (!row) throw new UnauthorizedException('Session expired');
     const csrf = keyed('csrf:' + sid);
-    req.actor = { id: row.id, email: row.email, role: row.role, sessionId: row.session_id, csrf };
+    req.actor = {
+      id: row.id,
+      email: row.email,
+      role: row.role,
+      tenantId: row.tenant_id,
+      tenantName: row.tenant_name,
+      tenantRole: row.tenant_role,
+      sessionId: row.session_id,
+      csrf,
+    };
     const roles = this.reflector.getAllAndOverride<string[]>('roles', [
       ctx.getHandler(),
       ctx.getClass(),
@@ -107,6 +130,18 @@ export class AuthController {
       );
       throw new UnauthorizedException('Email, password or authentication code is incorrect');
     }
+    const memberships = await this.db.query(
+      `SELECT m.tenant_id,m.role_key,t.display_name,t.status
+       FROM memberships m
+       JOIN tenants t ON t.id=m.tenant_id
+       WHERE m.user_id=$1 AND m.status='active' AND t.status<>'archived'
+       ORDER BY CASE WHEN m.role_key='owner' THEN 0 ELSE 1 END,t.display_name`,
+      [u.id],
+    );
+    if (!memberships.length)
+      throw new UnauthorizedException('No active workspace membership is available');
+
+    const activeMembership = memberships[0]!;
     const sid = token();
     const csrf = keyed('csrf:' + sid);
     const step = Math.floor(Date.now() / 30000);
@@ -117,23 +152,90 @@ export class AuthController {
       );
       if (!updated.rowCount) throw new UnauthorizedException('Wait for a new authentication code');
       await c.query(
-        "INSERT INTO sessions(user_id,token_hash,csrf_hash,expires_at) VALUES($1,$2,$3,now()+interval '8 hours')",
-        [u.id, digest(sid), digest(csrf)],
+        `INSERT INTO sessions(user_id,token_hash,csrf_hash,tenant_id,expires_at)
+         VALUES($1,$2,$3,$4,now()+interval '8 hours')`,
+        [u.id, digest(sid), digest(csrf), activeMembership.tenant_id],
       );
       await this.db.audit(c, u.id, 'auth.login', u.id);
     });
     res.cookie('jodo_session', sid, { ...secureCookie(), maxAge: 8 * 60 * 60 * 1000 });
     res.setHeader('Cache-Control', 'no-store');
-    return { user: { id: u.id, email: u.email, role: u.role }, csrf };
+    return {
+      user: { id: u.id, email: u.email, role: u.role },
+      tenant: {
+        id: activeMembership.tenant_id,
+        name: activeMembership.display_name,
+        role: activeMembership.role_key,
+        status: activeMembership.status,
+      },
+      workspaces: memberships.map((m) => ({
+        id: m.tenant_id,
+        name: m.display_name,
+        role: m.role_key,
+        status: m.status,
+      })),
+      csrf,
+    };
   }
-  @Get('me') @UseGuards(AuthGuard) @Roles('owner', 'editor', 'sales', 'analyst') me(
+  @Get('me') @UseGuards(AuthGuard) @Roles('owner', 'editor', 'sales', 'analyst') async me(
     @Req() req: AuthedRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
     res.setHeader('Cache-Control', 'no-store');
+    const workspaces = await this.db.query(
+      `SELECT m.tenant_id AS id,t.display_name AS name,m.role_key AS role,t.status
+       FROM memberships m
+       JOIN tenants t ON t.id=m.tenant_id
+       WHERE m.user_id=$1 AND m.status='active' AND t.status<>'archived'
+       ORDER BY CASE WHEN m.tenant_id=$2 THEN 0 ELSE 1 END,t.display_name`,
+      [req.actor.id, req.actor.tenantId],
+    );
     return {
       user: { id: req.actor.id, email: req.actor.email, role: req.actor.role },
+      tenant: {
+        id: req.actor.tenantId,
+        name: req.actor.tenantName,
+        role: req.actor.tenantRole,
+      },
+      workspaces,
       csrf: req.actor.csrf,
+    };
+  }
+
+  @Post('switch-tenant')
+  @UseGuards(AuthGuard)
+  @Roles('owner', 'editor', 'sales', 'analyst')
+  async switchTenant(@Req() req: AuthedRequest, @Body() body: unknown) {
+    const input = z.object({ tenantId: z.uuid() }).strict().parse(body);
+    const membership = (
+      await this.db.query(
+        `SELECT m.tenant_id,m.role_key,t.display_name,t.status
+         FROM memberships m
+         JOIN tenants t ON t.id=m.tenant_id
+         WHERE m.user_id=$1 AND m.tenant_id=$2
+           AND m.status='active' AND t.status<>'archived'`,
+        [req.actor.id, input.tenantId],
+      )
+    )[0];
+    if (!membership)
+      throw new ForbiddenException('That workspace is not available to this account');
+    await this.db.tx(async (c) => {
+      await c.query('UPDATE sessions SET tenant_id=$2 WHERE id=$1', [
+        req.actor.sessionId,
+        membership.tenant_id,
+      ]);
+      await this.db.audit(c, req.actor.id, 'membership.switch', membership.tenant_id, {
+        fromTenantId: req.actor.tenantId,
+        role: membership.role_key,
+      });
+    });
+    return {
+      tenant: {
+        id: membership.tenant_id,
+        name: membership.display_name,
+        role: membership.role_key,
+        status: membership.status,
+      },
     };
   }
   @Post('logout') @UseGuards(AuthGuard) @Roles('owner', 'editor', 'sales', 'analyst') async logout(
