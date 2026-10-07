@@ -20,6 +20,23 @@ type Payer = {
   active: boolean;
   schedules: number;
 };
+type FeeHead = {
+  id: string;
+  code: string;
+  name: string;
+  settlement_account_key?: string | null;
+  active: boolean;
+  usages: number;
+};
+type CollectionPage = {
+  id: string;
+  slug: string;
+  schedule_id: string;
+  account_reference: string;
+  title: string;
+  status: string;
+  intents: number;
+};
 type Schedule = {
   id: string;
   account_reference: string;
@@ -52,12 +69,16 @@ export function FeeOperations() {
   const [communications, setCommunications] = useState<any[]>([]);
   const [providerEvents, setProviderEvents] = useState<any[]>([]);
   const [providerStatus, setProviderStatus] = useState<any>(null);
+  const [feeHeads, setFeeHeads] = useState<FeeHead[]>([]);
+  const [collectionPages, setCollectionPages] = useState<CollectionPage[]>([]);
+  const [adjustments, setAdjustments] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [installmentRows, setInstallmentRows] = useState([{ dueDate: '', amount: '' }]);
+  const [componentRows, setComponentRows] = useState([{ feeHeadId: '', amount: '' }]);
 
   const load = async () => {
     try {
-      const [o, s, p, m, st, py, cm, pe, ps] = await Promise.all([
+      const [o, s, p, m, st, py, cm, pe, ps, fh, cp, ad] = await Promise.all([
         request('admin/fees/overview'),
         request<Schedule[]>('admin/fees/schedules'),
         request<any[]>('admin/fees/payments'),
@@ -67,6 +88,9 @@ export function FeeOperations() {
         request<any[]>('admin/fees/communications'),
         request<any[]>('admin/fees/provider-events'),
         request<any>('provider/payments/status'),
+        request<FeeHead[]>('admin/fees/structure/heads'),
+        request<CollectionPage[]>('admin/fees/collection-pages'),
+        request<any[]>('admin/fees/structure/adjustments'),
       ]);
       setOverview(o);
       setSchedules(s);
@@ -77,6 +101,9 @@ export function FeeOperations() {
       setCommunications(cm);
       setProviderEvents(pe);
       setProviderStatus(ps);
+      setFeeHeads(fh);
+      setCollectionPages(cp);
+      setAdjustments(ad);
       setMessage('');
     } catch (e) {
       setMessage((e as Error).message);
@@ -155,6 +182,223 @@ export function FeeOperations() {
           </div>
         )}
       </section>
+
+      <section className="admin-grid">
+        <form
+          className="admin-panel admin-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const f = new FormData(form);
+            try {
+              await request('admin/fees/structure/heads', 'POST', {
+                code: String(f.get('code') || '').toUpperCase(),
+                name: String(f.get('name') || ''),
+                ...(String(f.get('settlementAccountKey') || '')
+                  ? { settlementAccountKey: String(f.get('settlementAccountKey')) }
+                  : {}),
+              });
+              form.reset();
+              setMessage('Fee head created.');
+              await load();
+            } catch (e) {
+              setMessage((e as Error).message);
+            }
+          }}
+        >
+          <h2>Fee heads</h2>
+          <p>Define reusable components such as tuition, transport or hostel fees.</p>
+          <label className="field">
+            Code
+            <input name="code" required pattern="[A-Za-z0-9_]{2,40}" placeholder="TUITION" />
+          </label>
+          <label className="field">
+            Name
+            <input name="name" required minLength={2} maxLength={100} />
+          </label>
+          <label className="field">
+            Settlement account key
+            <input
+              name="settlementAccountKey"
+              pattern="[A-Za-z0-9_-]{2,80}"
+              placeholder="Internal routing key, not bank credentials"
+            />
+          </label>
+          <button className="button primary">Create fee head</button>
+          <p className="small">{feeHeads.length} configured fee head(s).</p>
+        </form>
+
+        <form
+          className="admin-panel admin-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const f = new FormData(form);
+            try {
+              await request('admin/fees/structure/adjustments', 'POST', {
+                installmentId: String(f.get('installmentId')),
+                kind: String(f.get('kind')),
+                amountMinor: toMinor(f.get('amount')),
+                reason: String(f.get('reason')),
+              });
+              form.reset();
+              setMessage('Fee adjustment applied and audited.');
+              await load();
+            } catch (e) {
+              setMessage((e as Error).message);
+            }
+          }}
+        >
+          <h2>Discounts & late fees</h2>
+          <p>Every change is a ledger adjustment and can be reversed without erasing history.</p>
+          <label className="field">
+            Installment
+            <select name="installmentId" required defaultValue="">
+              <option value="" disabled>
+                Select installment
+              </option>
+              {schedules.flatMap((s) =>
+                s.installments
+                  .filter((i) => i.status !== 'cancelled')
+                  .map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {s.account_reference} · #{i.sequence} · {rupees(i.amountMinor)}
+                    </option>
+                  )),
+              )}
+            </select>
+          </label>
+          <label className="field">
+            Adjustment type
+            <select name="kind" defaultValue="discount">
+              <option value="discount">Discount</option>
+              <option value="concession">Concession</option>
+              <option value="waiver">Waiver</option>
+              <option value="late_fee">Late fee</option>
+            </select>
+          </label>
+          <label className="field">
+            Amount (INR)
+            <input name="amount" inputMode="decimal" required />
+          </label>
+          <label className="field">
+            Reason
+            <input name="reason" minLength={3} maxLength={300} required />
+          </label>
+          <button className="button primary">Apply adjustment</button>
+          <p className="small">{adjustments.length} adjustment record(s).</p>
+        </form>
+      </section>
+
+      <form
+        className="admin-panel admin-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const f = new FormData(form);
+          try {
+            await request('admin/fees/structure/components', 'POST', {
+              installmentId: String(f.get('installmentId')),
+              components: componentRows.map((row) => ({
+                feeHeadId: row.feeHeadId,
+                amountMinor: toMinor(row.amount),
+              })),
+            });
+            form.reset();
+            setComponentRows([{ feeHeadId: '', amount: '' }]);
+            setMessage('Fee-head structure saved for the draft installment.');
+            await load();
+          } catch (e) {
+            setMessage((e as Error).message);
+          }
+        }}
+      >
+        <h2>Installment fee structure</h2>
+        <p>
+          Break a draft installment into fee heads. Component totals must equal the installment
+          amount.
+        </p>
+        <label className="field">
+          Draft installment
+          <select name="installmentId" required defaultValue="">
+            <option value="" disabled>
+              Select draft installment
+            </option>
+            {schedules
+              .filter((s) => s.status === 'draft')
+              .flatMap((s) =>
+                s.installments.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {s.account_reference} · #{i.sequence} · {rupees(i.amountMinor)}
+                  </option>
+                )),
+              )}
+          </select>
+        </label>
+        {componentRows.map((row, index) => (
+          <div className="row" key={index}>
+            <label className="field">
+              Fee head
+              <select
+                value={row.feeHeadId}
+                required
+                onChange={(e) =>
+                  setComponentRows((rows) =>
+                    rows.map((item, n) =>
+                      n === index ? { ...item, feeHeadId: e.target.value } : item,
+                    ),
+                  )
+                }
+              >
+                <option value="" disabled>
+                  Select fee head
+                </option>
+                {feeHeads
+                  .filter((head) => head.active)
+                  .map((head) => (
+                    <option value={head.id} key={head.id}>
+                      {head.code} · {head.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="field">
+              Amount (INR)
+              <input
+                value={row.amount}
+                inputMode="decimal"
+                required
+                onChange={(e) =>
+                  setComponentRows((rows) =>
+                    rows.map((item, n) =>
+                      n === index ? { ...item, amount: e.target.value } : item,
+                    ),
+                  )
+                }
+              />
+            </label>
+            {componentRows.length > 1 && (
+              <button
+                type="button"
+                className="button outline"
+                onClick={() => setComponentRows((rows) => rows.filter((_, n) => n !== index))}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          className="button outline"
+          onClick={() =>
+            setComponentRows((rows) => [...rows, { feeHeadId: '', amount: '' }])
+          }
+        >
+          Add fee head
+        </button>{' '}
+        <button className="button primary">Save structure</button>
+      </form>
 
       <form
         className="admin-panel admin-form"
@@ -294,6 +538,102 @@ export function FeeOperations() {
             Add installment
           </button>
           <button className="button primary">Create draft schedule</button>
+        </div>
+      </form>
+
+      <form
+        className="admin-panel admin-form"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const f = new FormData(form);
+          try {
+            const result = await request<any>('admin/fees/collection-pages', 'POST', {
+              scheduleId: String(f.get('scheduleId')),
+              title: String(f.get('title')),
+              description: String(f.get('description') || ''),
+              allowFull: Boolean(f.get('allowFull')),
+              allowPartial: Boolean(f.get('allowPartial')),
+              allowCustom: Boolean(f.get('allowCustom')),
+            });
+            form.reset();
+            await navigator.clipboard.writeText(window.location.origin + result.path);
+            setMessage('Collection page created and its protected link copied to clipboard.');
+            await load();
+          } catch (e) {
+            setMessage((e as Error).message);
+          }
+        }}
+      >
+        <h2>Collection pages</h2>
+        <p>
+          Create shareable, non-indexed amount-selection pages for approved fee schedules. These
+          pages do not collect money until a hosted payment provider is activated.
+        </p>
+        <label className="field">
+          Active schedule
+          <select name="scheduleId" required defaultValue="">
+            <option value="" disabled>
+              Select schedule
+            </option>
+            {schedules
+              .filter((s) => ['active', 'completed'].includes(s.status))
+              .map((s) => (
+                <option value={s.id} key={s.id}>
+                  {s.account_reference} · {rupees(s.total_amount_minor)}
+                </option>
+              ))}
+          </select>
+        </label>
+        <div className="row">
+          <label className="field">
+            Page title
+            <input name="title" minLength={3} maxLength={120} required />
+          </label>
+          <label className="field">
+            Description
+            <input name="description" maxLength={600} />
+          </label>
+        </div>
+        <fieldset>
+          <legend>Allowed amount modes</legend>
+          <div className="collection-modes">
+            <label>
+              <input type="checkbox" name="allowFull" defaultChecked /> Full
+            </label>
+            <label>
+              <input type="checkbox" name="allowPartial" /> Partial
+            </label>
+            <label>
+              <input type="checkbox" name="allowCustom" /> Custom
+            </label>
+          </div>
+        </fieldset>
+        <button className="button primary">Create collection page</button>
+        <div className="fee-schedule-grid">
+          {collectionPages.slice(0, 6).map((page) => (
+            <article className="fee-schedule-card" key={page.id}>
+              <strong>{page.title}</strong>
+              <p>
+                {page.account_reference} · {page.intents} prepared intent(s)
+              </p>
+              <div className="admin-toolbar">
+                <span className="status-pill">{page.status}</span>
+                <button
+                  type="button"
+                  className="button outline"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(
+                      window.location.origin + '/collect/' + page.slug + '/',
+                    );
+                    setMessage('Collection page link copied.');
+                  }}
+                >
+                  Copy link
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       </form>
 
