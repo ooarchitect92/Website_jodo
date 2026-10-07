@@ -78,7 +78,7 @@ test('API outage never displays false form success', async ({ page }) => {
   await page.getByLabel('City', { exact: true }).fill('Test City');
   await page.locator('input[name="notice"]').check();
   await page.getByRole('button', { name: 'Request a demo', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('no receipt');
+  await expect(page.locator('.error-card[role="alert"]')).toContainText('no receipt');
   await expect(page.getByRole('heading', { name: 'Enquiry received.' })).toHaveCount(0);
 });
 test('calculator changes locally without sending input values', async ({ page }) => {
