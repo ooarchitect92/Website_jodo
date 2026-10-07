@@ -191,8 +191,8 @@ export default async function PayerPortal({ params, searchParams }: Props) {
                   <strong>{money(session.amount_minor)}</strong>
                   <p>
                     Created {new Date(session.created_at).toLocaleString('en-IN')} · installment{' '}
-                    {data.installments.find((i: any) => i.id === session.installment_id)?.sequence ||
-                      '—'}
+                    {data.installments.find((i: any) => i.id === session.installment_id)
+                      ?.sequence || '—'}
                   </p>
                 </div>
                 <span className="status-pill">{session.status}</span>
