@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; mandate?: string }>;
 };
 const money = (minor: number | string) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(
@@ -74,6 +74,13 @@ export default async function PayerPortal({ params, searchParams }: Props) {
             {query.checkout === 'invalid'
               ? 'The payment request was invalid and no checkout was created.'
               : 'The payment provider is temporarily unavailable. No successful collection has been recorded.'}
+          </p>
+        )}
+        {query.mandate && (
+          <p className="admin-message" role="status">
+            {query.mandate === 'invalid'
+              ? 'The recurring payment request was invalid.'
+              : 'Recurring payment setup is temporarily unavailable. No automatic debit has been authorized.'}
           </p>
         )}
         <div className="dashboard-stats">
@@ -216,6 +223,71 @@ export default async function PayerPortal({ params, searchParams }: Props) {
             );
           })}
         </div>
+      </section>
+
+      <section className="payer-card">
+        <div className="admin-toolbar">
+          <div>
+            <p className="eyebrow">Automatic collections</p>
+            <h2>UPI AutoPay / eNACH mandate</h2>
+          </div>
+          {data.mandates?.[0] && (
+            <span className="status-pill">{data.mandates[0].status}</span>
+          )}
+        </div>
+        {data.mandates?.some((m: any) => m.status === 'active') ? (
+          <p>
+            Automatic collection is active through{' '}
+            <strong>
+              {data.mandates.find((m: any) => m.status === 'active')?.rail === 'upi_autopay'
+                ? 'UPI AutoPay'
+                : 'eNACH'}
+            </strong>
+            . Due installments can be submitted automatically to the configured provider. Final
+            payment status is recorded only after verified provider confirmation.
+          </p>
+        ) : data.autopayProviderConnected ? (
+          <>
+            <p>
+              Authorize the full fee schedule once with the approved provider. Bank credentials,
+              UPI PINs and OTPs stay on the provider-hosted authorization page.
+            </p>
+            <div className="admin-toolbar">
+              <form action={'/payer/' + encodeURIComponent(token) + '/autopay/'} method="post">
+                <input type="hidden" name="rail" value="upi_autopay" />
+                <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+                <button className="button" type="submit">
+                  Set up UPI AutoPay
+                </button>
+              </form>
+              <form action={'/payer/' + encodeURIComponent(token) + '/autopay/'} method="post">
+                <input type="hidden" name="rail" value="enach" />
+                <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+                <button className="button outline" type="submit">
+                  Set up eNACH
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <p>
+            Recurring payment setup is disabled until the institute connects and verifies an
+            approved mandate provider.
+          </p>
+        )}
+        {!!data.mandateSetups?.length && (
+          <div className="payer-receipts">
+            {data.mandateSetups.slice(0, 5).map((setup: any) => (
+              <article key={setup.id}>
+                <div>
+                  <strong>{setup.rail === 'upi_autopay' ? 'UPI AutoPay' : 'eNACH'}</strong>
+                  <p>Started {new Date(setup.created_at).toLocaleString('en-IN')}</p>
+                </div>
+                <span className="status-pill">{setup.status}</span>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="payer-card">
