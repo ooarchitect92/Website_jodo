@@ -1,0 +1,71 @@
+name: Website verification
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['.delivery/**', 'docs/evidence/**', '**/*.md']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-trixie
+        env:
+          POSTGRES_USER: jodo_owner
+          POSTGRES_PASSWORD: isolated-test-database-password-only
+          POSTGRES_DB: website_jodo
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U jodo_owner -d website_jodo"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-fund
+      - name: Prepare isolated credentials
+        run: |
+          npm run bootstrap
+          node <<'JS'
+          const fs=require('node:fs'),crypto=require('node:crypto'),{authenticator}=require('otplib');
+          let env=fs.readFileSync('.env','utf8');
+          const app=crypto.randomBytes(24).toString('hex');
+          const values={DEPLOYMENT_MODE:'test',DATABASE_URL:'postgresql://jodo_app:'+app+'@127.0.0.1:5432/website_jodo',MIGRATION_DATABASE_URL:'postgresql://jodo_owner:isolated-test-database-password-only@127.0.0.1:5432/website_jodo',APP_DB_PASSWORD:app,OWNER_EMAIL:'owner@example.invalid',OWNER_PASSWORD:crypto.randomBytes(24).toString('base64url'),OWNER_TOTP_SECRET:authenticator.generateSecret()};
+          for(const [k,v]of Object.entries(values)){const rx=new RegExp('^'+k+'=.*$','m');env=rx.test(env)?env.replace(rx,k+'='+v):env+'\n'+k+'='+v;}
+          fs.writeFileSync('.env',env,{mode:0o600});
+          JS
+          npm run migrate
+          npm run seed:demo
+          npm run create:owner
+      - run: node scripts/verify-source.mjs
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:integration
+      - run: npm run doctor
+      - run: npm run build
+      - name: Native API and website browser journeys
+        run: |
+          npx playwright install --with-deps chromium
+          npm run start:api > /tmp/jodo-api.log 2>&1 &
+          npm run start:web > /tmp/jodo-web.log 2>&1 &
+          for i in $(seq 1 30); do if curl -sf http://127.0.0.1:4000/health/ready && curl -sf http://localhost:3000/ >/dev/null; then break; fi; sleep 2; done
+          npm run test:e2e
+      - name: Dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: website-verification
+          path: |
+            test-results/
+            playwright-report/
+            /tmp/jodo-api.log
+            /tmp/jodo-web.log
+          retention-days: 7
