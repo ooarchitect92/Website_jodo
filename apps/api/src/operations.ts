@@ -218,6 +218,11 @@ export class OperationsController {
         implemented: true,
       },
       {
+        name: 'Fee structures and collection pages',
+        status: 'Implemented; checkout stays blocked until a hosted payment provider is activated',
+        implemented: true,
+      },
+      {
         name: 'Signed payment provider callbacks',
         status:
           process.env.PAYMENT_PROVIDER_MODE === 'signed_hmac'
