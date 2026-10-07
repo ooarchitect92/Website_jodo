@@ -1,0 +1,30 @@
+name: Prepare isolated database test runtime
+on:
+  push:
+    paths: ['.github/workflows/database-test-runtime.yml']
+permissions:
+  contents: read
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    container: debian:trixie-slim
+    timeout-minutes: 10
+    steps:
+      - name: Package PostgreSQL for isolated integration tests
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-17 postgresql-client-17 ca-certificates
+          mkdir -p /tmp/pg-runtime/usr/lib/postgresql /tmp/pg-runtime/usr/share/postgresql /tmp/pg-runtime/compat
+          cp -a /usr/lib/postgresql/17 /tmp/pg-runtime/usr/lib/postgresql/
+          rm -rf /tmp/pg-runtime/usr/lib/postgresql/17/lib/bitcode
+          cp -a /usr/share/postgresql/17 /tmp/pg-runtime/usr/share/postgresql/
+          for binary in /usr/lib/postgresql/17/bin/postgres /usr/lib/postgresql/17/bin/psql /usr/lib/postgresql/17/bin/pg_dump /usr/lib/postgresql/17/bin/pg_restore; do
+            ldd "$binary" | awk '/=> \/usr\/lib|=> \/lib/ {print $3}' | while read dependency; do cp -L "$dependency" /tmp/pg-runtime/compat/; done
+          done
+          /usr/lib/postgresql/17/bin/postgres --version > /tmp/pg-runtime/VERSION.txt
+          tar -czf /tmp/postgres-test-runtime.tar.gz -C /tmp pg-runtime
+      - uses: actions/upload-artifact@v4
+        with:
+          name: postgres-test-runtime
+          path: /tmp/postgres-test-runtime.tar.gz
+          retention-days: 2
