@@ -101,8 +101,10 @@ export function LeadForm({ source = 'form' }: { source?: 'form' | 'chat' }) {
         {title} <span aria-hidden="true">*</span>
       </span>
       <input
+        id={`lead-${name}`}
         name={name}
         type={type}
+        aria-label={title}
         required
         aria-invalid={!!fields[name]}
         aria-describedby={fields[name] ? name + '-error' : undefined}
