@@ -4,7 +4,7 @@ Baseline: Website Master Blueprint v1.3 (7 October 2026). This is a working publ
 
 ## Implemented behavior to verify
 
-Public rendering; local reference media; 42 insert-only content records; responsive primary pages; product sections; article/case summaries and source links; category/search/pagination; calculator; secure local owner login; block editor; optimistic concurrency; autosave; review/approval/publication; scheduling; immutable revision history; manual trash/restore; raster media validation; navigation/form-copy editing; encrypted and idempotent form/chat enquiries; consent gates; campaign links; lead stages and score explanations; guided chat/handoff tasks; task workflows; outbox/SMTP status; audit history; exports; native and Compose command profiles; database backups and isolated restore.
+Public rendering; local reference media; 42 insert-only content records; responsive primary pages; product sections; article/case summaries and source links; category/search/pagination; calculator; secure local owner login; block editor; optimistic concurrency; autosave; review/approval/publication; scheduling; immutable revision history; manual trash/restore; raster media validation; navigation/form-copy editing; encrypted and idempotent form/chat enquiries; consent gates; campaign links; lead stages and score explanations; guided chat/handoff tasks; task workflows; fee schedules and installment ledger; externally confirmed payment evidence; partial/full refund ledger; UPI AutoPay/eNACH mandate state records; settlement allocation and reconciliation records; outbox/SMTP status; audit history; exports; native and Compose command profiles; database backups and isolated restore.
 
 ## Known missing or incomplete capabilities
 
@@ -14,10 +14,11 @@ Public rendering; local reference media; 42 insert-only content records; respons
 - Google/Meta account/reporting/conversion integrations, provider-final-payload contracts, campaign writes and spend authority. They are disabled, not mocked as successful.
 - Full omnichannel inbox, real-time human support, channel providers, automated subscription/nurture lifecycle and deliverability diagnostics.
 - S3/CDN/private-download adapters, extensive performance/load proof, production CSP nonce strategy, robust identity invitations/recovery, monitored incident delivery, Terraform/cloud provisioning and independent DR/key-loss drills.
-- Exact pixel equivalence of every Jodo route; full original articles and private financial systems are not reproduced. This project includes original source-linked article overviews and a distinct owner platform.
+- Live payment gateway callbacks, actual UPI/eNACH mandate creation, lending/KYC underwriting, bank settlement ingestion and money movement remain provider-specific integrations. The core fee ledger now exists, but it deliberately does not invent provider success.
+- Competitor-specific copyrighted copy, logos, private product code and proprietary financial systems are not reproduced. The implementation targets feature-class parity using independent branding and code.
 
 ## Launch blockers
 
-Do not turn on public indexing or remove the recreation disclosure until content/brand rights, real business identity, current claims, privacy decisions and all critical requirements are approved. Do not accept real sensitive financial/customer data until lifecycle, retention, rights, security and recovery controls pass. No live production domain, payment provider or ad account has been verified.
+Do not turn on public indexing or remove the recreation disclosure until content/brand rights, real business identity, current claims, privacy decisions and all critical requirements are approved. Do not accept real sensitive financial/customer data or represent money as collected until the selected payment/lending providers, webhook authentication, settlement feeds, lifecycle controls, retention, rights, security and recovery controls pass. No live production domain, payment provider or ad account has been verified.
 
 Accountable owner, legal/security reviewer, operating budget, hosting target and response staffing remain unassigned. Source commits, tests and a polished homepage are not production sign-off.
