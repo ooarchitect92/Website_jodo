@@ -116,6 +116,57 @@ export const leadSchema = z
   })
   .strict();
 export type LeadInput = z.infer<typeof leadSchema>;
+
+export const moneyMinor = z.number().int().positive().max(1_000_000_000_000);
+export const feeInstallmentInputSchema = z
+  .object({
+    dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    amountMinor: moneyMinor,
+  })
+  .strict();
+export const feeScheduleCreateSchema = z
+  .object({
+    accountReference: z.string().trim().regex(/^[A-Za-z0-9_-]{2,80}$/),
+    currency: z.literal('INR').default('INR'),
+    installments: z.array(feeInstallmentInputSchema).min(1).max(60),
+    note: z.string().trim().max(300).default(''),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const dates = value.installments.map((i) => i.dueDate);
+    if (new Set(dates).size !== dates.length)
+      ctx.addIssue({ code: 'custom', path: ['installments'], message: 'Installment due dates must be unique' });
+  });
+export const feeScheduleActivationSchema = z
+  .object({ expectedVersion: z.number().int().positive() })
+  .strict();
+export const externalPaymentRecordSchema = z
+  .object({
+    installmentId: z.uuid(),
+    amountMinor: moneyMinor,
+    currency: z.literal('INR'),
+    providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+    idempotencyKey: z.uuid(),
+    evidenceNote: z.string().trim().min(3).max(300),
+  })
+  .strict();
+export const refundRecordSchema = z
+  .object({
+    paymentId: z.uuid(),
+    amountMinor: moneyMinor,
+    idempotencyKey: z.uuid(),
+    reason: z.string().trim().min(3).max(300),
+  })
+  .strict();
+export const mandateRecordSchema = z
+  .object({
+    scheduleId: z.uuid(),
+    rail: z.enum(['upi_autopay', 'enach']),
+    providerReference: z.string().trim().regex(/^[A-Za-z0-9._:-]{3,120}$/),
+    status: z.enum(['pending', 'active', 'paused', 'revoked', 'failed']),
+  })
+  .strict();
+
 export const consentSchema = z
   .object({
     analytics: z.boolean(),
