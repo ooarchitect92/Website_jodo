@@ -49,6 +49,7 @@ export function FeeOperations() {
   const [mandates, setMandates] = useState<any[]>([]);
   const [settlements, setSettlements] = useState<any[]>([]);
   const [payers, setPayers] = useState<Payer[]>([]);
+  const [communications, setCommunications] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [installmentRows, setInstallmentRows] = useState([
     { dueDate: '', amount: '' },
@@ -56,13 +57,14 @@ export function FeeOperations() {
 
   const load = async () => {
     try {
-      const [o, s, p, m, st, py] = await Promise.all([
+      const [o, s, p, m, st, py, cm] = await Promise.all([
         request('admin/fees/overview'),
         request<Schedule[]>('admin/fees/schedules'),
         request<any[]>('admin/fees/payments'),
         request<any[]>('admin/fees/mandates'),
         request<any[]>('admin/fees/settlements'),
         request<Payer[]>('admin/payers'),
+        request<any[]>('admin/fees/communications'),
       ]);
       setOverview(o);
       setSchedules(s);
@@ -70,6 +72,7 @@ export function FeeOperations() {
       setMandates(m);
       setSettlements(st);
       setPayers(py);
+      setCommunications(cm);
       setMessage('');
     } catch (e) {
       setMessage((e as Error).message);
@@ -448,7 +451,8 @@ export function FeeOperations() {
         <div className="admin-panel">
           <h2>Mandates & settlements</h2>
           <p>
-            {mandates.length} mandate record(s) · {settlements.length} settlement record(s).
+            {mandates.length} mandate record(s) · {settlements.length} settlement record(s) ·{' '}
+            {communications.length} communication record(s).
           </p>
           <p className="small">
             Provider callbacks and money movement remain provider-specific integrations. The core
