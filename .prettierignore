@@ -11,3 +11,4 @@ docs/acceptance/blueprint-register.json
 .github/workflows/toolchain-audit.yml
 .github/workflows/database-test-runtime.yml
 .github/workflows/materialize-source.yml
+apps/web/next-env.d.ts
