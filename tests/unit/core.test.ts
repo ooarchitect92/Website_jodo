@@ -301,7 +301,12 @@ test('flexible fee structure validates component minus concession against instal
     currency: 'INR',
     components: [
       { code: 'tuition', label: 'Tuition', amountMinor: 5000000 },
-      { code: 'transport', label: 'Transport', amountMinor: 1000000, bankRouteKey: 'transport_acct' },
+      {
+        code: 'transport',
+        label: 'Transport',
+        amountMinor: 1000000,
+        bankRouteKey: 'transport_acct',
+      },
     ],
     concessions: [
       {
