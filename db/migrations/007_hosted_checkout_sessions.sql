@@ -28,6 +28,9 @@ CREATE INDEX IF NOT EXISTS payment_checkout_sessions_schedule_idx
   ON payment_checkout_sessions(schedule_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS payment_checkout_sessions_status_idx
   ON payment_checkout_sessions(status,expires_at);
+CREATE UNIQUE INDEX IF NOT EXISTS payment_checkout_sessions_one_open_installment_idx
+  ON payment_checkout_sessions(installment_id)
+  WHERE status IN('requested','created');
 
 CREATE TABLE IF NOT EXISTS payment_checkout_allocations(
   session_id uuid NOT NULL REFERENCES payment_checkout_sessions(id),
