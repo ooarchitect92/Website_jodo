@@ -32,3 +32,12 @@ ALTER TABLE payment_records
   CHECK(recorded_via IN('staff','provider'));
 
 UPDATE payment_records SET recorded_via='staff' WHERE recorded_via IS NULL;
+
+ALTER TABLE payment_mandates
+  ALTER COLUMN recorded_by DROP NOT NULL;
+
+ALTER TABLE payment_mandates
+  ADD COLUMN IF NOT EXISTS recorded_via text NOT NULL DEFAULT 'staff'
+  CHECK(recorded_via IN('staff','provider'));
+
+UPDATE payment_mandates SET recorded_via='staff' WHERE recorded_via IS NULL;
