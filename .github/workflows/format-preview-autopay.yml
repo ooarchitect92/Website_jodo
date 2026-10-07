@@ -1,0 +1,23 @@
+name: AutoPay format preview
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  format-preview:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-fund
+      - name: Show Prettier diff
+        run: |
+          npx prettier --write             apps/api/src/payer.ts             apps/web/src/app/payer/[token]/autopay/route.ts             apps/web/src/app/payer/[token]/page.tsx             apps/worker/src/main.ts             tests/integration/platform.test.ts
+          git diff --             apps/api/src/payer.ts             apps/web/src/app/payer/[token]/autopay/route.ts             apps/web/src/app/payer/[token]/page.tsx             apps/worker/src/main.ts             tests/integration/platform.test.ts
