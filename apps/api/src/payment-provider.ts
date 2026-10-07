@@ -88,11 +88,13 @@ export class PaymentProviderController {
       if (!inserted) {
         const existing = (
           await c.query(
-            `SELECT id,status,failure_code FROM payment_provider_events
+            `SELECT id,status,failure_code,body_hash FROM payment_provider_events
              WHERE provider=$1 AND provider_event_id=$2`,
             [provider, event.eventId],
           )
         ).rows[0];
+        if (existing?.body_hash !== bodyHash)
+          throw new ForbiddenException('Provider event ID was reused with different content');
         return { accepted: true, duplicate: true, status: existing?.status || 'received' };
       }
 
@@ -137,6 +139,24 @@ export class PaymentProviderController {
             [provider, event.providerReference],
           )
         ).rows[0];
+
+        if (
+          existingMandate &&
+          (existingMandate.schedule_id !== event.scheduleId || existingMandate.rail !== event.rail)
+        ) {
+          await c.query(
+            `UPDATE payment_provider_events
+             SET status='failed',failure_code='MANDATE_REFERENCE_MISMATCH'
+             WHERE id=$1`,
+            [inserted.id],
+          );
+          return {
+            accepted: false,
+            duplicate: false,
+            status: 'failed',
+            code: 'MANDATE_REFERENCE_MISMATCH',
+          };
+        }
 
         const mandate = existingMandate
           ? (
