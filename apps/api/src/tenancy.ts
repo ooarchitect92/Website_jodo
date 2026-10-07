@@ -79,13 +79,7 @@ const roleSchema = z
 
 const onboardingSchema = z
   .object({
-    section: z.enum([
-      'organisation',
-      'partner',
-      'configuration',
-      'import',
-      'readiness',
-    ]),
+    section: z.enum(['organisation', 'partner', 'configuration', 'import', 'readiness']),
     data: z.record(z.string().max(80), z.union([z.string().max(500), z.boolean(), z.number()])),
   })
   .strict();
@@ -120,7 +114,11 @@ const yearSchema = z
   .strict()
   .superRefine((value, ctx) => {
     if (value.endsOn <= value.startsOn)
-      ctx.addIssue({ code: 'custom', path: ['endsOn'], message: 'End date must follow start date' });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endsOn'],
+        message: 'End date must follow start date',
+      });
   });
 
 const brandSchema = z
@@ -181,68 +179,78 @@ export class TenancyController {
   @Get('overview')
   async overview(@Req() req: AuthedRequest) {
     const tenantId = req.actor.tenantId;
-    const [tenant, onboarding, entities, branches, years, brands, domains, members, roles, approvals] =
-      await Promise.all([
-        this.db.query(
-          'SELECT id,slug,display_name,legal_name,status,locale,created_at,updated_at FROM tenants WHERE id=$1',
-          [tenantId],
-        ),
-        this.db.query(
-          'SELECT current_step,draft,version,submitted_at,reviewed_at,review_reason,updated_at FROM onboarding_cases WHERE tenant_id=$1',
-          [tenantId],
-        ),
-        this.db.query(
-          'SELECT id,name,registration_reference,tax_reference_masked,status,created_at FROM legal_entities WHERE tenant_id=$1 ORDER BY name',
-          [tenantId],
-        ),
-        this.db.query(
-          `SELECT b.id,b.legal_entity_id,b.code,b.name,b.city,b.state,b.status,b.created_at,
+    const [
+      tenant,
+      onboarding,
+      entities,
+      branches,
+      years,
+      brands,
+      domains,
+      members,
+      roles,
+      approvals,
+    ] = await Promise.all([
+      this.db.query(
+        'SELECT id,slug,display_name,legal_name,status,locale,created_at,updated_at FROM tenants WHERE id=$1',
+        [tenantId],
+      ),
+      this.db.query(
+        'SELECT current_step,draft,version,submitted_at,reviewed_at,review_reason,updated_at FROM onboarding_cases WHERE tenant_id=$1',
+        [tenantId],
+      ),
+      this.db.query(
+        'SELECT id,name,registration_reference,tax_reference_masked,status,created_at FROM legal_entities WHERE tenant_id=$1 ORDER BY name',
+        [tenantId],
+      ),
+      this.db.query(
+        `SELECT b.id,b.legal_entity_id,b.code,b.name,b.city,b.state,b.status,b.created_at,
                   le.name AS legal_entity_name
            FROM branches b
            JOIN legal_entities le ON le.id=b.legal_entity_id
            WHERE b.tenant_id=$1
            ORDER BY b.code`,
-          [tenantId],
-        ),
-        this.db.query(
-          'SELECT id,label,starts_on,ends_on,status,created_at FROM academic_years WHERE tenant_id=$1 ORDER BY starts_on DESC',
-          [tenantId],
-        ),
-        this.db.query(
-          'SELECT id,name,primary_colour,accent_colour,support_email,locale,status,version,created_at,published_at FROM tenant_brand_versions WHERE tenant_id=$1 ORDER BY version DESC LIMIT 20',
-          [tenantId],
-        ),
-        this.db.query(
-          'SELECT id,hostname,status,verified_at,created_at,updated_at FROM tenant_domains WHERE tenant_id=$1 AND status<>\'removed\' ORDER BY created_at DESC',
-          [tenantId],
-        ),
-        this.db.query(
-          `SELECT m.id,m.user_id,u.email,m.role_key,m.status,m.branch_id,m.created_at,m.updated_at
+        [tenantId],
+      ),
+      this.db.query(
+        'SELECT id,label,starts_on,ends_on,status,created_at FROM academic_years WHERE tenant_id=$1 ORDER BY starts_on DESC',
+        [tenantId],
+      ),
+      this.db.query(
+        'SELECT id,name,primary_colour,accent_colour,support_email,locale,status,version,created_at,published_at FROM tenant_brand_versions WHERE tenant_id=$1 ORDER BY version DESC LIMIT 20',
+        [tenantId],
+      ),
+      this.db.query(
+        "SELECT id,hostname,status,verified_at,created_at,updated_at FROM tenant_domains WHERE tenant_id=$1 AND status<>'removed' ORDER BY created_at DESC",
+        [tenantId],
+      ),
+      this.db.query(
+        `SELECT m.id,m.user_id,u.email,m.role_key,m.status,m.branch_id,m.created_at,m.updated_at
            FROM memberships m
            JOIN users u ON u.id=m.user_id
            WHERE m.tenant_id=$1
            ORDER BY u.email`,
-          [tenantId],
-        ),
-        this.db.query(
-          `SELECT id,role_key,name,description,grants,explicit_denies,status,version,
+        [tenantId],
+      ),
+      this.db.query(
+        `SELECT id,role_key,name,description,grants,explicit_denies,status,version,
                   created_by,published_at,created_at,updated_at
            FROM tenant_roles
            WHERE tenant_id=$1
            ORDER BY role_key,version DESC`,
-          [tenantId],
-        ),
-        this.db.query(
-          `SELECT r.id,r.role_id,r.payload_hash,r.requested_by,r.decided_by,r.status,
+        [tenantId],
+      ),
+      this.db.query(
+        `SELECT r.id,r.role_id,r.payload_hash,r.requested_by,r.decided_by,r.status,
                   r.decision_reason,r.created_at,r.decided_at,tr.role_key,tr.name,tr.version
            FROM tenant_role_releases r
            JOIN tenant_roles tr ON tr.id=r.role_id
            WHERE r.tenant_id=$1
            ORDER BY r.created_at DESC
            LIMIT 100`,
-          [tenantId],
-        ),
-      ]);
+        [tenantId],
+      ),
+    ]);
 
     return {
       tenant: tenant[0],
@@ -446,7 +454,7 @@ export class TenancyController {
     const parsedId = z.uuid().parse(id);
     const row = (
       await this.db.query(
-        'SELECT id,hostname,challenge,status FROM tenant_domains WHERE id=$1 AND tenant_id=$2 AND status<>\'removed\'',
+        "SELECT id,hostname,challenge,status FROM tenant_domains WHERE id=$1 AND tenant_id=$2 AND status<>'removed'",
         [parsedId, req.actor.tenantId],
       )
     )[0];
@@ -671,18 +679,13 @@ export class TenancyController {
       })
       .strict()
       .parse(body);
-    if (!permissionCatalogue.has(input.action))
-      throw new ConflictException('Unknown permission');
+    if (!permissionCatalogue.has(input.action)) throw new ConflictException('Unknown permission');
     const denied = input.explicitDenies.includes(input.action);
     const granted = input.grants.includes(input.action);
     return {
       action: input.action,
       allowed: granted && !denied,
-      reasons: denied
-        ? ['explicit_deny']
-        : granted
-          ? ['explicit_grant']
-          : ['no_matching_grant'],
+      reasons: denied ? ['explicit_deny'] : granted ? ['explicit_grant'] : ['no_matching_grant'],
     };
   }
 }
