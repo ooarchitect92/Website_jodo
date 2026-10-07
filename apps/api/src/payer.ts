@@ -14,6 +14,7 @@ import { AuthGuard, AuthedRequest, Roles } from './auth';
 import { uuid } from './content';
 import { feePayerProfileSchema, payerLinkSchema } from '../../../packages/core/src/contracts';
 import { decrypt, digest, encrypt, token } from '../../../packages/core/src/security';
+import { checkoutProviderEnabled } from './payment-checkout';
 
 type PayerProfile = {
   accountReference: string;
@@ -207,7 +208,7 @@ export class PayerPortalController {
   @Get(':token')
   async portal(@Param('token') rawToken: string) {
     const access = await this.access(rawToken);
-    const [installments, payments, refunds] = await Promise.all([
+    const [installments, payments, refunds, checkoutSessions] = await Promise.all([
       this.db.query(
         `SELECT id,sequence,due_date,amount_minor,paid_amount_minor,
           CASE
@@ -234,6 +235,19 @@ export class PayerPortalController {
          WHERE p.schedule_id=$1 ORDER BY f.created_at DESC`,
         [access.schedule_id],
       ),
+      this.db.query(
+        `SELECT id,installment_id,amount_minor,currency,
+                CASE
+                  WHEN status='created' AND expires_at<now() THEN 'expired'
+                  ELSE status
+                END AS status,
+                expires_at,created_at,updated_at
+         FROM payment_checkout_sessions
+         WHERE schedule_id=$1
+         ORDER BY created_at DESC
+         LIMIT 20`,
+        [access.schedule_id],
+      ),
     ]);
     const profile = decrypt<PayerProfile>(access.encrypted_profile);
     return {
@@ -247,8 +261,11 @@ export class PayerPortalController {
       installments,
       payments,
       refunds,
-      providerConnected: false,
-      note: 'This portal shows the platform ledger. Payment actions are enabled only after a verified payment provider is configured.',
+      checkoutSessions,
+      providerConnected: checkoutProviderEnabled(),
+      note: checkoutProviderEnabled()
+        ? 'Hosted checkout is activated. The selected provider collects payment credentials; this platform records only validated payment outcomes.'
+        : 'This portal shows the platform ledger. Payment actions are enabled only after a verified payment provider is configured.',
     };
   }
 
