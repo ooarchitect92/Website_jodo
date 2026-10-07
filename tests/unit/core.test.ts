@@ -11,6 +11,10 @@ import {
   scoreLead,
   csvCell,
   simulateWorkflow,
+  feeScheduleCreateSchema,
+  externalPaymentRecordSchema,
+  refundRecordSchema,
+  mandateRecordSchema,
 } from '../../packages/core/src/contracts';
 import { encrypt, decrypt, equal, bucket } from '../../packages/core/src/security';
 import { seedPages } from '../../packages/core/src/site';
@@ -172,3 +176,59 @@ test('workflow exits on contacted state', () => {
   assert.equal(t.length, 1);
   assert.equal(t[0]!.type, 'cancelled');
 });
+
+test('fee schedule contract requires bounded positive installments', () => {
+  const parsed = feeScheduleCreateSchema.parse({
+    accountReference: 'student_001',
+    currency: 'INR',
+    installments: [
+      { dueDate: '2027-01-10', amountMinor: 2500000 },
+      { dueDate: '2027-02-10', amountMinor: 2500000 },
+    ],
+  });
+  assert.equal(parsed.installments.length, 2);
+});
+test('fee schedule rejects duplicate due dates', () =>
+  assert.equal(
+    feeScheduleCreateSchema.safeParse({
+      accountReference: 'student_001',
+      currency: 'INR',
+      installments: [
+        { dueDate: '2027-01-10', amountMinor: 100 },
+        { dueDate: '2027-01-10', amountMinor: 100 },
+      ],
+    }).success,
+    false,
+  ));
+test('external payment evidence requires idempotency and reference', () =>
+  assert.equal(
+    externalPaymentRecordSchema.safeParse({
+      installmentId: crypto.randomUUID(),
+      amountMinor: 10000,
+      currency: 'INR',
+      providerReference: 'BANK:UTR:123',
+      idempotencyKey: crypto.randomUUID(),
+      evidenceNote: 'Verified in synthetic provider report',
+    }).success,
+    true,
+  ));
+test('refund cannot be zero or negative', () =>
+  assert.equal(
+    refundRecordSchema.safeParse({
+      paymentId: crypto.randomUUID(),
+      amountMinor: 0,
+      idempotencyKey: crypto.randomUUID(),
+      reason: 'Synthetic correction',
+    }).success,
+    false,
+  ));
+test('mandate rail is restricted to supported autopay classes', () =>
+  assert.equal(
+    mandateRecordSchema.safeParse({
+      scheduleId: crypto.randomUUID(),
+      rail: 'card',
+      providerReference: 'MANDATE-123',
+      status: 'active',
+    }).success,
+    false,
+  ));

@@ -23,6 +23,7 @@ import { PrivacyController } from './privacy';
 import { OperationsController } from './operations';
 import { ChatController } from './chat';
 import { MediaController } from './media';
+import { FeeOperationsController } from './fees';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
 class SafeErrors implements ExceptionFilter {
@@ -74,6 +75,7 @@ class Health {
     OperationsController,
     ChatController,
     MediaController,
+    FeeOperationsController,
   ],
   providers: [Db, AuthGuard, LeadsService],
 })
@@ -124,7 +126,7 @@ export async function createApp() {
   const doc = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
-      .setTitle('Website Jodo API')
+      .setTitle('Education Payments Platform API')
       .setVersion('1.0')
       .addCookieAuth('jodo_session')
       .build(),

@@ -7,10 +7,12 @@ import { ContentList } from './content-list';
 import { Leads } from './leads';
 import { Workflows } from './workflows';
 import { Dashboard, Campaigns, Media, Settings, Records } from './panels';
+import { FeeOperations } from './fees';
 const sections = [
   ['overview', 'Overview'],
   ['content', 'Content & publishing'],
   ['leads', 'Leads'],
+  ['fees', 'Fee operations'],
   ['tasks', 'Staff tasks'],
   ['media', 'Media library'],
   ['campaigns', 'Campaign links'],
@@ -109,14 +111,12 @@ export function AdminShell() {
             }
           }}
         >
-          <img
-            src="/reference/images/jodo-logo-v2.svg"
-            alt="Jodo recreation"
-            width={135}
-            height={42}
-          />
+          <div className="brand brand-wordmark" aria-label="Owner workspace">
+            <span className="brand-mark" aria-hidden="true">◆</span>
+            <strong>Owner workspace</strong>
+          </div>
           <h1>Your owner workspace.</h1>
-          <p>Manage this installation. This is not Jodo’s student or institute login.</p>
+          <p>Manage content, enquiries and fee operations for this installation.</p>
           <label className="field">
             Staff email
             <input type="email" name="email" autoComplete="username" required />
@@ -166,6 +166,8 @@ export function AdminShell() {
         return <Campaigns />;
       case 'workflows':
         return <Workflows />;
+      case 'fees':
+        return <FeeOperations />;
       case 'media':
         return <Media />;
       case 'settings':
@@ -179,7 +181,7 @@ export function AdminShell() {
       <div className="admin-root admin-shell">
         <aside className="admin-sidebar">
           <Link href="/" className="admin-logo">
-            Jodo<span className="yellow-dot">.</span> studio
+            Platform<span className="yellow-dot">.</span> studio
           </Link>
           <p>OWNER CONSOLE · BLUEPRINT 1.3</p>
           <nav className="admin-nav" aria-label="Owner navigation">
@@ -213,8 +215,8 @@ export function AdminShell() {
             </div>
           </div>
           <div className="admin-notice">
-            Demonstration build. Source claims and production launch require approval. External
-            financial services and advertising are not connected.
+            Production-gated build. Fee schedules and external payment evidence are supported; live
+            payment, lending and advertising providers remain disabled until separately configured and verified.
           </div>
           {error && (
             <p role="alert" className="error-card">
