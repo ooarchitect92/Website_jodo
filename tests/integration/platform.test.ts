@@ -131,7 +131,9 @@ test('workspace membership context is explicit and tenant switching is membershi
   ).rows[0]!;
   await owner.query('INSERT INTO onboarding_cases(tenant_id) VALUES($1)', [second.id]);
   const user = (
-    await owner.query('SELECT id FROM users WHERE lower(email)=lower($1)', [process.env.OWNER_EMAIL])
+    await owner.query('SELECT id FROM users WHERE lower(email)=lower($1)', [
+      process.env.OWNER_EMAIL,
+    ])
   ).rows[0]!;
   await owner.query(
     `INSERT INTO memberships(tenant_id,user_id,role_key,status)
@@ -139,13 +141,7 @@ test('workspace membership context is explicit and tenant switching is membershi
     [second.id, user.id],
   );
 
-  const switched = await call(
-    '/v1/auth/switch-tenant',
-    'POST',
-    { tenantId: second.id },
-    {},
-    true,
-  );
+  const switched = await call('/v1/auth/switch-tenant', 'POST', { tenantId: second.id }, {}, true);
   assert.equal(switched.r.status, 201, JSON.stringify(switched.data));
   assert.equal(switched.data.tenant.id, second.id);
 
