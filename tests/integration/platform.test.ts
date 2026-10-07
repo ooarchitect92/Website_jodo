@@ -1436,13 +1436,7 @@ test('recurring mandate setup and due-date autopay reconcile through verified ca
       1,
     );
 
-    const adminAttempts = await call(
-      '/v1/admin/fees/autopay-attempts',
-      'GET',
-      undefined,
-      {},
-      true,
-    );
+    const adminAttempts = await call('/v1/admin/fees/autopay-attempts', 'GET', undefined, {}, true);
     assert.equal(adminAttempts.r.status, 200);
     assert.ok(adminAttempts.data.some((row: any) => row.id === attempts[0]!.id));
   } finally {
