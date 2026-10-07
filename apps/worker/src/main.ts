@@ -3,7 +3,7 @@ import { notifyFeePayer, notifyStaff } from './notifications';
 import { Pool, PoolClient } from 'pg';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { createHmac } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { Db } from '../../api/src/db';
 import { checkConfig } from '../../api/src/config';
 import { workflowSchema, pageSchema } from '../../../packages/core/src/contracts';
@@ -84,7 +84,7 @@ export async function tick(db: Db) {
       )
     ).rows;
     for (const row of reminderRows) {
-      const eventId = crypto.randomUUID();
+      const eventId = randomUUID();
       const inserted = await c.query(
         `INSERT INTO fee_reminder_runs(installment_id,reminder_key,reminder_date,event_id)
          VALUES($1,$2,current_date,$3)
