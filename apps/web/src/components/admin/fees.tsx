@@ -76,6 +76,8 @@ export function FeeOperations() {
   const [providerStatus, setProviderStatus] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [lateFees, setLateFees] = useState<any[]>([]);
+  const [mandateSetups, setMandateSetups] = useState<any[]>([]);
+  const [autopayAttempts, setAutopayAttempts] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [installmentRows, setInstallmentRows] = useState([{ dueDate: '', amount: '' }]);
   const [componentRows, setComponentRows] = useState([
@@ -87,7 +89,7 @@ export function FeeOperations() {
 
   const load = async () => {
     try {
-      const [o, s, p, m, st, py, cm, pe, ps, an, lf] = await Promise.all([
+      const [o, s, p, m, st, py, cm, pe, ps, an, lf, ms, aa] = await Promise.all([
         request('admin/fees/overview'),
         request<Schedule[]>('admin/fees/schedules'),
         request<any[]>('admin/fees/payments'),
@@ -99,6 +101,8 @@ export function FeeOperations() {
         request<any>('provider/payments/status'),
         request<any>('admin/fees/analytics'),
         request<any[]>('admin/fees/late-fees'),
+        request<any[]>('admin/fees/mandate-setups'),
+        request<any[]>('admin/fees/autopay-attempts'),
       ]);
       setOverview(o);
       setSchedules(s);
@@ -111,6 +115,8 @@ export function FeeOperations() {
       setProviderStatus(ps);
       setAnalytics(an);
       setLateFees(lf);
+      setMandateSetups(ms);
+      setAutopayAttempts(aa);
       setMessage('');
     } catch (e) {
       setMessage((e as Error).message);
@@ -763,7 +769,7 @@ export function FeeOperations() {
             <p className="eyebrow">Provider integrity</p>
             <h2>Signed payment callbacks</h2>
           </div>
-          <span className="status-pill">{providerStatus?.mode || 'disabled'}</span>
+          <span className="status-pill">{providerStatus?.webhookMode || 'disabled'}</span>
         </div>
         <p>
           Browser redirects never mark an installment paid. Only staff-confirmed evidence or a
@@ -774,7 +780,9 @@ export function FeeOperations() {
           <span>{providerEvents.length} event(s)</span>
           <span>{providerEvents.filter((event) => event.status === 'applied').length} applied</span>
           <span className="status-pill">
-            {providerStatus?.mode === 'signed_hmac' ? 'signature verification on' : 'blocked'}
+            {providerStatus?.webhookMode === 'signed_hmac'
+              ? 'signature verification on'
+              : 'blocked'}
           </span>
         </div>
         {providerEvents.slice(0, 8).map((event) => (
@@ -862,16 +870,39 @@ export function FeeOperations() {
           )}
         </div>
         <div className="admin-panel">
-          <h2>Mandates & settlements</h2>
+          <h2>Mandates, AutoPay & settlements</h2>
           <p>
-            {mandates.length} mandate record(s) · {settlements.length} settlement record(s) ·{' '}
-            {communications.length} communication record(s).
+            {mandates.length} mandate record(s) · {mandateSetups.length} setup attempt(s) ·{' '}
+            {autopayAttempts.length} automated debit attempt(s) · {settlements.length} settlement
+            record(s) · {communications.length} communication record(s).
           </p>
           <p className="small">
-            Signed normalized payment and mandate callbacks can now update the internal ledger when
-            explicitly configured. Hosted checkout, raw card/UPI credential handling, bank
-            settlement ingestion and lending remain provider-specific and disabled until verified.
+            Hosted mandate setup and due-date debit submission activate only when an approved
+            provider endpoint is configured. Payer bank credentials, UPI PINs and OTPs are never
+            collected by this console. Verified callbacks remain the source of truth for final
+            payment and mandate status.
           </p>
+          <div className="record-row">
+            <strong>Recurring provider</strong>
+            <span>{providerStatus?.provider || 'Not configured'}</span>
+            <span>{providerStatus?.autopayMode || 'disabled'}</span>
+            <span className="status-pill">
+              {autopayAttempts.filter((attempt) => attempt.status === 'confirmed').length} confirmed
+            </span>
+          </div>
+          {autopayAttempts.slice(0, 8).map((attempt) => (
+            <div className="record-row" key={attempt.id}>
+              <strong>{attempt.account_reference}</strong>
+              <span>
+                #{attempt.sequence} · {rupees(attempt.amount_minor)}
+              </span>
+              <span>
+                attempt {attempt.attempt_no}
+                {attempt.failure_code ? ' · ' + attempt.failure_code : ''}
+              </span>
+              <span className="status-pill">{attempt.status}</span>
+            </div>
+          ))}
         </div>
       </section>
     </>

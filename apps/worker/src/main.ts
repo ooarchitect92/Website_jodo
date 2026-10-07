@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { notifyFeePayer, notifyStaff } from './notifications';
+import { submitAutopayDebit } from './payments';
 import { Pool, PoolClient } from 'pg';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -23,6 +24,8 @@ export async function tick(db: Db) {
       if (job.type === 'lead.accepted') delivery = await notifyStaff(db, job.event_id);
       if (job.type.startsWith('fee.reminder.') || job.type === 'payment.external_confirmed')
         delivery = await notifyFeePayer(db, job.event_id);
+      if (job.type === 'autopay.debit.requested')
+        delivery = await submitAutopayDebit(db, job.event_id);
       await db.tx(async (c) => {
         if (job.type === 'lead.accepted') {
           await c.query(
@@ -37,7 +40,8 @@ export async function tick(db: Db) {
         const requiresDelivery =
           job.type.startsWith('lead.') ||
           job.type.startsWith('fee.reminder.') ||
-          (job.type === 'payment.external_confirmed' && job.payload?.payerCommunication === true);
+          (job.type === 'payment.external_confirmed' && job.payload?.payerCommunication === true) ||
+          job.type === 'autopay.debit.requested';
         const blocked = requiresDelivery && delivery !== 'provider_accepted';
         await c.query('UPDATE outbox SET status=$2,last_error=$3,lease_until=NULL WHERE id=$1', [
           job.id,
@@ -181,6 +185,100 @@ export async function tick(db: Db) {
         reminderKey: row.reminder_key,
         eventId,
       });
+    }
+
+    if (process.env.AUTOPAY_PROVIDER_MODE === 'mandate_api') {
+      const maxAttempts = Math.max(1, Math.min(10, Number(process.env.AUTOPAY_MAX_ATTEMPTS || 3)));
+      const autopayRows = (
+        await c.query(
+          `SELECT i.id AS installment_id,i.schedule_id,i.amount_minor,i.paid_amount_minor,
+                  s.currency,m.id AS mandate_id,m.provider,
+                  coalesce(last_attempt.attempt_no,0)::int AS last_attempt_no,
+                  last_attempt.status AS last_attempt_status,
+                  last_attempt.next_retry_at
+           FROM fee_installments i
+           JOIN fee_schedules s ON s.id=i.schedule_id
+           JOIN LATERAL (
+             SELECT pm.id,pm.provider,pm.last_event_at
+             FROM payment_mandates pm
+             WHERE pm.schedule_id=s.id AND pm.status='active'
+             ORDER BY pm.last_event_at DESC
+             LIMIT 1
+           ) m ON true
+           LEFT JOIN LATERAL (
+             SELECT a.attempt_no,a.status,a.next_retry_at
+             FROM autopay_debit_attempts a
+             WHERE a.installment_id=i.id
+             ORDER BY a.attempt_no DESC
+             LIMIT 1
+           ) last_attempt ON true
+           WHERE s.status='active'
+             AND i.status NOT IN('paid','cancelled')
+             AND i.due_date<=current_date
+             AND (
+               last_attempt.attempt_no IS NULL
+               OR (
+                 last_attempt.status='failed'
+                 AND last_attempt.next_retry_at IS NOT NULL
+                 AND last_attempt.next_retry_at<=now()
+                 AND last_attempt.attempt_no<$1
+               )
+             )
+           ORDER BY i.due_date,i.sequence
+           FOR UPDATE OF i SKIP LOCKED
+           LIMIT 100`,
+          [maxAttempts],
+        )
+      ).rows;
+      for (const row of autopayRows) {
+        const remaining = Number(row.amount_minor) - Number(row.paid_amount_minor);
+        if (remaining <= 0) continue;
+        const attemptNo = Number(row.last_attempt_no || 0) + 1;
+        const eventId = randomUUID();
+        const idempotencyKey = randomUUID();
+        const attempt = (
+          await c.query(
+            `INSERT INTO autopay_debit_attempts(
+               schedule_id,installment_id,mandate_id,idempotency_key,provider,
+               amount_minor,currency,attempt_no,status
+             ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'queued')
+             ON CONFLICT(installment_id,attempt_no) DO NOTHING
+             RETURNING id`,
+            [
+              row.schedule_id,
+              row.installment_id,
+              row.mandate_id,
+              idempotencyKey,
+              row.provider,
+              remaining,
+              row.currency,
+              attemptNo,
+            ],
+          )
+        ).rows[0];
+        if (!attempt) continue;
+        await c.query(
+          `INSERT INTO outbox(event_id,type,aggregate_id,payload)
+           VALUES($1,'autopay.debit.requested',$2,$3)`,
+          [
+            eventId,
+            attempt.id,
+            {
+              scheduleId: row.schedule_id,
+              installmentId: row.installment_id,
+              attemptNo,
+              amountMinor: remaining,
+            },
+          ],
+        );
+        await db.audit(c, 'worker', 'fees.autopay.queued', attempt.id, {
+          scheduleId: row.schedule_id,
+          installmentId: row.installment_id,
+          attemptNo,
+          amountMinor: remaining,
+          eventId,
+        });
+      }
     }
 
     const due = (

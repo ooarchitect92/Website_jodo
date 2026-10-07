@@ -27,6 +27,11 @@ import { FeeOperationsController } from './fees';
 import { PayerAdminController, PayerLinkAdminController, PayerPortalController } from './payer';
 import { PaymentProviderAdminController, PaymentProviderController } from './payment-provider';
 import { PayerCheckoutController, PaymentReturnController } from './payment-checkout';
+import {
+  AutopayAdminController,
+  MandateReturnController,
+  PayerMandateController,
+} from './mandate-autopay';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
 class SafeErrors implements ExceptionFilter {
@@ -86,6 +91,9 @@ class Health {
     PaymentProviderAdminController,
     PayerCheckoutController,
     PaymentReturnController,
+    PayerMandateController,
+    MandateReturnController,
+    AutopayAdminController,
   ],
   providers: [Db, AuthGuard, LeadsService],
 })
@@ -109,7 +117,8 @@ export async function createApp() {
       req.path.startsWith('/v1/chat') ||
       req.path.startsWith('/v1/provider/') ||
       req.path.startsWith('/v1/payer/') ||
-      req.path.startsWith('/v1/payment-return/')
+      req.path.startsWith('/v1/payment-return/') ||
+      req.path.startsWith('/v1/mandate-return/')
     )
       res.setHeader('Cache-Control', 'no-store');
     const providerWebhook = req.path.startsWith('/v1/provider/');

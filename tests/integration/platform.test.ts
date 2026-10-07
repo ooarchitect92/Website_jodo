@@ -1195,6 +1195,270 @@ test('hosted checkout is idempotent, provider-gated and reconciles to the fee le
   }
 });
 
+test('recurring mandate setup and due-date autopay reconcile through verified callbacks', async () => {
+  let mandateCalls = 0;
+  let debitCalls = 0;
+  let providerReturnUrl = '';
+  let debitReference = '';
+  const mandateReference = 'mandate_' + randomUUID().replaceAll('-', '');
+
+  const providerServer = createHttpServer(async (req, res) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) chunks.push(Buffer.from(chunk));
+    const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {};
+
+    if (req.url === '/mandates') {
+      mandateCalls++;
+      assert.equal(req.method, 'POST');
+      assert.equal(req.headers.authorization, 'Bearer synthetic-autopay-api-key-123456789');
+      providerReturnUrl = body.returnUrl;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          providerReference: mandateReference,
+          authorizationUrl:
+            'http://127.0.0.1:' + (providerServer.address() as any).port + '/authorize',
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        }),
+      );
+      return;
+    }
+
+    if (req.url === '/debits') {
+      debitCalls++;
+      assert.equal(req.method, 'POST');
+      assert.equal(req.headers.authorization, 'Bearer synthetic-autopay-api-key-123456789');
+      assert.equal(body.mandateReference, mandateReference);
+      debitReference = 'debit_' + randomUUID().replaceAll('-', '');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ providerReference: debitReference, status: 'accepted' }));
+      return;
+    }
+
+    res.writeHead(404).end();
+  });
+
+  await new Promise<void>((resolve) => providerServer.listen(0, '127.0.0.1', resolve));
+  const providerPort = (providerServer.address() as { port: number }).port;
+  const previous = {
+    autopayMode: process.env.AUTOPAY_PROVIDER_MODE,
+    mandateUrl: process.env.AUTOPAY_MANDATE_CREATE_URL,
+    debitUrl: process.env.AUTOPAY_DEBIT_CREATE_URL,
+    allowedHosts: process.env.AUTOPAY_ALLOWED_HOSTS,
+    apiKey: process.env.AUTOPAY_API_KEY,
+    timeout: process.env.AUTOPAY_TIMEOUT_MS,
+    maxAttempts: process.env.AUTOPAY_MAX_ATTEMPTS,
+    webhookMode: process.env.PAYMENT_PROVIDER_MODE,
+    providerName: process.env.PAYMENT_PROVIDER_NAME,
+    webhookSecret: process.env.PAYMENT_WEBHOOK_SECRET,
+  };
+  Object.assign(process.env, {
+    AUTOPAY_PROVIDER_MODE: 'mandate_api',
+    AUTOPAY_MANDATE_CREATE_URL: 'http://127.0.0.1:' + providerPort + '/mandates',
+    AUTOPAY_DEBIT_CREATE_URL: 'http://127.0.0.1:' + providerPort + '/debits',
+    AUTOPAY_ALLOWED_HOSTS: '127.0.0.1',
+    AUTOPAY_API_KEY: 'synthetic-autopay-api-key-123456789',
+    AUTOPAY_TIMEOUT_MS: '5000',
+    AUTOPAY_MAX_ATTEMPTS: '3',
+    PAYMENT_PROVIDER_MODE: 'signed_hmac',
+    PAYMENT_PROVIDER_NAME: 'qa_autopay_gateway',
+    PAYMENT_WEBHOOK_SECRET: 'autopay-webhook-secret-'.repeat(3),
+  });
+
+  const send = async (body: any) => {
+    const raw = JSON.stringify(body);
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET!)
+      .update(timestamp)
+      .update('.')
+      .update(raw)
+      .digest('hex');
+    const r = await fetch(base + '/v1/provider/payments/webhook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Payment-Timestamp': timestamp,
+        'X-Payment-Signature': signature,
+      },
+      body: raw,
+    });
+    return { r, data: await r.json() };
+  };
+
+  try {
+    const reference = 'autopay_' + randomUUID().slice(0, 8);
+    const payer = await call(
+      '/v1/admin/payers',
+      'POST',
+      {
+        accountReference: reference,
+        displayName: 'Synthetic AutoPay Parent',
+        email: 'autopay@example.invalid',
+        preferredChannel: 'email',
+        locale: 'en-IN',
+      },
+      {},
+      true,
+    );
+    assert.equal(payer.r.status, 201, JSON.stringify(payer.data));
+
+    const dueDate = new Date().toISOString().slice(0, 10);
+    const schedule = await call(
+      '/v1/admin/fees/schedules',
+      'POST',
+      {
+        accountReference: reference,
+        payerId: payer.data.id,
+        scopeType: 'student',
+        scopeReference: reference,
+        currency: 'INR',
+        components: [{ code: 'tuition', label: 'Tuition', amountMinor: 90000 }],
+        installments: [{ dueDate, amountMinor: 90000 }],
+        note: 'Synthetic recurring collection schedule',
+      },
+      {},
+      true,
+    );
+    assert.equal(schedule.r.status, 201, JSON.stringify(schedule.data));
+    assert.equal(
+      (
+        await call(
+          '/v1/admin/fees/schedules/' + schedule.data.id + '/activate',
+          'POST',
+          { expectedVersion: 1 },
+          {},
+          true,
+        )
+      ).r.status,
+      201,
+    );
+
+    const schedules = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
+    const active = schedules.find((row: any) => row.id === schedule.data.id);
+    const installmentId = active.installments[0].id;
+
+    const link = await call(
+      '/v1/admin/fees/schedules/' + schedule.data.id + '/payer-link',
+      'POST',
+      { expiresHours: 1 },
+      {},
+      true,
+    );
+    assert.equal(link.r.status, 201, JSON.stringify(link.data));
+    const payerToken = String(link.data.path).split('/').filter(Boolean).pop()!;
+
+    const setupBody = { rail: 'upi_autopay', idempotencyKey: randomUUID() };
+    const setup = await call('/v1/payer/' + payerToken + '/mandates', 'POST', setupBody);
+    assert.equal(setup.r.status, 201, JSON.stringify(setup.data));
+    assert.equal(setup.data.status, 'created');
+    assert.equal(mandateCalls, 1);
+
+    const setupRetry = await call('/v1/payer/' + payerToken + '/mandates', 'POST', setupBody);
+    assert.equal(setupRetry.r.status, 201, JSON.stringify(setupRetry.data));
+    assert.equal(setupRetry.data.setupId, setup.data.setupId);
+    assert.equal(mandateCalls, 1);
+
+    const mandateEvent = {
+      eventId: 'evt_' + randomUUID(),
+      type: 'mandate_status',
+      scheduleId: schedule.data.id,
+      rail: 'upi_autopay',
+      providerReference: mandateReference,
+      status: 'active',
+      occurredAt: new Date().toISOString(),
+    };
+    const activated = await send(mandateEvent);
+    assert.equal(activated.r.status, 202, JSON.stringify(activated.data));
+    assert.equal(activated.data.status, 'applied');
+
+    const returnToken = new URL(providerReturnUrl).pathname.split('/').filter(Boolean).pop()!;
+    const returned = await call('/v1/mandate-return/' + returnToken);
+    assert.equal(returned.r.status, 200, JSON.stringify(returned.data));
+    assert.equal(returned.data.status, 'active');
+
+    const portal = await call('/v1/payer/' + payerToken);
+    assert.equal(portal.r.status, 200, JSON.stringify(portal.data));
+    assert.equal(portal.data.autopayProviderConnected, true);
+    assert.ok(portal.data.mandates.some((row: any) => row.status === 'active'));
+
+    await tick(db);
+    let attempts = await db.query(
+      'SELECT * FROM autopay_debit_attempts WHERE installment_id=$1 ORDER BY attempt_no',
+      [installmentId],
+    );
+    assert.equal(attempts.length, 1);
+    assert.equal(attempts[0]!.status, 'queued');
+
+    await tick(db);
+    attempts = await db.query(
+      'SELECT * FROM autopay_debit_attempts WHERE installment_id=$1 ORDER BY attempt_no',
+      [installmentId],
+    );
+    assert.equal(debitCalls, 1);
+    assert.equal(attempts.length, 1);
+    assert.equal(attempts[0]!.status, 'submitted');
+    assert.equal(attempts[0]!.provider_reference, debitReference);
+
+    const paymentEvent = {
+      eventId: 'evt_' + randomUUID(),
+      type: 'payment_confirmed',
+      installmentId,
+      providerReference: debitReference,
+      amountMinor: 90000,
+      currency: 'INR',
+      occurredAt: new Date().toISOString(),
+    };
+    const confirmed = await send(paymentEvent);
+    assert.equal(confirmed.r.status, 202, JSON.stringify(confirmed.data));
+    assert.equal(confirmed.data.status, 'applied');
+
+    attempts = await db.query(
+      'SELECT * FROM autopay_debit_attempts WHERE installment_id=$1 ORDER BY attempt_no',
+      [installmentId],
+    );
+    assert.equal(attempts[0]!.status, 'confirmed');
+    assert.ok(attempts[0]!.completed_at);
+
+    const installment = (
+      await db.query('SELECT * FROM fee_installments WHERE id=$1', [installmentId])
+    )[0]!;
+    assert.equal(installment.status, 'paid');
+    assert.equal(Number(installment.paid_amount_minor), 90000);
+
+    await tick(db);
+    assert.equal(
+      (
+        await db.query(
+          'SELECT count(*)::int AS count FROM autopay_debit_attempts WHERE installment_id=$1',
+          [installmentId],
+        )
+      )[0]!.count,
+      1,
+    );
+
+    const adminAttempts = await call('/v1/admin/fees/autopay-attempts', 'GET', undefined, {}, true);
+    assert.equal(adminAttempts.r.status, 200);
+    assert.ok(adminAttempts.data.some((row: any) => row.id === attempts[0]!.id));
+  } finally {
+    for (const [key, value] of Object.entries({
+      AUTOPAY_PROVIDER_MODE: previous.autopayMode,
+      AUTOPAY_MANDATE_CREATE_URL: previous.mandateUrl,
+      AUTOPAY_DEBIT_CREATE_URL: previous.debitUrl,
+      AUTOPAY_ALLOWED_HOSTS: previous.allowedHosts,
+      AUTOPAY_API_KEY: previous.apiKey,
+      AUTOPAY_TIMEOUT_MS: previous.timeout,
+      AUTOPAY_MAX_ATTEMPTS: previous.maxAttempts,
+      PAYMENT_PROVIDER_MODE: previous.webhookMode,
+      PAYMENT_PROVIDER_NAME: previous.providerName,
+      PAYMENT_WEBHOOK_SECRET: previous.webhookSecret,
+    })) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    await new Promise<void>((resolve) => providerServer.close(() => resolve()));
+  }
+});
+
 test('session revocation invalidates subsequent access', async () => {
   await call('/v1/auth/logout', 'POST', {}, {}, true);
   assert.equal((await call('/v1/admin/content', 'GET', undefined, {}, true)).r.status, 401);

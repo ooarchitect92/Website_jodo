@@ -32,14 +32,20 @@ export class PaymentProviderController {
   status() {
     const webhookEnabled = process.env.PAYMENT_PROVIDER_MODE === 'signed_hmac';
     const checkoutEnabled = process.env.PAYMENT_CHECKOUT_MODE === 'redirect_api';
+    const autopayEnabled = process.env.AUTOPAY_PROVIDER_MODE === 'mandate_api';
     return {
-      provider: webhookEnabled || checkoutEnabled ? process.env.PAYMENT_PROVIDER_NAME : null,
+      provider:
+        webhookEnabled || checkoutEnabled || autopayEnabled
+          ? process.env.PAYMENT_PROVIDER_NAME
+          : null,
       webhookMode: webhookEnabled ? 'signed_hmac' : 'disabled',
       checkoutMode: checkoutEnabled ? 'redirect_api' : 'disabled',
-      moneyMovement: checkoutEnabled,
-      note: checkoutEnabled
-        ? 'Hosted checkout is configured. Payment credentials remain with the selected provider; authoritative outcomes arrive through verified provider callbacks.'
-        : 'Signed provider callbacks can be enabled independently. Hosted checkout remains disabled until an approved provider endpoint is configured.',
+      autopayMode: autopayEnabled ? 'mandate_api' : 'disabled',
+      moneyMovement: checkoutEnabled || autopayEnabled,
+      note:
+        checkoutEnabled || autopayEnabled
+          ? 'Hosted payment capabilities are configured. Payment credentials remain with the selected provider; authoritative outcomes arrive through verified provider callbacks.'
+          : 'Signed provider callbacks can be enabled independently. Hosted checkout and recurring mandate APIs remain disabled until approved provider endpoints are configured.',
     };
   }
 
@@ -108,6 +114,28 @@ export class PaymentProviderController {
            WHERE provider=$1 AND provider_reference=$2
              AND status IN('requested','created')`,
           [provider, event.providerReference, event.reasonCode],
+        );
+        await c.query(
+          `UPDATE autopay_debit_attempts
+           SET status='failed',failure_code=$3,
+               next_retry_at=CASE
+                 WHEN attempt_no < greatest(1,least(10,$4::int))
+                   THEN now() + CASE
+                     WHEN attempt_no=1 THEN interval '1 hour'
+                     WHEN attempt_no=2 THEN interval '24 hours'
+                     ELSE interval '48 hours'
+                   END
+                 ELSE NULL
+               END,
+               updated_at=now()
+           WHERE provider=$1 AND provider_reference=$2
+             AND status IN('submitted','queued','uncertain')`,
+          [
+            provider,
+            event.providerReference,
+            event.reasonCode,
+            Number(process.env.AUTOPAY_MAX_ATTEMPTS || 3),
+          ],
         );
         await c.query(
           `UPDATE payment_provider_events
@@ -194,6 +222,19 @@ export class PaymentProviderController {
               )
             ).rows[0];
 
+        await c.query(
+          `UPDATE payment_mandate_setup_requests
+           SET status=CASE
+                 WHEN $3='active' THEN 'active'
+                 WHEN $3 IN('failed','revoked') THEN 'failed'
+                 ELSE 'created'
+               END,
+               failure_code=CASE WHEN $3 IN('failed','revoked') THEN upper($3) ELSE NULL END,
+               updated_at=now()
+           WHERE provider=$1 AND provider_reference=$2
+             AND status IN('requested','created')`,
+          [provider, event.providerReference, event.status],
+        );
         await c.query(
           `UPDATE payment_provider_events
            SET status='applied',applied_at=now()
@@ -329,6 +370,14 @@ export class PaymentProviderController {
           [checkout.id, payment.id],
         );
       }
+
+      await c.query(
+        `UPDATE autopay_debit_attempts
+         SET status='confirmed',completed_at=now(),failure_code=NULL,next_retry_at=NULL,updated_at=now()
+         WHERE provider=$1 AND provider_reference=$2
+           AND status IN('submitted','queued','uncertain','failed')`,
+        [provider, event.providerReference],
+      );
 
       const nextPaid = Number(installment.paid_amount_minor) + event.amountMinor;
       const nextStatus = nextPaid === Number(installment.amount_minor) ? 'paid' : 'part_paid';
