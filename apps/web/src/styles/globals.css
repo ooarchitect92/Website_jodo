@@ -2452,3 +2452,66 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+/* Secure payer portal */
+.payer-portal {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f0fdfa 0, #f8fafc 38%, #fff 100%);
+  padding: 28px max(20px, calc((100vw - 1080px) / 2)) 80px;
+}
+.payer-portal-header {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.payer-hero {
+  padding: 70px 0 36px;
+}
+.payer-hero h1 { max-width: 720px; }
+.payer-card,
+.payer-security-note {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 28px;
+  margin-top: 22px;
+  box-shadow: 0 12px 34px #0f172a0a;
+}
+.payer-table { display: grid; }
+.payer-row {
+  display: grid;
+  grid-template-columns: .7fr 1fr 1fr 1fr .7fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 4px;
+  border-top: 1px solid var(--line);
+}
+.payer-row-head {
+  border-top: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.payer-receipts { display: grid; gap: 10px; }
+.payer-receipts article {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+.payer-receipts article:first-child { border-top: 0; }
+.payer-security-note { background: #fff7ed; border-color: #fed7aa; }
+.payer-security-note p { margin: 6px 0 0; }
+@media (max-width: 760px) {
+  .payer-portal { padding-inline: 18px; }
+  .payer-portal-header { align-items: flex-start; }
+  .payer-hero { padding-top: 42px; }
+  .payer-row,
+  .payer-row-head { grid-template-columns: 1fr 1fr; }
+  .payer-row-head { display: none; }
+  .payer-receipts article { align-items: flex-start; flex-direction: column; }
+}
