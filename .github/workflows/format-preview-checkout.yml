@@ -1,0 +1,24 @@
+name: Format preview checkout
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  format-preview:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-fund
+      - name: Show Prettier diff
+        run: |
+          npx prettier --write             apps/api/src/payment-checkout.ts             apps/web/src/app/payer/[token]/page.tsx             apps/web/src/app/payer/[token]/pay/route.ts             apps/web/src/app/payment/return/[token]/page.tsx             tests/integration/platform.test.ts
+          git diff --             apps/api/src/payment-checkout.ts             apps/web/src/app/payer/[token]/page.tsx             apps/web/src/app/payer/[token]/pay/route.ts             apps/web/src/app/payment/return/[token]/page.tsx             tests/integration/platform.test.ts
