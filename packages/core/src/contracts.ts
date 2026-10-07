@@ -121,10 +121,17 @@ export const moneyMinor = z.number().int().positive().max(1_000_000_000_000);
 
 export const feeComponentInputSchema = z
   .object({
-    code: z.string().trim().regex(/^[A-Za-z0-9_-]{2,40}$/),
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,40}$/),
     label: z.string().trim().min(2).max(100),
     amountMinor: moneyMinor,
-    bankRouteKey: z.string().trim().regex(/^[A-Za-z0-9_-]{2,60}$/).optional(),
+    bankRouteKey: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,60}$/)
+      .optional(),
   })
   .strict();
 
@@ -168,7 +175,11 @@ export const feeScheduleCreateSchema = z
       .regex(/^[A-Za-z0-9_-]{2,80}$/),
     payerId: z.uuid().optional(),
     scopeType: z.enum(['course', 'batch', 'year', 'student', 'custom']).default('custom'),
-    scopeReference: z.string().trim().regex(/^[A-Za-z0-9_./:-]{2,100}$/).default('custom'),
+    scopeReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_./:-]{2,100}$/)
+      .default('custom'),
     currency: z.literal('INR').default('INR'),
     components: z.array(feeComponentInputSchema).max(30).default([]),
     concessions: z.array(feeConcessionInputSchema).max(20).default([]),
@@ -189,14 +200,26 @@ export const feeScheduleCreateSchema = z
       const componentCodes = value.components.map((i) => i.code);
       const concessionCodes = value.concessions.map((i) => i.code);
       if (new Set(componentCodes).size !== componentCodes.length)
-        ctx.addIssue({ code: 'custom', path: ['components'], message: 'Fee component codes must be unique' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['components'],
+          message: 'Fee component codes must be unique',
+        });
       if (new Set(concessionCodes).size !== concessionCodes.length)
-        ctx.addIssue({ code: 'custom', path: ['concessions'], message: 'Concession codes must be unique' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['concessions'],
+          message: 'Concession codes must be unique',
+        });
       const gross = value.components.reduce((sum, i) => sum + i.amountMinor, 0);
       const concession = value.concessions.reduce((sum, i) => sum + i.amountMinor, 0);
       const installments = value.installments.reduce((sum, i) => sum + i.amountMinor, 0);
       if (concession >= gross)
-        ctx.addIssue({ code: 'custom', path: ['concessions'], message: 'Concessions must be lower than gross fees' });
+        ctx.addIssue({
+          code: 'custom',
+          path: ['concessions'],
+          message: 'Concessions must be lower than gross fees',
+        });
       if (gross - concession !== installments)
         ctx.addIssue({
           code: 'custom',
