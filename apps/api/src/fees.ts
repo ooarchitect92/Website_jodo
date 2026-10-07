@@ -328,6 +328,11 @@ export class FeeOperationsController {
             amountMinor: v.amountMinor,
             receiptId: receipt.id,
             receiptNumber: receipt.receipt_number,
+            payerCommunication: Boolean(
+              installment.payer_id &&
+                installment.preferred_channel &&
+                installment.preferred_channel !== 'none',
+            ),
           },
         ],
       );
