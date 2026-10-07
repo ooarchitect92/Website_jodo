@@ -37,7 +37,7 @@ export async function tick(db: Db) {
         const requiresDelivery =
           job.type.startsWith('lead.') ||
           job.type.startsWith('fee.reminder.') ||
-          job.type === 'payment.external_confirmed';
+          (job.type === 'payment.external_confirmed' && job.payload?.payerCommunication === true);
         const blocked = requiresDelivery && delivery !== 'provider_accepted';
         await c.query('UPDATE outbox SET status=$2,last_error=$3,lease_until=NULL WHERE id=$1', [
           job.id,
