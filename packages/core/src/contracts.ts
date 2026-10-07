@@ -240,6 +240,103 @@ export const mandateRecordSchema = z
   })
   .strict();
 
+export const feeHeadSchema = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Z0-9_]{2,40}$/),
+    name: z.string().trim().min(2).max(100),
+    settlementAccountKey: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,80}$/)
+      .optional(),
+  })
+  .strict();
+
+export const installmentComponentSchema = z
+  .object({
+    installmentId: z.uuid(),
+    components: z
+      .array(
+        z
+          .object({
+            feeHeadId: z.uuid(),
+            amountMinor: moneyMinor,
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(30),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    const ids = value.components.map((x) => x.feeHeadId);
+    if (new Set(ids).size !== ids.length)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['components'],
+        message: 'Fee heads must be unique per installment',
+      });
+  });
+
+export const feeAdjustmentSchema = z
+  .object({
+    installmentId: z.uuid(),
+    kind: z.enum(['discount', 'concession', 'late_fee', 'waiver']),
+    amountMinor: moneyMinor,
+    reason: z.string().trim().min(3).max(300),
+  })
+  .strict();
+
+export const feeAdjustmentReverseSchema = z
+  .object({
+    reason: z.string().trim().min(3).max(300),
+  })
+  .strict();
+
+export const collectionPageCreateSchema = z
+  .object({
+    scheduleId: z.uuid(),
+    title: z.string().trim().min(3).max(120),
+    description: z.string().trim().max(600).default(''),
+    allowFull: z.boolean().default(true),
+    allowPartial: z.boolean().default(false),
+    allowCustom: z.boolean().default(false),
+    minimumMinor: moneyMinor.optional(),
+    maximumMinor: moneyMinor.optional(),
+    expiresAt: z.iso.datetime().optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (!value.allowFull && !value.allowPartial && !value.allowCustom)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['allowFull'],
+        message: 'Enable at least one collection mode',
+      });
+    if (
+      value.minimumMinor !== undefined &&
+      value.maximumMinor !== undefined &&
+      value.maximumMinor < value.minimumMinor
+    )
+      ctx.addIssue({
+        code: 'custom',
+        path: ['maximumMinor'],
+        message: 'Maximum must be at least the minimum',
+      });
+  });
+
+export const collectionIntentSchema = z
+  .object({
+    installmentId: z.uuid().optional(),
+    mode: z.enum(['full', 'partial', 'custom']),
+    amountMinor: moneyMinor.optional(),
+    idempotencyKey: z.uuid(),
+  })
+  .strict();
+
 export const feePayerProfileSchema = z
   .object({
     accountReference: z

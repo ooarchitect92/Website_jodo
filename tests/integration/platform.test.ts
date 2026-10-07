@@ -851,6 +851,139 @@ test('signed provider webhooks verify authenticity and apply payment exactly onc
   }
 });
 
+test('fee heads, discounts and collection pages preserve an auditable amount lifecycle', async () => {
+  const tuition = await call(
+    '/v1/admin/fees/structure/heads',
+    'POST',
+    { code: 'QA_TUITION_' + randomUUID().slice(0, 4).toUpperCase(), name: 'QA Tuition' },
+    {},
+    true,
+  );
+  const transport = await call(
+    '/v1/admin/fees/structure/heads',
+    'POST',
+    { code: 'QA_TRANSPORT_' + randomUUID().slice(0, 4).toUpperCase(), name: 'QA Transport' },
+    {},
+    true,
+  );
+  assert.equal(tuition.r.status, 201, JSON.stringify(tuition.data));
+  assert.equal(transport.r.status, 201, JSON.stringify(transport.data));
+
+  const schedule = await call(
+    '/v1/admin/fees/schedules',
+    'POST',
+    {
+      accountReference: 'structure_' + randomUUID().slice(0, 8),
+      currency: 'INR',
+      note: 'Synthetic structured fee',
+      installments: [{ dueDate: '2027-08-10', amountMinor: 100000 }],
+    },
+    {},
+    true,
+  );
+  assert.equal(schedule.r.status, 201, JSON.stringify(schedule.data));
+  const all = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
+  const draft = all.find((row: any) => row.id === schedule.data.id);
+  const installmentId = draft.installments[0].id;
+
+  const components = await call(
+    '/v1/admin/fees/structure/components',
+    'POST',
+    {
+      installmentId,
+      components: [
+        { feeHeadId: tuition.data.id, amountMinor: 60000 },
+        { feeHeadId: transport.data.id, amountMinor: 40000 },
+      ],
+    },
+    {},
+    true,
+  );
+  assert.equal(components.r.status, 201, JSON.stringify(components.data));
+
+  const activated = await call(
+    '/v1/admin/fees/schedules/' + schedule.data.id + '/activate',
+    'POST',
+    { expectedVersion: 1 },
+    {},
+    true,
+  );
+  assert.equal(activated.r.status, 201);
+
+  const adjustment = await call(
+    '/v1/admin/fees/structure/adjustments',
+    'POST',
+    {
+      installmentId,
+      kind: 'discount',
+      amountMinor: 10000,
+      reason: 'Synthetic approved concession',
+    },
+    {},
+    true,
+  );
+  assert.equal(adjustment.r.status, 201, JSON.stringify(adjustment.data));
+
+  const page = await call(
+    '/v1/admin/fees/collection-pages',
+    'POST',
+    {
+      scheduleId: schedule.data.id,
+      title: 'Synthetic fee collection',
+      description: 'QA collection page',
+      allowFull: true,
+      allowPartial: true,
+      allowCustom: false,
+    },
+    {},
+    true,
+  );
+  assert.equal(page.r.status, 201, JSON.stringify(page.data));
+  const slug = page.data.slug;
+
+  const publicPage = await call('/v1/collections/' + slug);
+  assert.equal(publicPage.r.status, 200, JSON.stringify(publicPage.data));
+  assert.equal(publicPage.data.installments[0].components.length, 2);
+  assert.equal(Number(publicPage.data.installments[0].outstanding_minor), 90000);
+
+  const intentKey = randomUUID();
+  const intent = await call('/v1/collections/' + slug + '/intents', 'POST', {
+    installmentId,
+    mode: 'full',
+    idempotencyKey: intentKey,
+  });
+  assert.equal(intent.r.status, 201, JSON.stringify(intent.data));
+  assert.equal(Number(intent.data.amount_minor), 90000);
+  assert.equal(intent.data.status, 'provider_required');
+  assert.equal(intent.data.checkoutAvailable, false);
+  assert.match(intent.data.message, /no payment has been taken|no payment/i);
+
+  const replay = await call('/v1/collections/' + slug + '/intents', 'POST', {
+    installmentId,
+    mode: 'full',
+    idempotencyKey: intentKey,
+  });
+  assert.equal(replay.r.status, 201);
+  assert.equal(replay.data.id, intent.data.id);
+  assert.equal(replay.data.replayed, true);
+
+  const reversed = await call(
+    '/v1/admin/fees/structure/adjustments/' + adjustment.data.id + '/reverse',
+    'POST',
+    { reason: 'Synthetic adjustment reversal' },
+    {},
+    true,
+  );
+  assert.equal(reversed.r.status, 201);
+  assert.equal(
+    Number(
+      (await db.query('SELECT amount_minor FROM fee_installments WHERE id=$1', [installmentId]))[0]!
+        .amount_minor,
+    ),
+    100000,
+  );
+});
+
 test('session revocation invalidates subsequent access', async () => {
   await call('/v1/auth/logout', 'POST', {}, {}, true);
   assert.equal((await call('/v1/admin/content', 'GET', undefined, {}, true)).r.status, 401);
