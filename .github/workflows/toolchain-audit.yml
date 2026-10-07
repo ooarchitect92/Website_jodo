@@ -1,11 +1,10 @@
-name: Toolchain and reference assets
+name: Toolchain security update
 on:
   push:
     paths: ['.github/workflows/toolchain-audit.yml']
   workflow_dispatch:
 permissions:
   contents: read
-  actions: read
 jobs:
   prepare:
     runs-on: ubuntu-latest
@@ -15,9 +14,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Resolve and freeze dependencies
+      - name: Install reviewed security updates and freeze all versions
         run: |
           npm install --no-fund
+          npm install --save-exact sharp@0.35.5 nodemailer@10.0.15 --no-fund
           node <<'JS'
           const fs=require('node:fs');
           const p=JSON.parse(fs.readFileSync('package.json','utf8'));
@@ -26,39 +26,13 @@ jobs:
           JS
           npm install --package-lock-only --no-fund
           npm audit --omit=dev --json > dependency-audit.json || true
-      - name: Collect first-party reference images with provenance
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run download 37580266004 -n jodo-reference-audit -D "$RUNNER_TEMP/jodo-reference"
-          node <<'JS'
-          const fs=require('node:fs');const path=require('node:path');const crypto=require('node:crypto');
-          (async()=>{
-            const records=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/jodo-reference/reference.json','utf8'));
-            const urls=[...new Set(records.flatMap(r=>(r.assets||[]).map(a=>a.src)))].filter(u=>/^https:\/\/www\.jodo\.in\/assets\/.*\.(png|jpe?g|webp|svg)$/i.test(u)).slice(0,150);
-            const manifest=[];
-            for(const url of urls){try{
-              const response=await fetch(url,{signal:AbortSignal.timeout(15000),redirect:'error'});
-              if(!response.ok)throw Error('HTTP '+response.status);
-              const bytes=Buffer.from(await response.arrayBuffer());if(bytes.length>10000000)throw Error('oversize');
-              if(url.endsWith('.svg')&&/<script|<foreignObject|onload=|javascript:|<!ENTITY|<!DOCTYPE/i.test(bytes.toString()))throw Error('active SVG rejected');
-              const relative=new URL(url).pathname.replace(/^\/assets\//,'');
-              if(relative.includes('..')||!/^[-\w./]+$/.test(relative))throw Error('unsafe path');
-              const destination='apps/web/public/reference/'+relative;fs.mkdirSync(path.dirname(destination),{recursive:true});fs.writeFileSync(destination,bytes);
-              manifest.push({url,local:'/reference/'+relative,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),bytes:bytes.length,rights:'Reference use only; production rights approval required',retrieved_at:new Date().toISOString()});
-            }catch(error){manifest.push({url,error:String(error)});}}
-            fs.mkdirSync('docs/reference',{recursive:true});fs.writeFileSync('docs/reference/assets.json',JSON.stringify(manifest,null,2)+'\n');
-          })().catch(e=>{console.error(e);process.exit(1)});
-          JS
-      - name: Package reproducible build toolchain
-        run: |
-          mkdir -p artifacts
-          tar -czf artifacts/jodo-toolchain.tar.gz node_modules package.json package-lock.json dependency-audit.json apps/web/public/reference docs/reference/assets.json
+          mkdir artifacts
+          tar -czf artifacts/jodo-security-toolchain.tar.gz node_modules package.json package-lock.json dependency-audit.json
           cp package.json package-lock.json dependency-audit.json artifacts/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: jodo-build-toolchain
+          name: jodo-security-toolchain
           path: artifacts/
           compression-level: 0
           retention-days: 3
