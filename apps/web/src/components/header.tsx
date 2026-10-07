@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { SmartLink } from './links';
 export function Header({
   navigation,
-  name = 'Jodo',
+  name = 'YourCompany',
 }: {
   navigation: { label: string; href: string }[];
   name?: string;
@@ -22,12 +22,9 @@ export function Header({
   return (
     <header className="site-header" ref={ref}>
       <div className="header-inner">
-        <Link className="brand" href="/" aria-label="Jodo recreation home">
-          {name === 'Jodo' ? (
-            <img src="/reference/images/jodo-logo-v2.svg" alt="Jodo" width="136" height="40" />
-          ) : (
-            <strong>{name}</strong>
-          )}
+        <Link className="brand brand-wordmark" href="/" aria-label={name + ' home'}>
+          <span className="brand-mark" aria-hidden="true">◆</span>
+          <strong>{name}</strong>
         </Link>
         <button
           className="menu-toggle"
@@ -50,12 +47,10 @@ export function Header({
                 </summary>
                 <div>
                   <SmartLink href="/products/">For educational institutes</SmartLink>
-                  <SmartLink href="/products/#flex">Flex · Recurring collections</SmartLink>
-                  <SmartLink href="/products/#cred">Cred · Monthly payments</SmartLink>
-                  <SmartLink href="/products/#pay">Pay · Payment methods</SmartLink>
-                  <SmartLink href="https://collect.jodo.in">
-                    For businesses · Official site
-                  </SmartLink>
+                  <SmartLink href="/products/#flex">AutoCollect · Recurring collections</SmartLink>
+                  <SmartLink href="/products/#cred">Advance · Monthly payments</SmartLink>
+                  <SmartLink href="/products/#pay">Checkout · Payment methods</SmartLink>
+                  <SmartLink href="/contact-us/">For businesses</SmartLink>
                 </div>
               </details>
             ) : (
