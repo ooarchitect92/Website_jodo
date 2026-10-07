@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS payment_checkout_sessions(
   idempotency_key uuid NOT NULL UNIQUE,
   provider text NOT NULL,
   provider_reference text,
+  return_token_hash text NOT NULL UNIQUE,
   amount_minor bigint NOT NULL CHECK(amount_minor>0),
   currency text NOT NULL CHECK(currency='INR'),
   checkout_url text,
