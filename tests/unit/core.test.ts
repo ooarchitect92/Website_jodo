@@ -22,6 +22,7 @@ import {
   feeConcessionInputSchema,
   lateFeeRuleInputSchema,
   payerCheckoutRequestSchema,
+  payerMandateSetupSchema,
 } from '../../packages/core/src/contracts';
 import { encrypt, decrypt, equal, bucket } from '../../packages/core/src/security';
 import { seedPages } from '../../packages/core/src/site';
@@ -442,6 +443,31 @@ test('full-balance collection link cannot silently enable partial-payment option
       paymentMode: 'full_balance',
       allowCustomAmount: true,
       allowComponentSelection: false,
+    }).success,
+    false,
+  ));
+
+test('payer mandate setup accepts supported recurring rails', () => {
+  assert.equal(
+    payerMandateSetupSchema.parse({
+      rail: 'upi_autopay',
+      idempotencyKey: crypto.randomUUID(),
+    }).rail,
+    'upi_autopay',
+  );
+  assert.equal(
+    payerMandateSetupSchema.parse({
+      rail: 'enach',
+      idempotencyKey: crypto.randomUUID(),
+    }).rail,
+    'enach',
+  );
+});
+test('payer mandate setup rejects unsupported rails', () =>
+  assert.equal(
+    payerMandateSetupSchema.safeParse({
+      rail: 'card_recurring',
+      idempotencyKey: crypto.randomUUID(),
     }).success,
     false,
   ));
