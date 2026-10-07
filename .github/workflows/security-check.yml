@@ -1,0 +1,29 @@
+name: Dependency security verification
+on:
+  push:
+    branches: [main]
+    paths: ['package.json', 'package-lock.json', '.github/workflows/security-check.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit installed runtime dependency graph
+        run: |
+          npm ci --no-fund
+          npm audit --omit=dev --json > dependency-current-audit.json || true
+          cat dependency-current-audit.json
+          npm audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-current-audit
+          path: dependency-current-audit.json
+          retention-days: 7
