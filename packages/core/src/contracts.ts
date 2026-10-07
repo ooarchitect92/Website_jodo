@@ -127,6 +127,7 @@ export const feeInstallmentInputSchema = z
 export const feeScheduleCreateSchema = z
   .object({
     accountReference: z.string().trim().regex(/^[A-Za-z0-9_-]{2,80}$/),
+    payerId: z.uuid().optional(),
     currency: z.literal('INR').default('INR'),
     installments: z.array(feeInstallmentInputSchema).min(1).max(60),
     note: z.string().trim().max(300).default(''),
