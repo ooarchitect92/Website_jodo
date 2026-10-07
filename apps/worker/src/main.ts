@@ -61,6 +61,17 @@ export async function tick(db: Db) {
     }
   }
   await db.tx(async (c) => {
+    const expiredCheckouts = (
+      await c.query(
+        `UPDATE payment_checkout_sessions
+         SET status='expired',updated_at=now()
+         WHERE status='created' AND expires_at IS NOT NULL AND expires_at<now()
+         RETURNING id`,
+      )
+    ).rows;
+    for (const row of expiredCheckouts)
+      await db.audit(c, 'worker', 'fees.checkout.expired', row.id);
+
     const lateFeeRows = (
       await c.query(
         `SELECT i.id AS installment_id,i.schedule_id,i.due_date,i.status,
