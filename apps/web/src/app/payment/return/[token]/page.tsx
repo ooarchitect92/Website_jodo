@@ -10,9 +10,7 @@ export const metadata: Metadata = {
 };
 
 const money = (minor: number | string, currency = 'INR') =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(
-    Number(minor || 0) / 100,
-  );
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(Number(minor || 0) / 100);
 
 async function load(token: string) {
   if (!/^[A-Za-z0-9_-]{30,100}$/.test(token)) return null;
@@ -25,11 +23,7 @@ async function load(token: string) {
   return response.json();
 }
 
-export default async function PaymentReturn({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+export default async function PaymentReturn({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const data = await load(token);
   if (!data) notFound();
