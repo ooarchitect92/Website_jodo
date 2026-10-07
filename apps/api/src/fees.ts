@@ -238,9 +238,11 @@ export class FeeOperationsController {
 
       const installment = (
         await c.query(
-          `SELECT i.*,s.status AS schedule_status,s.currency,s.account_reference
+          `SELECT i.*,s.status AS schedule_status,s.currency,s.account_reference,s.payer_id,
+                  p.preferred_channel
            FROM fee_installments i
            JOIN fee_schedules s ON s.id=i.schedule_id
+           LEFT JOIN fee_payers p ON p.id=s.payer_id
            WHERE i.id=$1
            FOR UPDATE OF i,s`,
           [v.installmentId],
@@ -329,6 +331,20 @@ export class FeeOperationsController {
           },
         ],
       );
+      if (installment.payer_id && installment.preferred_channel && installment.preferred_channel !== 'none') {
+        await c.query(
+          `INSERT INTO fee_communication_log(
+             event_id,schedule_id,installment_id,payer_id,channel,kind,status
+           ) VALUES($1,$2,$3,$4,$5,'receipt','pending')`,
+          [
+            eventId,
+            installment.schedule_id,
+            v.installmentId,
+            installment.payer_id,
+            installment.preferred_channel,
+          ],
+        );
+      }
       await this.db.audit(c, req.actor.id, 'fees.payment.external_confirmed', payment.id, {
         scheduleId: installment.schedule_id,
         providerReference: v.providerReference,
