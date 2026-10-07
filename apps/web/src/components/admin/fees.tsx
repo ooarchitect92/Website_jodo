@@ -635,25 +635,59 @@ export function FeeOperations() {
                 </button>
               )}
               {s.payer_id && (
-                <button
-                  className="button outline"
-                  onClick={async () => {
-                    try {
-                      const result = await request<{ path: string; expiresHours: number }>(
-                        'admin/fees/schedules/' + s.id + '/payer-link',
-                        'POST',
-                        { expiresHours: 72 },
-                      );
-                      const url = window.location.origin + result.path;
-                      await navigator.clipboard.writeText(url);
-                      setMessage('Secure 72-hour payer portal link copied to clipboard.');
-                    } catch (e) {
-                      setMessage((e as Error).message);
-                    }
-                  }}
-                >
-                  Copy payer portal link
-                </button>
+                <div className="admin-toolbar">
+                  <button
+                    className="button outline"
+                    onClick={async () => {
+                      try {
+                        const result = await request<{ path: string; expiresHours: number }>(
+                          'admin/fees/schedules/' + s.id + '/payer-link',
+                          'POST',
+                          {
+                            expiresHours: 72,
+                            paymentMode: 'full_balance',
+                            allowCustomAmount: false,
+                            allowComponentSelection: false,
+                          },
+                        );
+                        const url = window.location.origin + result.path;
+                        await navigator.clipboard.writeText(url);
+                        setMessage('Secure 72-hour full-balance payer link copied to clipboard.');
+                      } catch (e) {
+                        setMessage((e as Error).message);
+                      }
+                    }}
+                  >
+                    Copy full-balance link
+                  </button>
+                  <button
+                    className="button outline"
+                    onClick={async () => {
+                      try {
+                        const result = await request<{ path: string; expiresHours: number }>(
+                          'admin/fees/schedules/' + s.id + '/payer-link',
+                          'POST',
+                          {
+                            expiresHours: 72,
+                            paymentMode: 'flexible',
+                            allowCustomAmount: true,
+                            allowComponentSelection: true,
+                            minAmountMinor: 100,
+                          },
+                        );
+                        const url = window.location.origin + result.path;
+                        await navigator.clipboard.writeText(url);
+                        setMessage(
+                          'Secure 72-hour smart collection link copied. It allows custom and fee-head payments subject to server-side balance checks.',
+                        );
+                      } catch (e) {
+                        setMessage((e as Error).message);
+                      }
+                    }}
+                  >
+                    Copy smart collection link
+                  </button>
+                </div>
               )}
             </article>
           ))}
