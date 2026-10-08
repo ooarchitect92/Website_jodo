@@ -24,7 +24,7 @@ const sensitiveRouteSegments = new Set([
   'fees',
   'mandates',
 ]);
-const sensitiveVisitorRoute = (path: string) => sensitiveRouteSegments.has(path.split('/')[1]);
+const sensitiveVisitorRoute = (path: string) => sensitiveRouteSegments.has(path.split('/')[1] ?? '');
 @Controller('v1')
 export class PrivacyController {
   constructor(@Inject(Db) private db: Db) {}
