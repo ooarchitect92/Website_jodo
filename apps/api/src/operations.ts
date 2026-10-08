@@ -54,8 +54,7 @@ export class OperationsController {
         "UPDATE tasks SET status='done' WHERE id=$1 AND status='open' RETURNING id",
         [uuid(id)],
       );
-      if (!updated.rowCount)
-        throw new ConflictException('Task is missing or no longer open');
+      if (!updated.rowCount) throw new ConflictException('Task is missing or no longer open');
       await this.db.audit(c, req.actor.id, 'task.complete', id);
     });
     return { status: 'done' };
