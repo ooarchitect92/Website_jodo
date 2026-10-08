@@ -48,9 +48,12 @@ BEGIN
   UPDATE settlement_records SET tenant_id=default_tenant WHERE tenant_id IS NULL;
   UPDATE settlement_payments sp SET tenant_id=s.tenant_id
   FROM settlement_records s WHERE sp.settlement_id=s.id AND sp.tenant_id IS NULL;
-  UPDATE reconciliation_entries r SET tenant_id=coalesce(p.tenant_id,s.tenant_id)
-  FROM payment_records p FULL JOIN settlement_records s ON false
-  WHERE r.tenant_id IS NULL AND (r.payment_id=p.id OR r.settlement_id=s.id);
+  UPDATE reconciliation_entries r SET tenant_id=p.tenant_id
+  FROM payment_records p
+  WHERE r.tenant_id IS NULL AND r.payment_id=p.id;
+  UPDATE reconciliation_entries r SET tenant_id=s.tenant_id
+  FROM settlement_records s
+  WHERE r.tenant_id IS NULL AND r.settlement_id=s.id;
   UPDATE payer_access_tokens t SET tenant_id=s.tenant_id
   FROM fee_schedules s WHERE t.schedule_id=s.id AND t.tenant_id IS NULL;
   UPDATE fee_receipts r SET tenant_id=p.tenant_id
