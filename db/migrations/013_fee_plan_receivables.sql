@@ -1,6 +1,10 @@
 -- Versioned fee plans, assignments, receivable controls and advance-credit handling.
 -- CAP-021..CAP-025. Money remains represented as obligations/evidence; no bank movement is asserted here.
 
+ALTER TABLE fee_installments
+  ADD COLUMN IF NOT EXISTS adjustment_amount_minor bigint NOT NULL DEFAULT 0
+    CHECK(adjustment_amount_minor>=0 AND adjustment_amount_minor<=amount_minor);
+
 CREATE TABLE IF NOT EXISTS fee_plan_versions(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL REFERENCES tenants(id),
