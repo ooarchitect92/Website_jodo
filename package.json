@@ -31,7 +31,8 @@
     "start:prod": "concurrently -k -n web,api,worker \"npm:start:web\" \"npm:start:api\" \"npm:start:worker\"",
     "backup": "node --env-file=.env scripts/backup.mjs",
     "restore:verify": "node --env-file=.env scripts/restore-verify.mjs",
-    "preview": "node scripts/preview.mjs"
+    "preview": "node scripts/preview.mjs",
+    "prestart:prod": "node scripts/production-gate.mjs"
   },
   "dependencies": {
     "@nestjs/common": "12.1.2",
