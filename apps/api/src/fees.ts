@@ -189,7 +189,8 @@ export class FeeOperationsController {
             req.actor.tenantId,
           ])
         ).rows[0];
-        if (!payer) throw new ConflictException('Payer profile is outside this workspace or inactive');
+        if (!payer)
+          throw new ConflictException('Payer profile is outside this workspace or inactive');
       }
       const schedule = (
         await c.query(
@@ -425,10 +426,10 @@ export class FeeOperationsController {
     return this.db.tx(async (c) => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['payment:' + v.idempotencyKey]);
       const replay = (
-        await c.query(
-          'SELECT * FROM payment_records WHERE tenant_id=$1 AND idempotency_key=$2',
-          [req.actor.tenantId, v.idempotencyKey],
-        )
+        await c.query('SELECT * FROM payment_records WHERE tenant_id=$1 AND idempotency_key=$2', [
+          req.actor.tenantId,
+          v.idempotencyKey,
+        ])
       ).rows[0];
       if (replay) return { ...replay, replayed: true };
 
@@ -569,10 +570,10 @@ export class FeeOperationsController {
     return this.db.tx(async (c) => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['refund:' + v.idempotencyKey]);
       const replay = (
-        await c.query(
-          'SELECT * FROM payment_refunds WHERE tenant_id=$1 AND idempotency_key=$2',
-          [req.actor.tenantId, v.idempotencyKey],
-        )
+        await c.query('SELECT * FROM payment_refunds WHERE tenant_id=$1 AND idempotency_key=$2', [
+          req.actor.tenantId,
+          v.idempotencyKey,
+        ])
       ).rows[0];
       if (replay) return { ...replay, replayed: true };
       const payment = (
@@ -754,10 +755,10 @@ export class FeeOperationsController {
       ).rows[0];
       for (const allocation of v.allocations) {
         const payment = (
-          await c.query(
-            'SELECT id,currency FROM payment_records WHERE id=$1 AND tenant_id=$2',
-            [allocation.paymentId, req.actor.tenantId],
-          )
+          await c.query('SELECT id,currency FROM payment_records WHERE id=$1 AND tenant_id=$2', [
+            allocation.paymentId,
+            req.actor.tenantId,
+          ])
         ).rows[0];
         if (!payment) throw new ConflictException('Settlement references an unknown payment');
         if (payment.currency !== v.currency)
