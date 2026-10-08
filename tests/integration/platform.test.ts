@@ -856,13 +856,7 @@ test('academic customer context is tenant-scoped, relationship-explicit and impo
       },
     ],
   };
-  const preview = await call(
-    '/v1/admin/academic/imports/preview',
-    'POST',
-    previewBody,
-    {},
-    true,
-  );
+  const preview = await call('/v1/admin/academic/imports/preview', 'POST', previewBody, {}, true);
   assert.equal(preview.r.status, 201, JSON.stringify(preview.data));
   assert.equal(preview.data.batch.valid_count, 1);
   assert.equal(preview.data.batch.error_count, 1);
