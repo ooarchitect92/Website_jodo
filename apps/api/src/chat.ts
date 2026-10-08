@@ -68,14 +68,15 @@ export class ChatController {
       .parse(body);
     const c = await this.session(req);
     const old = (
-      await this.db.query('SELECT topic,answer FROM chat_messages WHERE chat_id=$1 AND client_id=$2', [
-        c.id,
-        v.clientId,
-      ])
+      await this.db.query(
+        'SELECT topic,answer FROM chat_messages WHERE chat_id=$1 AND client_id=$2',
+        [c.id, v.clientId],
+      )
     )[0];
     if (old) {
-      if (old.topic !== v.topic)
+      if (old.topic !== v.topic) {
         throw new ConflictException('This message ID was already used for another topic');
+      }
       return { answer: old.answer };
     }
     let answer =
@@ -108,8 +109,9 @@ export class ChatController {
        SELECT topic,answer FROM inserted`,
       [c.id, v.clientId, v.topic, answer],
     );
-    if (stored[0]?.topic !== v.topic)
+    if (stored[0]?.topic !== v.topic) {
       throw new ConflictException('This message ID was already used for another topic');
+    }
     return { answer: stored[0]!.answer };
   }
   @Post('leads') async capture(
