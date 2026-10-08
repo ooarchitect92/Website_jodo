@@ -117,16 +117,13 @@ export async function createApp() {
   const db = app.get(Db);
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('X-Request-Id', crypto.randomUUID());
-    if (
-      req.path.startsWith('/v1/admin') ||
-      req.path.startsWith('/v1/auth') ||
-      req.path.startsWith('/v1/chat') ||
-      req.path.startsWith('/v1/provider/') ||
-      req.path.startsWith('/v1/payer/') ||
-      req.path.startsWith('/v1/payment-return/') ||
-      req.path.startsWith('/v1/mandate-return/')
-    )
-      res.setHeader('Cache-Control', 'no-store');
+    // The API can return tenant data, private profiles, signed links, financial
+    // outcomes and consent records. Never permit intermediate caches to store
+    // API responses; public website HTML/content can be cached separately.
+    if (req.path === '/v1' || req.path.startsWith('/v1/')) {
+      res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+      res.setHeader('Pragma', 'no-cache');
+    }
     const providerWebhook = req.path.startsWith('/v1/provider/');
     if (
       !providerWebhook &&
