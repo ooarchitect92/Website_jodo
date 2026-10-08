@@ -50,10 +50,12 @@ export class OperationsController {
     @Req() req: AuthedRequest,
   ) {
     await this.db.tx(async (c) => {
-      const updated = await c.query("UPDATE tasks SET status='done' WHERE id=$1 RETURNING id", [
-        uuid(id),
-      ]);
-      if (!updated.rowCount) throw new ConflictException('Task does not exist');
+      const updated = await c.query(
+        "UPDATE tasks SET status='done' WHERE id=$1 AND status='open' RETURNING id",
+        [uuid(id)],
+      );
+      if (!updated.rowCount)
+        throw new ConflictException('Task is missing or no longer open');
       await this.db.audit(c, req.actor.id, 'task.complete', id);
     });
     return { status: 'done' };
