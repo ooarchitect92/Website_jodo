@@ -1,6 +1,7 @@
 import {
   Body,
   ConflictException,
+  ForbiddenException,
   Controller,
   Get,
   Inject,
@@ -163,19 +164,39 @@ export class OperationsController {
       'SELECT id,status,created_at,expires_at FROM chats ORDER BY created_at DESC LIMIT 100',
     );
   }
-  @Get('users') users() {
-    return this.db.query('SELECT id,email,role,active,created_at FROM users ORDER BY created_at');
+  @Get('users') users(@Req() req: AuthedRequest) {
+    if (req.actor.tenantRole !== 'owner')
+      throw new ForbiddenException('Workspace owner access required');
+    return this.db.query(
+      `SELECT u.id,u.email,u.role,u.active,u.created_at
+       FROM users u
+       JOIN memberships m ON m.user_id=u.id
+       WHERE m.tenant_id=$1 AND m.status='active'
+       ORDER BY u.created_at`,
+      [req.actor.tenantId],
+    );
   }
   @Post('users/:id/revoke-sessions') async revoke(
     @Param('id') id: string,
     @Req() req: AuthedRequest,
   ) {
+    if (req.actor.tenantRole !== 'owner')
+      throw new ForbiddenException('Workspace owner access required');
+    const userId = uuid(id);
     await this.db.tx(async (c) => {
-      await c.query(
-        'UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL',
-        [uuid(id)],
+      const member = await c.query(
+        "SELECT id FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND status='active' FOR UPDATE",
+        [req.actor.tenantId, userId],
       );
-      await this.db.audit(c, req.actor.id, 'sessions.revoke', id);
+      if (!member.rowCount)
+        throw new ForbiddenException('Account is outside this workspace');
+      await c.query(
+        'UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND tenant_id=$2 AND revoked_at IS NULL',
+        [userId, req.actor.tenantId],
+      );
+      await this.db.audit(c, req.actor.id, 'sessions.revoke', userId, {
+        tenantId: req.actor.tenantId,
+      });
     });
     return { status: 'revoked' };
   }
