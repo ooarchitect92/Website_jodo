@@ -438,8 +438,14 @@ export function AcademicOperations() {
               Batch {preview.batch.id} · {preview.batch.status}
             </strong>
             <p>
-              Valid {preview.batch.valid_count ?? preview.rows?.filter((r: any) => r.status === 'valid').length ?? 0}
-              {' · '}errors {preview.batch.error_count ?? preview.rows?.filter((r: any) => r.status === 'error').length ?? 0}
+              Valid{' '}
+              {preview.batch.valid_count ??
+                preview.rows?.filter((r: any) => r.status === 'valid').length ??
+                0}
+              {' · '}errors{' '}
+              {preview.batch.error_count ??
+                preview.rows?.filter((r: any) => r.status === 'error').length ??
+                0}
             </p>
             {preview.batch.status === 'previewed' && (
               <button
