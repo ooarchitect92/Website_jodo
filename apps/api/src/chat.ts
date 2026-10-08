@@ -1,5 +1,6 @@
 import {
   Body,
+  ConflictException,
   Controller,
   ForbiddenException,
   Get,
@@ -67,12 +68,16 @@ export class ChatController {
       .parse(body);
     const c = await this.session(req);
     const old = (
-      await this.db.query('SELECT answer FROM chat_messages WHERE chat_id=$1 AND client_id=$2', [
+      await this.db.query('SELECT topic,answer FROM chat_messages WHERE chat_id=$1 AND client_id=$2', [
         c.id,
         v.clientId,
       ])
     )[0];
-    if (old) return { answer: old.answer };
+    if (old) {
+      if (old.topic !== v.topic)
+        throw new ConflictException('This message ID was already used for another topic');
+      return { answer: old.answer };
+    }
     let answer =
       'Use the demo form to submit an enquiry to this installation. Do not provide banking details or authentication codes.';
     if (['Flex', 'Cred', 'Pay'].includes(v.topic)) {
@@ -92,11 +97,20 @@ export class ChatController {
     if (v.topic === 'Official support')
       answer =
         'This demo cannot access Jodo accounts. Use the official Jodo website or the external student/institute login links. Never send passwords or OTPs here.';
-    await this.db.query(
-      'INSERT INTO chat_messages(chat_id,client_id,topic,answer) VALUES($1,$2,$3,$4) ON CONFLICT(chat_id,client_id) DO NOTHING',
+    // Return the persisted result even when two identical requests race to insert.
+    const stored = await this.db.query(
+      `WITH inserted AS (
+         INSERT INTO chat_messages(chat_id,client_id,topic,answer)
+         VALUES($1,$2,$3,$4)
+         ON CONFLICT(chat_id,client_id) DO UPDATE SET answer=chat_messages.answer
+         RETURNING topic,answer
+       )
+       SELECT topic,answer FROM inserted`,
       [c.id, v.clientId, v.topic, answer],
     );
-    return { answer };
+    if (stored[0]?.topic !== v.topic)
+      throw new ConflictException('This message ID was already used for another topic');
+    return { answer: stored[0]!.answer };
   }
   @Post('leads') async capture(
     @Body() body: unknown,
