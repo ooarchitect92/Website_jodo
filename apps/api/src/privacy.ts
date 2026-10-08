@@ -24,8 +24,7 @@ const sensitiveRouteSegments = new Set([
   'fees',
   'mandates',
 ]);
-const sensitiveVisitorRoute = (path: string) =>
-  sensitiveRouteSegments.has(path.split('/')[1]);
+const sensitiveVisitorRoute = (path: string) => sensitiveRouteSegments.has(path.split('/')[1]);
 @Controller('v1')
 export class PrivacyController {
   constructor(@Inject(Db) private db: Db) {}
@@ -85,8 +84,7 @@ export class PrivacyController {
     if (!choice?.analytics) throw new ForbiddenException('Analytics permission required');
     if (Math.abs(Date.now() - Date.parse(v.occurredAt)) > 300000)
       throw new ForbiddenException('Event outside allowed clock window');
-    if (sensitiveVisitorRoute(v.route))
-      return { status: 'suppressed', reason: 'sensitive_route' };
+    if (sensitiveVisitorRoute(v.route)) return { status: 'suppressed', reason: 'sensitive_route' };
     await this.db.query(
       'INSERT INTO events(id,consent_id,name,route,action_id,occurred_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO NOTHING',
       [v.id, choice.id, v.name, v.route, v.actionId || null, v.occurredAt],
