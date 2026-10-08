@@ -622,6 +622,24 @@ test('consent, event dedupe and attribution sanitisation', async () => {
   );
   assert.equal(sensitive.r.status, 201);
   assert.deepEqual(sensitive.data, { status: 'suppressed', reason: 'sensitive_route' });
+  for (const route of ['/payer', '/payer/receipts', '/checkout/pay', '/payments/status']) {
+    const blockedEventId = randomUUID();
+    const blockedEvent = await call(
+      '/v1/events',
+      'POST',
+      { id: blockedEventId, name: 'page_view', route, occurredAt: new Date().toISOString() },
+      { Cookie: consentCookie },
+    );
+    assert.deepEqual(blockedEvent.data, { status: 'suppressed', reason: 'sensitive_route' });
+    assert.equal((await db.query('SELECT id FROM events WHERE id=$1', [blockedEventId])).length, 0);
+    const blockedTouch = await call(
+      '/v1/attribution/touches',
+      'POST',
+      { route, fields: { utm_source: 'google' } },
+      { Cookie: consentCookie },
+    );
+    assert.deepEqual(blockedTouch.data, { status: 'suppressed', reason: 'sensitive_route' });
+  }
 });
 
 test('withdrawal stops further events', async () => {
