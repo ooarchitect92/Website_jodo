@@ -176,11 +176,22 @@ export function FeePlanStudio() {
         <div className="row">
           <label className="field">
             Plan key
-            <input name="planKey" required pattern="[A-Za-z0-9._/-]{2,80}" placeholder="grade10_2027" />
+            <input
+              name="planKey"
+              required
+              pattern="[A-Za-z0-9._/-]{2,80}"
+              placeholder="grade10_2027"
+            />
           </label>
           <label className="field">
             Plan name
-            <input name="name" required minLength={2} maxLength={160} placeholder="Grade 10 annual fees" />
+            <input
+              name="name"
+              required
+              minLength={2}
+              maxLength={160}
+              placeholder="Grade 10 annual fees"
+            />
           </label>
         </div>
 
@@ -227,7 +238,9 @@ export function FeePlanStudio() {
                 value={component.category}
                 onChange={(e) =>
                   setComponents((rows) =>
-                    rows.map((row, n) => (n === index ? { ...row, category: e.target.value } : row)),
+                    rows.map((row, n) =>
+                      n === index ? { ...row, category: e.target.value } : row,
+                    ),
                   )
                 }
               >
@@ -256,7 +269,12 @@ export function FeePlanStudio() {
           onClick={() =>
             setComponents((rows) => [
               ...rows,
-              { code: 'component_' + (rows.length + 1), label: 'Fee component', amount: '', category: 'fee' },
+              {
+                code: 'component_' + (rows.length + 1),
+                label: 'Fee component',
+                amount: '',
+                category: 'fee',
+              },
             ])
           }
         >
@@ -358,7 +376,11 @@ export function FeePlanStudio() {
                     className="button"
                     onClick={async () => {
                       try {
-                        await request('admin/fee-plans/' + plan.id + '/request-approval', 'POST', {});
+                        await request(
+                          'admin/fee-plans/' + plan.id + '/request-approval',
+                          'POST',
+                          {},
+                        );
                         setMessage('Fee plan sent for independent approval.');
                         await load();
                       } catch (error) {
@@ -415,11 +437,15 @@ export function FeePlanStudio() {
         onSubmit={(event) =>
           submit(
             event,
-            'admin/fee-plans/' + String(new FormData(event.currentTarget).get('planId')) + '/assign',
+            'admin/fee-plans/' +
+              String(new FormData(event.currentTarget).get('planId')) +
+              '/assign',
             (form) => ({
               studentId: String(form.get('studentId') || ''),
               accountReference: String(form.get('accountReference') || ''),
-              ...(String(form.get('payerId') || '') ? { payerId: String(form.get('payerId')) } : {}),
+              ...(String(form.get('payerId') || '')
+                ? { payerId: String(form.get('payerId')) }
+                : {}),
             }),
             'Effective fee plan assigned and active student receivable schedule created.',
           )
@@ -555,7 +581,9 @@ export function FeePlanStudio() {
                 accountReference: String(form.get('accountReference') || ''),
                 source: String(form.get('source') || 'external_advance'),
                 amountMinor: toMinor(form.get('amount')),
-                ...(String(form.get('payerId') || '') ? { payerId: String(form.get('payerId')) } : {}),
+                ...(String(form.get('payerId') || '')
+                  ? { payerId: String(form.get('payerId')) }
+                  : {}),
                 ...(String(form.get('evidenceReference') || '')
                   ? { evidenceReference: String(form.get('evidenceReference')) }
                   : {}),
@@ -715,10 +743,14 @@ export function FeePlanStudio() {
                   className="button outline"
                   onClick={async () => {
                     try {
-                      await request('admin/fee-plans/adjustments/' + adjustment.id + '/decide', 'POST', {
-                        decision: 'approve',
-                        reason: 'Independent owner approval after receivable review',
-                      });
+                      await request(
+                        'admin/fee-plans/adjustments/' + adjustment.id + '/decide',
+                        'POST',
+                        {
+                          decision: 'approve',
+                          reason: 'Independent owner approval after receivable review',
+                        },
+                      );
                       setMessage('Adjustment approved.');
                       await load();
                     } catch (error) {
@@ -734,7 +766,11 @@ export function FeePlanStudio() {
                   className="button"
                   onClick={async () => {
                     try {
-                      await request('admin/fee-plans/adjustments/' + adjustment.id + '/apply', 'POST', {});
+                      await request(
+                        'admin/fee-plans/adjustments/' + adjustment.id + '/apply',
+                        'POST',
+                        {},
+                      );
                       setMessage('Approved adjustment applied without fabricating a payment.');
                       await load();
                     } catch (error) {
@@ -780,7 +816,11 @@ export function FeePlanStudio() {
                   className="button"
                   onClick={async () => {
                     try {
-                      await request('admin/fee-plans/changes/' + change.id + '/execute', 'POST', {});
+                      await request(
+                        'admin/fee-plans/changes/' + change.id + '/execute',
+                        'POST',
+                        {},
+                      );
                       setMessage('Approved receivable change executed.');
                       await load();
                     } catch (error) {
