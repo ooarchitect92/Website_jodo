@@ -354,13 +354,9 @@ export class PaymentProviderController {
            WHERE id=$1`,
           [inserted.id, code],
         );
-        if (checkout)
-          await c.query(
-            `UPDATE payment_checkout_sessions
-             SET status='failed',failure_code=$2,updated_at=now()
-             WHERE id=$1 AND status IN('requested','created')`,
-            [checkout.id, code],
-          );
+        // A rejected or inconsistent *success* webhook is not evidence
+        // that the underlying customer checkout actually failed.
+        // Preserve its state for provider inquiry and reconciliation.
         await this.db.audit(c, 'provider:' + provider, 'payment.provider_rejected', inserted.id, {
           providerEventId: event.eventId,
           code,
