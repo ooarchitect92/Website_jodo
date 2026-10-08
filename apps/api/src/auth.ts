@@ -81,7 +81,9 @@ export class AuthGuard implements CanActivate {
       ctx.getHandler(),
       ctx.getClass(),
     ]) || ['owner'];
-    if (!roles.includes(row.role)) {
+    // Route permissions belong to the active tenant membership, not the
+    // user's global account role. Never inherit rights across workspaces.
+    if (!roles.includes(row.tenant_role)) {
       await this.db.tx((c) =>
         this.db.audit(c, row.id, 'access.denied', req.route?.path || 'admin', { reason: 'role' }),
       );
