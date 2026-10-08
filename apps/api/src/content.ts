@@ -1,6 +1,7 @@
 import {
   Body,
   ConflictException,
+  ForbiddenException,
   Controller,
   Get,
   Inject,
@@ -69,12 +70,23 @@ export class PublicContentController {
 @Roles('owner', 'editor')
 export class ContentController {
   constructor(@Inject(Db) private db: Db) {}
-  @Get() async list() {
+  private async requireLegacyWorkspace(req: AuthedRequest) {
+    const workspace = await this.db.query(
+      "SELECT id FROM tenants WHERE id=$1 AND slug='default' AND status<>'archived'",
+      [req.actor.tenantId],
+    );
+    if (!workspace.length) {
+      throw new ForbiddenException('Legacy site management is unavailable in this workspace');
+    }
+  }
+  @Get() async list(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query(
       "SELECT id,slug,kind,draft->>'title' AS title,state,version,deleted_at,published_revision,scheduled_at,updated_at FROM content ORDER BY updated_at DESC LIMIT 200",
     );
   }
-  @Get(':id') async detail(@Param('id') id: string) {
+  @Get(':id') async detail(@Param('id') id: string, @Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     const row = (await this.db.query('SELECT * FROM content WHERE id=$1', [uuid(id)]))[0];
     if (!row) throw new NotFoundException();
     const revisions = await this.db.query(
@@ -84,6 +96,7 @@ export class ContentController {
     return { ...row, revisions };
   }
   @Post() async create(@Body() body: unknown, @Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ slug: safePath, kind: z.enum(['page', 'post', 'case']), body: pageSchema })
       .strict()
@@ -109,6 +122,7 @@ export class ContentController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
+    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ expectedVersion: z.number().int().positive(), body: pageSchema })
       .strict()
@@ -131,6 +145,7 @@ export class ContentController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
+    await this.requireLegacyWorkspace(req);
     const v = z
       .object({
         action: z.enum([
@@ -247,7 +262,17 @@ export class ContentController {
 @Roles('owner')
 export class SettingsController {
   constructor(@Inject(Db) private db: Db) {}
-  @Get() list() {
+  private async requireLegacyWorkspace(req: AuthedRequest) {
+    const workspace = await this.db.query(
+      "SELECT id FROM tenants WHERE id=$1 AND slug='default' AND status<>'archived'",
+      [req.actor.tenantId],
+    );
+    if (!workspace.length) {
+      throw new ForbiddenException('Legacy site management is unavailable in this workspace');
+    }
+  }
+  @Get() async list(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query('SELECT key,value,version FROM settings');
   }
   @Patch(':key') async save(
@@ -255,6 +280,7 @@ export class SettingsController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
+    await this.requireLegacyWorkspace(req);
     const b = z
       .object({ expectedVersion: z.number().int(), value: z.unknown() })
       .strict()
