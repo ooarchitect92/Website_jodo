@@ -1,8 +1,15 @@
 // Production readiness guard. This only checks declared configuration and evidence
 // references. It does NOT certify provider agreements, legal compliance or safety.
 const missing = [];
+if (process.env.DEPLOYMENT_MODE !== 'production')
+  missing.push('DEPLOYMENT_MODE must be production for start:prod');
+if (process.env.NODE_ENV && process.env.NODE_ENV !== 'production')
+  missing.push('NODE_ENV must be production when set');
 const isTrue = (key) => process.env[key] === 'true';
-const evidence = (key) => typeof process.env[key] === 'string' && process.env[key].trim().length >= 8;
+const evidence = (key) => {
+  const id = process.env[key]?.trim() || '';
+  return id.length >= 8 && !/^(change.?me|todo|pending|example|placeholder|not.?run|none|n\\/?a)$/i.test(id);
+};
 const requiredTrue = ['SITE_APPROVED', 'PRODUCTION_RELEASE_APPROVED'];
 for (const key of requiredTrue) if (!isTrue(key)) missing.push(key + ' must be true after independent sign-off');
 for (const key of ['PRODUCTION_SECURITY_REVIEW_ID', 'PRODUCTION_PRIVACY_REVIEW_ID',
