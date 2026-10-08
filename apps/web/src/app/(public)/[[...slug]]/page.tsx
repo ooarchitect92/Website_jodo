@@ -18,6 +18,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const data = await pages();
   const found = data.find((p) => p.slug === path);
   const config = await site();
+  const isListing = path === '/blog/' || /^\\/blog\\/(engineering|insight|product)\\/$/.test(path) || path === '/case-studies/';
+  const isPrivateUtility = path === '/search/' || path === '/cookie-preferences/' || path === '/login/';
   const title =
     found?.body.title ||
     (
@@ -34,7 +36,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title,
     description: found?.body.description || 'Browse the education payments platform.',
     alternates: { canonical: new URL(path, baseUrl()).toString() },
-    robots: { index: !!config.indexing && !!found?.body.indexable, follow: !!config.indexing },
+    robots: { index: !!config.indexing && !isPrivateUtility && (!!found?.body.indexable || isListing), follow: !!config.indexing },
     openGraph: {
       title,
       description: found?.body.description || process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany',
@@ -61,7 +63,11 @@ export default async function Page({ params, searchParams }: Props) {
         (!category || p.body.category.toLowerCase() === category) &&
         (!q || (p.body.title + ' ' + p.body.description).toLowerCase().includes(q.toLowerCase())),
     );
-    const n = Math.max(1, Math.min(100, Number(search.page) || 1));
+    const pageCount = Math.ceil(filtered.length / 9);
+    const requestedPage = typeof search.page === 'string' && /^[1-9]\\d*$/.test(search.page)
+      ? Number(search.page)
+      : 1;
+    const n = Math.min(pageCount || 1, Math.max(1, Number.isSafeInteger(requestedPage) ? requestedPage : 1));
     const selected = filtered.slice((n - 1) * 9, n * 9);
     return (
       <section className="wrap section listing">
@@ -120,7 +126,7 @@ export default async function Page({ params, searchParams }: Props) {
           </div>
         )}
         <nav className="pagination" aria-label="Pagination">
-          {Array.from({ length: Math.ceil(filtered.length / 9) }, (_, i) => (
+          {Array.from({ length: pageCount }, (_, i) => (
             <Link
               key={i}
               aria-current={n === i + 1 ? 'page' : undefined}
