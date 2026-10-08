@@ -28,6 +28,14 @@ import { decrypt } from '../../../packages/core/src/security';
 @Roles('owner')
 export class OperationsController {
   constructor(@Inject(Db) private db: Db) {}
+  private async requireLegacyWorkspace(req: AuthedRequest) {
+    const workspace = await this.db.query(
+      "SELECT id FROM tenants WHERE id=$1 AND slug='default' AND status<>'archived'",
+      [req.actor.tenantId],
+    );
+    if (!workspace.length)
+      throw new ForbiddenException('This operation is unavailable outside the legacy workspace');
+  }
   @Get('overview') @Roles('owner', 'editor', 'sales', 'analyst') async overview() {
     const stats = (
       await this.db.query(
@@ -150,6 +158,7 @@ export class OperationsController {
     );
   }
   @Get('privacy-requests') async rights(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     await this.db.tx((c) => this.db.audit(c, req.actor.id, 'privacy.requests.read', 'queue'));
     return (
       await this.db.query('SELECT * FROM privacy_requests ORDER BY created_at DESC LIMIT 100')
@@ -200,6 +209,7 @@ export class OperationsController {
     return { status: 'revoked' };
   }
   @Post('content-export') async export(@Req() req: AuthedRequest, @Res() res: Response) {
+    await this.requireLegacyWorkspace(req);
     const pages = await this.db.query('SELECT * FROM content ORDER BY slug');
     const revisions = await this.db.query('SELECT * FROM revisions ORDER BY created_at');
     const media = await this.db.query('SELECT * FROM media');
