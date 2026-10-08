@@ -19,7 +19,7 @@
     "typecheck": "tsc -p tsconfig.api.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "lint": "prettier --check .",
     "format": "prettier --write .",
-    "test": "tsx --test tests/unit/*.test.ts",
+    "test": "tsx --test tests/unit/*.test.ts && node --test tests/unit/*.test.mjs",
     "test:integration": "tsx --env-file=.env --tsconfig tsconfig.api.json --test tests/integration/*.test.ts",
     "test:e2e": "playwright test",
     "migrate": "tsx --env-file=.env scripts/migrate.ts",
