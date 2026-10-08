@@ -614,7 +614,16 @@ test('consent, event dedupe and attribution sanitisation', async () => {
   assert.equal(t.r.status, 201);
   const touch = (await db.query('SELECT * FROM acquisition WHERE id=$1', [t.data.reference]))[0]!;
   assert.deepEqual(touch.fields, { utm_source: 'google', utm_campaign: 'safe_campaign' });
+  const sensitive = await call(
+    '/v1/attribution/touches',
+    'POST',
+    { route: '/privacy', fields: { utm_source: 'google' } },
+    { Cookie: consentCookie },
+  );
+  assert.equal(sensitive.r.status, 201);
+  assert.deepEqual(sensitive.data, { status: 'suppressed', reason: 'sensitive_route' });
 });
+
 test('withdrawal stops further events', async () => {
   await call(
     '/v1/consent/choices',
