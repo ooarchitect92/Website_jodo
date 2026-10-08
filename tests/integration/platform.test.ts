@@ -932,6 +932,263 @@ test('academic customer context is tenant-scoped, relationship-explicit and impo
   assert.equal(back.r.status, 201, JSON.stringify(back.data));
 });
 
+test('fee plans require maker-checker approval and project receivables safely', async () => {
+  const student = await call(
+    '/v1/admin/academic/students',
+    'POST',
+    {
+      studentReference: 'PLAN-' + randomUUID().slice(0, 8),
+      fullName: 'Synthetic Fee Plan Student',
+    },
+    {},
+    true,
+  );
+  assert.equal(student.r.status, 201, JSON.stringify(student.data));
+
+  const planKey = 'plan_' + randomUUID().slice(0, 8);
+  const plan = await call(
+    '/v1/admin/fee-plans',
+    'POST',
+    {
+      planKey,
+      name: 'Synthetic Annual Fee Plan',
+      components: [{ code: 'tuition', label: 'Tuition', amountMinor: 100000, category: 'fee' }],
+      installments: [
+        { dueDate: '2027-01-10', amountMinor: 50000 },
+        { dueDate: '2027-02-10', amountMinor: 50000 },
+      ],
+      eligibility: {},
+      note: 'Synthetic fee-plan fixture',
+    },
+    {},
+    true,
+  );
+  assert.equal(plan.r.status, 201, JSON.stringify(plan.data));
+  assert.equal(plan.data.status, 'draft');
+
+  const validated = await call(
+    '/v1/admin/fee-plans/' + plan.data.id + '/validate',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(validated.r.status, 201, JSON.stringify(validated.data));
+  assert.equal(validated.data.status, 'validated');
+
+  const requested = await call(
+    '/v1/admin/fee-plans/' + plan.data.id + '/request-approval',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(requested.r.status, 201, JSON.stringify(requested.data));
+  assert.equal(requested.data.status, 'pending_approval');
+
+  const selfApproval = await call(
+    '/v1/admin/fee-plans/' + plan.data.id + '/approve',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(selfApproval.r.status, 409);
+
+  const originalCookie = cookie;
+  const originalCsrf = csrf;
+  const checkerEmail = 'checker-' + randomUUID().slice(0, 8) + '@example.invalid';
+  const checkerPassword = 'Checker-' + randomUUID() + '-Password!';
+  const checkerTotp = authenticator.generateSecret();
+  const checkerUser = (
+    await owner.query(
+      `INSERT INTO users(email,password_hash,totp_secret,role,active)
+       VALUES($1,$2,$3,'owner',true)
+       RETURNING id`,
+      [checkerEmail, await argon2.hash(checkerPassword), checkerTotp],
+    )
+  ).rows[0]!;
+  await owner.query(
+    `INSERT INTO memberships(tenant_id,user_id,role_key,status)
+     VALUES($1,$2,'owner','active')`,
+    [primaryTenantId, checkerUser.id],
+  );
+
+  const checkerLogin = await call('/v1/auth/login', 'POST', {
+    email: checkerEmail,
+    password: checkerPassword,
+    otp: authenticator.generate(checkerTotp),
+  });
+  assert.equal(checkerLogin.r.status, 201, JSON.stringify(checkerLogin.data));
+  cookie = checkerLogin.r.headers.getSetCookie()[0]!.split(';')[0]!;
+  csrf = checkerLogin.data.csrf;
+
+  const approved = await call(
+    '/v1/admin/fee-plans/' + plan.data.id + '/approve',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(approved.r.status, 201, JSON.stringify(approved.data));
+  assert.equal(approved.data.status, 'approved');
+
+  const effective = await call(
+    '/v1/admin/fee-plans/' + plan.data.id + '/effective',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(effective.r.status, 201, JSON.stringify(effective.data));
+  assert.equal(effective.data.status, 'effective');
+
+  cookie = originalCookie;
+  csrf = originalCsrf;
+
+  const assignment = await call(
+    '/v1/admin/fee-plans/' + plan.data.id + '/assign',
+    'POST',
+    {
+      studentId: student.data.id,
+      accountReference: 'PLANACC_' + randomUUID().slice(0, 8),
+    },
+    {},
+    true,
+  );
+  assert.equal(assignment.r.status, 201, JSON.stringify(assignment.data));
+  assert.equal(assignment.data.assignment.status, 'active');
+  const scheduleId = assignment.data.schedule.id;
+
+  const schedules = (await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true)).data;
+  const assignedSchedule = schedules.find((row: any) => row.id === scheduleId);
+  assert.equal(assignedSchedule.status, 'active');
+  assert.equal(assignedSchedule.installments.length, 2);
+
+  const credit = await call(
+    '/v1/admin/fee-plans/credits',
+    'POST',
+    {
+      accountReference: assignment.data.schedule.account_reference,
+      source: 'external_advance',
+      amountMinor: 10000,
+      evidenceReference: 'ADV-' + randomUUID().slice(0, 8),
+      note: 'Synthetic confirmed advance',
+    },
+    {},
+    true,
+  );
+  assert.equal(credit.r.status, 201, JSON.stringify(credit.data));
+
+  const allocated = await call(
+    '/v1/admin/fee-plans/credits/' + credit.data.id + '/allocate',
+    'POST',
+    { installmentId: assignedSchedule.installments[0].id, amountMinor: 10000 },
+    {},
+    true,
+  );
+  assert.equal(allocated.r.status, 201, JSON.stringify(allocated.data));
+
+  const adjustment = await call(
+    '/v1/admin/fee-plans/adjustments',
+    'POST',
+    {
+      scheduleId,
+      kind: 'scholarship',
+      amountMinor: 15000,
+      reason: 'Synthetic approved scholarship',
+    },
+    {},
+    true,
+  );
+  assert.equal(adjustment.r.status, 201, JSON.stringify(adjustment.data));
+
+  cookie = checkerLogin.r.headers.getSetCookie()[0]!.split(';')[0]!;
+  csrf = checkerLogin.data.csrf;
+  const adjustmentApproved = await call(
+    '/v1/admin/fee-plans/adjustments/' + adjustment.data.id + '/decide',
+    'POST',
+    { decision: 'approve', reason: 'Independent checker approval' },
+    {},
+    true,
+  );
+  assert.equal(adjustmentApproved.r.status, 201, JSON.stringify(adjustmentApproved.data));
+  assert.equal(adjustmentApproved.data.status, 'approved');
+
+  cookie = originalCookie;
+  csrf = originalCsrf;
+  const adjustmentApplied = await call(
+    '/v1/admin/fee-plans/adjustments/' + adjustment.data.id + '/apply',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(adjustmentApplied.r.status, 201, JSON.stringify(adjustmentApplied.data));
+  assert.equal(adjustmentApplied.data.status, 'applied');
+
+  const statement = await call(
+    '/v1/admin/fee-plans/statements/students/' + student.data.id,
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(statement.r.status, 200, JSON.stringify(statement.data));
+  assert.equal(statement.data.student.id, student.data.id);
+  assert.ok(statement.data.movements.some((row: any) => row.kind === 'adjustment'));
+
+  const ageing = await call('/v1/admin/fee-plans/receivables/ageing', 'GET', undefined, {}, true);
+  assert.equal(ageing.r.status, 200, JSON.stringify(ageing.data));
+
+  const change = await call(
+    '/v1/admin/fee-plans/changes',
+    'POST',
+    {
+      assignmentId: assignment.data.assignment.id,
+      scheduleId,
+      changeType: 'withdrawal',
+      reason: 'Synthetic withdrawal case',
+      payload: {},
+    },
+    {},
+    true,
+  );
+  assert.equal(change.r.status, 201, JSON.stringify(change.data));
+
+  cookie = checkerLogin.r.headers.getSetCookie()[0]!.split(';')[0]!;
+  csrf = checkerLogin.data.csrf;
+  const changeApproved = await call(
+    '/v1/admin/fee-plans/changes/' + change.data.id + '/decide',
+    'POST',
+    { decision: 'approve', reason: 'Independent withdrawal approval' },
+    {},
+    true,
+  );
+  assert.equal(changeApproved.r.status, 201, JSON.stringify(changeApproved.data));
+
+  cookie = originalCookie;
+  csrf = originalCsrf;
+  const executed = await call(
+    '/v1/admin/fee-plans/changes/' + change.data.id + '/execute',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(executed.r.status, 201, JSON.stringify(executed.data));
+  assert.equal(executed.data.status, 'executed');
+
+  const assignmentRow = (
+    await db.query('SELECT status FROM student_fee_plan_assignments WHERE id=$1', [
+      assignment.data.assignment.id,
+    ])
+  )[0]!;
+  assert.equal(assignmentRow.status, 'withdrawn');
+
+  await owner.query('UPDATE sessions SET revoked_at=now() WHERE user_id=$1', [checkerUser.id]);
+});
+
 test('fee administration is isolated by active workspace', async () => {
   assert.ok(primaryTenantId);
   assert.ok(secondaryTenantId);
