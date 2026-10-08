@@ -15,7 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import sharp from 'sharp';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
@@ -70,13 +70,21 @@ export class MediaController {
     await writeFile(resolve(process.env.MEDIA_DIRECTORY || '.data/media', id + '.webp'), bytes, {
       flag: 'wx',
     });
-    return this.db.tx(async (c) => {
-      await c.query(
-        'INSERT INTO media(id,path,alt,rights,checksum,created_by) VALUES($1,$2,$3,$4,$5,$6)',
-        [id, path, v.alt, v.rights, digest(bytes.toString('base64')), req.actor.id],
+    try {
+      return await this.db.tx(async (c) => {
+        await c.query(
+          'INSERT INTO media(id,path,alt,rights,checksum,created_by) VALUES($1,$2,$3,$4,$5,$6)',
+          [id, path, v.alt, v.rights, digest(bytes.toString('base64')), req.actor.id],
+        );
+        await this.db.audit(c, req.actor.id, 'media.create', id);
+        return { id, path, alt: v.alt };
+      });
+    } catch (error) {
+      // A failed database transaction must not leave an untracked public media file.
+      await unlink(resolve(process.env.MEDIA_DIRECTORY || '.data/media', id + '.webp')).catch(
+        () => undefined,
       );
-      await this.db.audit(c, req.actor.id, 'media.create', id);
-      return { id, path, alt: v.alt };
-    });
+      throw error;
+    }
   }
 }
