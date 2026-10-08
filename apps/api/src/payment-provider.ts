@@ -130,8 +130,10 @@ export class PaymentProviderController {
           `UPDATE payment_checkout_sessions
            SET status='failed',failure_code=$4,updated_at=now()
            WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
+             AND installment_id=$5 AND amount_minor=$6 AND currency=$7
              AND status IN('requested','created')`,
-          [tenantId, provider, event.providerReference, event.reasonCode],
+          [tenantId, provider, event.providerReference, event.reasonCode,
+           event.installmentId, event.amountMinor, event.currency],
         );
         await c.query(
           `UPDATE autopay_debit_attempts
@@ -147,6 +149,7 @@ export class PaymentProviderController {
                END,
                updated_at=now()
            WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
+             AND installment_id=$6 AND amount_minor=$7 AND currency=$8
              AND status IN('submitted','queued','uncertain')`,
           [
             tenantId,
@@ -154,6 +157,9 @@ export class PaymentProviderController {
             event.providerReference,
             event.reasonCode,
             Number(process.env.AUTOPAY_MAX_ATTEMPTS || 3),
+            event.installmentId,
+            event.amountMinor,
+            event.currency,
           ],
         );
         await c.query(
