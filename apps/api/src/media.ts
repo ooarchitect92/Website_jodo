@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Inject,
   Param,
@@ -25,6 +26,15 @@ import { digest } from '../../../packages/core/src/security';
 @Controller('v1')
 export class MediaController {
   constructor(@Inject(Db) private db: Db) {}
+  private async requireLegacyWorkspace(req: AuthedRequest) {
+    const workspace = await this.db.query(
+      "SELECT id FROM tenants WHERE id=$1 AND slug='default' AND status<>'archived'",
+      [req.actor.tenantId],
+    );
+    if (!workspace.length) {
+      throw new ForbiddenException('Media management is unavailable outside the legacy workspace');
+    }
+  }
   @Get('media/:filename') async serve(@Param('filename') name: string, @Res() res: Response) {
     if (!/^[a-f0-9-]{36}\.webp$/.test(name))
       throw new UnprocessableEntityException('Invalid media reference');
@@ -32,7 +42,11 @@ export class MediaController {
     res.setHeader('Cache-Control', 'public,max-age=31536000,immutable');
     res.type('webp').sendFile(resolve(process.env.MEDIA_DIRECTORY || '.data/media', name));
   }
-  @Get('admin/media') @UseGuards(AuthGuard) @Roles('owner', 'editor') list() {
+  @Get('admin/media')
+  @UseGuards(AuthGuard)
+  @Roles('owner', 'editor')
+  async list(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query('SELECT * FROM media ORDER BY created_at DESC LIMIT 200');
   }
   @Post('admin/media')
@@ -46,6 +60,7 @@ export class MediaController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
+    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ alt: z.string().min(3).max(200), rights: z.string().min(5).max(300) })
       .strict()
