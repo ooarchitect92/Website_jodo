@@ -76,9 +76,9 @@ export class FeeOperationsController {
           count(*)::int AS schedules,
           count(*) FILTER (WHERE status='active')::int AS active_schedules,
           coalesce(sum(total_amount_minor),0)::bigint AS scheduled_minor,
-          coalesce((SELECT sum(amount_minor-refunded_amount_minor) FROM payment_records),0)::bigint AS confirmed_minor,
-          coalesce((SELECT sum(amount_minor-paid_amount_minor) FROM fee_installments WHERE status NOT IN('paid','cancelled')),0)::bigint AS outstanding_minor,
-          coalesce((SELECT sum(amount_minor-paid_amount_minor) FROM fee_installments WHERE due_date<current_date AND status NOT IN('paid','cancelled')),0)::bigint AS overdue_minor
+          coalesce((SELECT sum(amount_minor-refunded_amount_minor) FROM payment_records WHERE tenant_id=$1),0)::bigint AS confirmed_minor,
+          coalesce((SELECT sum(amount_minor-paid_amount_minor) FROM fee_installments WHERE tenant_id=$1 AND status NOT IN('paid','cancelled')),0)::bigint AS outstanding_minor,
+          coalesce((SELECT sum(amount_minor-paid_amount_minor) FROM fee_installments WHERE tenant_id=$1 AND due_date<current_date AND status NOT IN('paid','cancelled')),0)::bigint AS overdue_minor
         FROM fee_schedules
         WHERE tenant_id=$1`,
         [req.actor.tenantId],
