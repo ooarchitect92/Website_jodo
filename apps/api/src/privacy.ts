@@ -10,6 +10,10 @@ import {
   sanitizeCampaign,
 } from '../../../packages/core/src/contracts';
 import { digest, encrypt, token } from '../../../packages/core/src/security';
+const sensitiveVisitorRoute = (path: string) =>
+  /^\/(?:admin|auth|login|privacy|contact|tools|payer|checkout|payment|payments|fees|mandates)(?:\/|$)/.test(
+    path,
+  );
 @Controller('v1')
 export class PrivacyController {
   constructor(@Inject(Db) private db: Db) {}
@@ -69,7 +73,7 @@ export class PrivacyController {
     if (!choice?.analytics) throw new ForbiddenException('Analytics permission required');
     if (Math.abs(Date.now() - Date.parse(v.occurredAt)) > 300000)
       throw new ForbiddenException('Event outside allowed clock window');
-    if (/^\/(admin|login|privacy|contact|tools)/.test(v.route))
+    if (sensitiveVisitorRoute(v.route))
       return { status: 'suppressed', reason: 'sensitive_route' };
     await this.db.query(
       'INSERT INTO events(id,consent_id,name,route,action_id,occurred_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(id) DO NOTHING',
@@ -84,7 +88,7 @@ export class PrivacyController {
       .parse(body);
     const choice = await this.choice(req);
     if (!choice?.analytics) throw new ForbiddenException('Analytics permission required');
-    if (/^\/(admin|login|privacy|contact|tools)/.test(v.route)) {
+    if (sensitiveVisitorRoute(v.route)) {
       return { status: 'suppressed', reason: 'sensitive_route' };
     }
     const fields = sanitizeCampaign(v.fields);
