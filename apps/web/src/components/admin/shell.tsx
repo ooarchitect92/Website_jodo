@@ -9,11 +9,13 @@ import { Workflows } from './workflows';
 import { Dashboard, Campaigns, Media, Settings, Records } from './panels';
 import { FeeOperations } from './fees';
 import { TenancyStudio } from './tenancy';
+import { AcademicOperations } from './academic';
 const sections = [
   ['overview', 'Overview'],
   ['content', 'Content & publishing'],
   ['leads', 'Leads'],
   ['fees', 'Fee operations'],
+  ['academic', 'Students & academic'],
   ['tenant', 'Organisation & access'],
   ['tasks', 'Staff tasks'],
   ['media', 'Media library'],
@@ -172,6 +174,8 @@ export function AdminShell() {
         return <Workflows />;
       case 'fees':
         return <FeeOperations />;
+      case 'academic':
+        return <AcademicOperations />;
       case 'tenant':
         return <TenancyStudio />;
       case 'media':
