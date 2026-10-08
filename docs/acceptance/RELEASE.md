@@ -8,7 +8,7 @@ Public rendering; local reference media; 42 insert-only content records; respons
 
 ## Known missing or incomplete capabilities
 
-- Full cross-tenant isolation is not complete across legacy content, leads, campaigns, workflows, media, fee/payer, settlement and communication records. The tenant control-plane foundation is implemented, but additional production workspaces must remain disabled until every tenant-owned query/mutation/job is scoped and adversarial cross-tenant tests pass.
+- Financial-domain tenant isolation is implemented for fee/payer/payment/mandate/settlement/reconciliation data and active-workspace administration. Full cross-tenant isolation is still incomplete across legacy content, leads, campaigns, workflows, media, shared outbox/audit surfaces and some communications/operations views; additional production workspaces remain release-gated until every tenant-owned query/mutation/job is scoped and adversarial cross-tenant tests pass.
 - Self-service tenant signup/contact verification, invitation acceptance, recovery, membership delegation/access reviews, field/row ABAC and production enforcement of custom tenant-role grants across all business controllers remain incomplete.
 
 - Full dynamic form/schema and custom-collection builders; coordinated release bundles; broad imports/dry runs; full content dependency graph; full editor presence/comments and human acceptance.
