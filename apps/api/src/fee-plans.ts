@@ -519,7 +519,7 @@ export class FeePlanController {
     const movements = scheduleIds.length
       ? await this.db.query(
           `SELECT 'charge' AS kind,i.schedule_id,i.id AS reference_id,i.due_date::text AS occurred_on,
-                  (i.amount_minor-i.adjustment_amount_minor)::bigint AS debit_minor,0::bigint AS credit_minor,
+                  i.amount_minor::bigint AS debit_minor,0::bigint AS credit_minor,
                   'Installment #'||i.sequence AS description
            FROM fee_installments i
            WHERE i.tenant_id=$1 AND i.schedule_id=ANY($2::uuid[])
@@ -533,6 +533,12 @@ export class FeePlanController {
                   initcap(replace(a.kind,'_',' '))||' adjustment'
            FROM fee_adjustment_requests a
            WHERE a.tenant_id=$1 AND a.schedule_id=ANY($2::uuid[]) AND a.status='applied'
+           UNION ALL
+           SELECT 'credit_allocation',i.schedule_id,ca.id,ca.created_at::date::text,0::bigint,
+                  ca.amount_minor::bigint,'Advance / unapplied credit allocated'
+           FROM fee_credit_allocations ca
+           JOIN fee_installments i ON i.id=ca.installment_id
+           WHERE ca.tenant_id=$1 AND i.schedule_id=ANY($2::uuid[])
            ORDER BY occurred_on,reference_id`,
           [req.actor.tenantId, scheduleIds],
         )
@@ -703,6 +709,21 @@ export class FeePlanController {
           [adjustmentId, req.actor.tenantId],
         )
       ).rows[0];
+      const open = (
+        await c.query(
+          `SELECT count(*)::int AS count FROM fee_installments
+           WHERE schedule_id=$1 AND tenant_id=$2 AND status NOT IN('paid','cancelled','adjusted')
+             AND amount_minor-adjustment_amount_minor-paid_amount_minor>0`,
+          [request.schedule_id, req.actor.tenantId],
+        )
+      ).rows[0]!.count;
+      if (open === 0)
+        await c.query(
+          `UPDATE fee_schedules
+           SET status='completed',version=version+1,updated_at=now()
+           WHERE id=$1 AND tenant_id=$2 AND status='active'`,
+          [request.schedule_id, req.actor.tenantId],
+        );
       await this.db.audit(c, req.actor.id, 'fees.adjustment.apply', adjustmentId, {
         amountMinor: request.amount_minor,
         scheduleId: request.schedule_id,
@@ -806,6 +827,21 @@ export class FeePlanController {
          WHERE id=$1`,
         [input.installmentId, nextPaid, settled],
       );
+      const open = (
+        await c.query(
+          `SELECT count(*)::int AS count FROM fee_installments
+           WHERE schedule_id=$1 AND tenant_id=$2 AND status NOT IN('paid','cancelled','adjusted')
+             AND amount_minor-adjustment_amount_minor-paid_amount_minor>0`,
+          [installment.schedule_id, req.actor.tenantId],
+        )
+      ).rows[0]!.count;
+      if (open === 0)
+        await c.query(
+          `UPDATE fee_schedules
+           SET status='completed',version=version+1,updated_at=now()
+           WHERE id=$1 AND tenant_id=$2 AND status='active'`,
+          [installment.schedule_id, req.actor.tenantId],
+        );
       await this.db.audit(c, req.actor.id, 'fees.credit.allocate', row.id, {
         creditId,
         installmentId: input.installmentId,
