@@ -14,7 +14,7 @@ import {
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { Request } from 'express';
 import { Db } from './db';
-import { AuthGuard, Roles } from './auth';
+import { AuthGuard, AuthedRequest, Roles } from './auth';
 import { paymentProviderEventSchema } from '../../../packages/core/src/contracts';
 
 function safeEqualHex(a: string, b: string) {
@@ -83,14 +83,31 @@ export class PaymentProviderController {
     const bodyHash = createHash('sha256').update(raw).digest('hex');
 
     return this.db.tx(async (c) => {
+      const tenant = event.type === 'mandate_status'
+        ? (
+            await c.query('SELECT tenant_id FROM fee_schedules WHERE id=$1', [event.scheduleId])
+          ).rows[0]
+        : (
+            await c.query(
+              `SELECT s.tenant_id
+               FROM fee_installments i
+               JOIN fee_schedules s ON s.id=i.schedule_id
+               WHERE i.id=$1`,
+              [event.installmentId],
+            )
+          ).rows[0];
+      if (!tenant)
+        throw new ForbiddenException('Provider event references an unknown financial record');
+      const tenantId = tenant.tenant_id;
+
       const inserted = (
         await c.query(
           `INSERT INTO payment_provider_events(
-             provider,provider_event_id,event_type,body_hash,normalized_payload
-           ) VALUES($1,$2,$3,$4,$5)
-           ON CONFLICT(provider,provider_event_id) DO NOTHING
+             tenant_id,provider,provider_event_id,event_type,body_hash,normalized_payload
+           ) VALUES($1,$2,$3,$4,$5,$6)
+           ON CONFLICT(tenant_id,provider,provider_event_id) DO NOTHING
            RETURNING *`,
-          [provider, event.eventId, event.type, bodyHash, event],
+          [tenantId, provider, event.eventId, event.type, bodyHash, event],
         )
       ).rows[0];
 
@@ -98,8 +115,8 @@ export class PaymentProviderController {
         const existing = (
           await c.query(
             `SELECT id,status,failure_code,body_hash FROM payment_provider_events
-             WHERE provider=$1 AND provider_event_id=$2`,
-            [provider, event.eventId],
+             WHERE tenant_id=$1 AND provider=$2 AND provider_event_id=$3`,
+            [tenantId, provider, event.eventId],
           )
         ).rows[0];
         if (existing?.body_hash !== bodyHash)
@@ -110,16 +127,16 @@ export class PaymentProviderController {
       if (event.type === 'payment_failed') {
         await c.query(
           `UPDATE payment_checkout_sessions
-           SET status='failed',failure_code=$3,updated_at=now()
-           WHERE provider=$1 AND provider_reference=$2
+           SET status='failed',failure_code=$4,updated_at=now()
+           WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
              AND status IN('requested','created')`,
-          [provider, event.providerReference, event.reasonCode],
+          [tenantId, provider, event.providerReference, event.reasonCode],
         );
         await c.query(
           `UPDATE autopay_debit_attempts
-           SET status='failed',failure_code=$3,
+           SET status='failed',failure_code=$4,
                next_retry_at=CASE
-                 WHEN attempt_no < greatest(1,least(10,$4::int))
+                 WHEN attempt_no < greatest(1,least(10,$5::int))
                    THEN now() + CASE
                      WHEN attempt_no=1 THEN interval '1 hour'
                      WHEN attempt_no=2 THEN interval '24 hours'
@@ -128,9 +145,10 @@ export class PaymentProviderController {
                  ELSE NULL
                END,
                updated_at=now()
-           WHERE provider=$1 AND provider_reference=$2
+           WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
              AND status IN('submitted','queued','uncertain')`,
           [
+            tenantId,
             provider,
             event.providerReference,
             event.reasonCode,
@@ -157,7 +175,10 @@ export class PaymentProviderController {
 
       if (event.type === 'mandate_status') {
         const schedule = (
-          await c.query('SELECT id FROM fee_schedules WHERE id=$1 FOR UPDATE', [event.scheduleId])
+          await c.query(
+          'SELECT id FROM fee_schedules WHERE id=$1 AND tenant_id=$2 FOR UPDATE',
+          [event.scheduleId, tenantId],
+        )
         ).rows[0];
         if (!schedule) {
           await c.query(
@@ -172,9 +193,9 @@ export class PaymentProviderController {
         const existingMandate = (
           await c.query(
             `SELECT * FROM payment_mandates
-             WHERE provider=$1 AND provider_reference=$2
+             WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
              FOR UPDATE`,
-            [provider, event.providerReference],
+            [tenantId, provider, event.providerReference],
           )
         ).rows[0];
 
@@ -225,15 +246,15 @@ export class PaymentProviderController {
         await c.query(
           `UPDATE payment_mandate_setup_requests
            SET status=CASE
-                 WHEN $3='active' THEN 'active'
-                 WHEN $3 IN('failed','revoked') THEN 'failed'
+                 WHEN $4='active' THEN 'active'
+                 WHEN $4 IN('failed','revoked') THEN 'failed'
                  ELSE 'created'
                END,
-               failure_code=CASE WHEN $3 IN('failed','revoked') THEN upper($3) ELSE NULL END,
+               failure_code=CASE WHEN $4 IN('failed','revoked') THEN upper($4) ELSE NULL END,
                updated_at=now()
-           WHERE provider=$1 AND provider_reference=$2
+           WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
              AND status IN('requested','created')`,
-          [provider, event.providerReference, event.status],
+          [tenantId, provider, event.providerReference, event.status],
         );
         await c.query(
           `UPDATE payment_provider_events
@@ -258,9 +279,9 @@ export class PaymentProviderController {
            FROM fee_installments i
            JOIN fee_schedules s ON s.id=i.schedule_id
            LEFT JOIN fee_payers p ON p.id=s.payer_id
-           WHERE i.id=$1
+           WHERE i.id=$1 AND s.tenant_id=$2
            FOR UPDATE OF i,s`,
-          [event.installmentId],
+          [event.installmentId, tenantId],
         )
       ).rows[0];
 
@@ -268,9 +289,9 @@ export class PaymentProviderController {
         await c.query(
           `SELECT id,schedule_id,installment_id,amount_minor,status
            FROM payment_checkout_sessions
-           WHERE provider=$1 AND provider_reference=$2
+           WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
            FOR UPDATE`,
-          [provider, event.providerReference],
+          [tenantId, provider, event.providerReference],
         )
       ).rows[0];
 
@@ -311,8 +332,8 @@ export class PaymentProviderController {
       const existingPayment = (
         await c.query(
           `SELECT id FROM payment_records
-           WHERE provider=$1 AND provider_reference=$2`,
-          [provider, event.providerReference],
+           WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3`,
+          [tenantId, provider, event.providerReference],
         )
       ).rows[0];
       if (existingPayment) {
@@ -374,9 +395,9 @@ export class PaymentProviderController {
       await c.query(
         `UPDATE autopay_debit_attempts
          SET status='confirmed',completed_at=now(),failure_code=NULL,next_retry_at=NULL,updated_at=now()
-         WHERE provider=$1 AND provider_reference=$2
+         WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
            AND status IN('submitted','queued','uncertain','failed')`,
-        [provider, event.providerReference],
+        [tenantId, provider, event.providerReference],
       );
 
       const nextPaid = Number(installment.paid_amount_minor) + event.amountMinor;
@@ -506,12 +527,14 @@ export class PaymentProviderAdminController {
   constructor(@Inject(Db) private db: Db) {}
 
   @Get()
-  async list() {
+  async list(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT id,provider,provider_event_id,event_type,status,failure_code,received_at,applied_at
        FROM payment_provider_events
+       WHERE tenant_id=$1
        ORDER BY received_at DESC
        LIMIT 300`,
+      [req.actor.tenantId],
     );
   }
 }
