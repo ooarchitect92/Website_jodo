@@ -16,7 +16,10 @@ import { AuthGuard, AuthedRequest, Roles } from './auth';
 const money = z.number().int().positive().max(1_000_000_000_000);
 const componentSchema = z
   .object({
-    code: z.string().trim().regex(/^[A-Za-z0-9_-]{2,40}$/),
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,40}$/),
     label: z.string().trim().min(2).max(100),
     amountMinor: money,
     category: z.enum(['fee', 'deposit', 'transport', 'hostel', 'exam', 'other']).default('fee'),
@@ -31,11 +34,16 @@ const installmentSchema = z
 
 const planSchema = z
   .object({
-    planKey: z.string().trim().regex(/^[A-Za-z0-9._/-]{2,80}$/),
+    planKey: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._/-]{2,80}$/),
     name: z.string().trim().min(2).max(160),
     academicYearId: z.uuid().optional(),
     branchId: z.uuid().optional(),
-    eligibility: z.record(z.string().max(80), z.union([z.string().max(200), z.boolean(), z.number()])).default({}),
+    eligibility: z
+      .record(z.string().max(80), z.union([z.string().max(200), z.boolean(), z.number()]))
+      .default({}),
     components: z.array(componentSchema).min(1).max(40),
     installments: z.array(installmentSchema).min(1).max(60),
     note: z.string().trim().max(500).default(''),
@@ -69,7 +77,10 @@ const planSchema = z
 const assignSchema = z
   .object({
     studentId: z.uuid(),
-    accountReference: z.string().trim().regex(/^[A-Za-z0-9_-]{2,80}$/),
+    accountReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9_-]{2,80}$/),
     payerId: z.uuid().optional(),
   })
   .strict();
@@ -79,7 +90,10 @@ const adjustmentRequestSchema = z
     scheduleId: z.uuid(),
     kind: z.enum(['concession', 'scholarship', 'waiver', 'write_off']),
     amountMinor: money,
-    effectiveOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    effectiveOn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
     reason: z.string().trim().min(3).max(500),
   })
   .strict();
@@ -275,16 +289,17 @@ export class FeePlanController {
         )
       ).rows[0];
       if (!plan) throw new ConflictException('Fee plan does not exist in this workspace');
-      if (plan.status !== 'draft') throw new ConflictException('Only a draft plan can be validated');
+      if (plan.status !== 'draft')
+        throw new ConflictException('Only a draft plan can be validated');
       if (BigInt(plan.component_total) !== BigInt(plan.installment_total))
         throw new ConflictException('Fee plan component and installment totals do not balance');
 
       if (plan.academic_year_id) {
         const year = (
-          await c.query('SELECT starts_on,ends_on FROM academic_years WHERE id=$1 AND tenant_id=$2', [
-            plan.academic_year_id,
-            req.actor.tenantId,
-          ])
+          await c.query(
+            'SELECT starts_on,ends_on FROM academic_years WHERE id=$1 AND tenant_id=$2',
+            [plan.academic_year_id, req.actor.tenantId],
+          )
         ).rows[0];
         const invalid = (
           await c.query(
@@ -293,7 +308,8 @@ export class FeePlanController {
             [planId, year.starts_on, year.ends_on],
           )
         ).rows[0]!.count;
-        if (invalid) throw new ConflictException('An installment due date is outside the academic year');
+        if (invalid)
+          throw new ConflictException('An installment due date is outside the academic year');
       }
 
       const updated = (
@@ -332,10 +348,10 @@ export class FeePlanController {
     const planId = parseUuid(id);
     return this.db.tx(async (c) => {
       const plan = (
-        await c.query(
-          'SELECT * FROM fee_plan_versions WHERE id=$1 AND tenant_id=$2 FOR UPDATE',
-          [planId, req.actor.tenantId],
-        )
+        await c.query('SELECT * FROM fee_plan_versions WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [
+          planId,
+          req.actor.tenantId,
+        ])
       ).rows[0];
       if (!plan || plan.status !== 'pending_approval')
         throw new ConflictException('Fee plan is not pending approval');
@@ -361,10 +377,10 @@ export class FeePlanController {
     const planId = parseUuid(id);
     return this.db.tx(async (c) => {
       const plan = (
-        await c.query(
-          'SELECT * FROM fee_plan_versions WHERE id=$1 AND tenant_id=$2 FOR UPDATE',
-          [planId, req.actor.tenantId],
-        )
+        await c.query('SELECT * FROM fee_plan_versions WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [
+          planId,
+          req.actor.tenantId,
+        ])
       ).rows[0];
       if (!plan || plan.status !== 'approved')
         throw new ConflictException('Only an approved fee plan can become effective');
@@ -405,7 +421,9 @@ export class FeePlanController {
         )
       ).rows[0];
       if (!plan || !student)
-        throw new ConflictException('Effective plan and active student must belong to this workspace');
+        throw new ConflictException(
+          'Effective plan and active student must belong to this workspace',
+        );
       if (plan.branch_id && plan.branch_id !== student.branch_id)
         throw new ConflictException('Student branch is not eligible for this fee plan');
       if (plan.academic_year_id && plan.academic_year_id !== student.academic_year_id)
@@ -581,7 +599,10 @@ export class FeePlanController {
     return {
       payer,
       schedules,
-      outstandingMinor: schedules.reduce((sum: number, row: any) => sum + Number(row.outstanding_minor), 0),
+      outstandingMinor: schedules.reduce(
+        (sum: number, row: any) => sum + Number(row.outstanding_minor),
+        0,
+      ),
       asOf: new Date().toISOString(),
     };
   }
@@ -690,7 +711,8 @@ export class FeePlanController {
         const applied = Math.min(room, remaining);
         const nextAdjustment = Number(installment.adjustment_amount_minor) + applied;
         const settled =
-          Number(installment.paid_amount_minor) + nextAdjustment === Number(installment.amount_minor);
+          Number(installment.paid_amount_minor) + nextAdjustment ===
+          Number(installment.amount_minor);
         await c.query(
           `UPDATE fee_installments
            SET adjustment_amount_minor=$2,status=CASE WHEN $3 THEN 'adjusted' ELSE status END
@@ -771,11 +793,7 @@ export class FeePlanController {
   }
 
   @Post('credits/:id/allocate')
-  async allocateCredit(
-    @Req() req: AuthedRequest,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async allocateCredit(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: unknown) {
     const creditId = parseUuid(id);
     const input = allocateCreditSchema.parse(body);
     return this.db.tx(async (c) => {
