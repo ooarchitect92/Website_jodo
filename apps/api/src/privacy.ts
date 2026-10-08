@@ -97,13 +97,15 @@ export class PrivacyController {
       .object({ email: z.email().max(200), kind: z.enum(['access', 'correction', 'deletion']) })
       .strict()
       .parse(body);
-    const rows = await this.db.query(
-      'INSERT INTO privacy_requests(encrypted_contact,kind) VALUES($1,$2) RETURNING id',
-      [encrypt(v.email), v.kind],
-    );
-    await this.db.tx((c) =>
-      this.db.audit(c, 'visitor', 'privacy.request', rows[0]!.id, { kind: v.kind }),
-    );
+    await this.db.tx(async (c) => {
+      const rows = await c.query(
+        'INSERT INTO privacy_requests(encrypted_contact,kind) VALUES($1,$2) RETURNING id',
+        [encrypt(v.email), v.kind],
+      );
+      await this.db.audit(c, 'visitor', 'privacy.request', rows.rows[0]!.id, {
+        kind: v.kind,
+      });
+    });
     return {
       status: 'verification_required',
       message:
