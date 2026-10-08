@@ -232,7 +232,9 @@ export class AuthController {
          RETURNING s.id`,
         [req.actor.sessionId, membership.tenant_id, req.actor.id],
       );
-      if (!switched.rowCount) throw new ForbiddenException('Workspace or session is no longer available');
+      if (!switched.rowCount) {
+        throw new ForbiddenException('Workspace or session is no longer available');
+      }
       await this.db.audit(c, req.actor.id, 'membership.switch', membership.tenant_id, {
         fromTenantId: req.actor.tenantId,
         role: membership.role_key,
