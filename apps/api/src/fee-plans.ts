@@ -567,7 +567,7 @@ export class FeePlanController {
       `SELECT s.id,s.account_reference,s.scope_reference,
               coalesce(sum(i.amount_minor-i.adjustment_amount_minor-i.paid_amount_minor),0)::bigint AS outstanding_minor
        FROM fee_schedules s
-       LEFT JOIN fee_installments i ON i.schedule_id=s.id AND i.status<>'cancelled'
+       LEFT JOIN fee_installments i ON i.schedule_id=s.id AND i.status NOT IN('cancelled','adjusted')
        WHERE s.tenant_id=$1 AND s.payer_id=$2
        GROUP BY s.id ORDER BY s.created_at`,
       [req.actor.tenantId, payerId],
@@ -687,7 +687,7 @@ export class FeePlanController {
           Number(installment.paid_amount_minor) + nextAdjustment === Number(installment.amount_minor);
         await c.query(
           `UPDATE fee_installments
-           SET adjustment_amount_minor=$2,status=CASE WHEN $3 THEN 'paid' ELSE status END
+           SET adjustment_amount_minor=$2,status=CASE WHEN $3 THEN 'adjusted' ELSE status END
            WHERE id=$1`,
           [installment.id, nextAdjustment, settled],
         );
