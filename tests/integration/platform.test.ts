@@ -174,13 +174,7 @@ test('workspace membership context is explicit and tenant switching is membershi
     assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
   }
   // Record lookup is also tenant-protected, not just the collection index.
-  const deniedDetail = await call(
-    '/v1/admin/content/' + randomUUID(),
-    'GET',
-    undefined,
-    {},
-    true,
-  );
+  const deniedDetail = await call('/v1/admin/content/' + randomUUID(), 'GET', undefined, {}, true);
   assert.equal(deniedDetail.r.status, 403);
 
   const deniedExport = await call('/v1/admin/content-export', 'POST', {}, {}, true);
