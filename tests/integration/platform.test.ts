@@ -1005,7 +1005,7 @@ test('fee plans require maker-checker approval and project receivables safely', 
       `INSERT INTO users(email,password_hash,totp_secret,role,active)
        VALUES($1,$2,$3,'owner',true)
        RETURNING id`,
-      [checkerEmail, await argon2.hash(checkerPassword), checkerTotp],
+      [checkerEmail, await argon2.hash(checkerPassword), encrypt(checkerTotp)],
     )
   ).rows[0]!;
   await owner.query(
