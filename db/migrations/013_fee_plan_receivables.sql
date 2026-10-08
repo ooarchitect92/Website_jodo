@@ -4,6 +4,10 @@
 ALTER TABLE fee_installments
   ADD COLUMN IF NOT EXISTS adjustment_amount_minor bigint NOT NULL DEFAULT 0
     CHECK(adjustment_amount_minor>=0 AND adjustment_amount_minor<=amount_minor);
+ALTER TABLE fee_installments DROP CONSTRAINT IF EXISTS fee_installments_status_check;
+ALTER TABLE fee_installments
+  ADD CONSTRAINT fee_installments_status_check
+  CHECK(status IN('scheduled','due','part_paid','paid','overdue','cancelled','adjusted'));
 
 CREATE TABLE IF NOT EXISTS fee_plan_versions(
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
