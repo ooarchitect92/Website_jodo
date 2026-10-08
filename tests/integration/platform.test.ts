@@ -165,6 +165,8 @@ test('workspace membership context is explicit and tenant switching is membershi
     '/v1/admin/workflows/runs',
     '/v1/admin/conversations',
     '/v1/admin/privacy-requests',
+    '/v1/admin/leads',
+    '/v1/admin/media',
   ]) {
     const denied = await call(route, 'GET', undefined, {}, true);
     assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
@@ -180,6 +182,8 @@ test('workspace membership context is explicit and tenant switching is membershi
     ['/v1/admin/workflows', 'POST', {}],
     ['/v1/admin/workflows/' + randomUUID(), 'PATCH', {}],
     ['/v1/admin/outbox/' + randomUUID() + '/retry', 'POST', {}],
+    ['/v1/admin/leads/' + randomUUID() + '/stage', 'POST', {}],
+    ['/v1/admin/leads/export', 'POST', {}],
   ] as const) {
     const denied = await call(route, method, payload, {}, true);
     assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
