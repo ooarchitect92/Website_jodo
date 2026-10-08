@@ -18,7 +18,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const data = await pages();
   const found = data.find((p) => p.slug === path);
   const config = await site();
-  const isListing = path === '/blog/' || /^\\/blog\\/(engineering|insight|product)\\/$/.test(path) || path === '/case-studies/';
+  const isListing = ['/blog/', '/blog/engineering/', '/blog/insight/', '/blog/product/', '/case-studies/'].includes(path);
   const isPrivateUtility = path === '/search/' || path === '/cookie-preferences/' || path === '/login/';
   const title =
     found?.body.title ||
