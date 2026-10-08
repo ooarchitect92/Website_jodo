@@ -17,6 +17,7 @@ import { Db } from './db';
 import { AuthGuard, AuthedRequest, Roles } from './auth';
 import { paymentProviderEventSchema } from '../../../packages/core/src/contracts';
 import { isNewerMandateEvent } from '../../../packages/core/src/mandate-events';
+import { hasMatchedPaymentFailure } from '../../../packages/core/src/payment-failure';
 
 function safeEqualHex(a: string, b: string) {
   if (!/^[a-f0-9]{64}$/i.test(a) || !/^[a-f0-9]{64}$/i.test(b)) return false;
@@ -165,7 +166,7 @@ export class PaymentProviderController {
         // A signed event is not necessarily a valid transaction outcome.
         // Only apply a failure if it changed the exact outstanding checkout
         // or debit attempt; otherwise keep the discrepancy for investigation.
-        if (!checkoutFailure.rowCount && !debitFailure.rowCount) {
+        if (!hasMatchedPaymentFailure(checkoutFailure.rowCount, debitFailure.rowCount)) {
           await c.query(
             `UPDATE payment_provider_events
              SET status='failed',failure_code='UNMATCHED_PAYMENT_FAILURE'
