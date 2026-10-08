@@ -172,6 +172,19 @@ test('workspace membership context is explicit and tenant switching is membershi
   const deniedExport = await call('/v1/admin/content-export', 'POST', {}, {}, true);
   assert.equal(deniedExport.r.status, 403);
 
+  // A second workspace must not modify global legacy tasks, campaigns or workflows.
+  // These fail-closed checks happen before business payload validation.
+  for (const [route, method, payload] of [
+    ['/v1/admin/tasks/' + randomUUID() + '/complete', 'POST', {}],
+    ['/v1/admin/campaigns', 'POST', {}],
+    ['/v1/admin/workflows', 'POST', {}],
+    ['/v1/admin/workflows/' + randomUUID(), 'PATCH', {}],
+    ['/v1/admin/outbox/' + randomUUID() + '/retry', 'POST', {}],
+  ] as const) {
+    const denied = await call(route, method, payload, {}, true);
+    assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
+  }
+
   const back = await call(
     '/v1/auth/switch-tenant',
     'POST',
