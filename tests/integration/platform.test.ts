@@ -153,6 +153,25 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === primaryTenantId));
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === second.id));
 
+  // Legacy operations have no tenant-owned rows yet: deny access rather than leak
+  // the primary institution's content, tasks, campaigns, or operational records.
+  for (const route of [
+    '/v1/admin/overview',
+    '/v1/admin/tasks',
+    '/v1/admin/audit',
+    '/v1/admin/outbox',
+    '/v1/admin/campaigns',
+    '/v1/admin/workflows',
+    '/v1/admin/workflows/runs',
+    '/v1/admin/conversations',
+    '/v1/admin/privacy-requests',
+  ]) {
+    const denied = await call(route, 'GET', undefined, {}, true);
+    assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
+  }
+  const deniedExport = await call('/v1/admin/content-export', 'POST', {}, {}, true);
+  assert.equal(deniedExport.r.status, 403);
+
   const back = await call(
     '/v1/auth/switch-tenant',
     'POST',
