@@ -83,9 +83,15 @@ const assignmentSchema = z
 
 const importRowSchema = z
   .object({
-    studentReference: z.string().trim().regex(/^[A-Za-z0-9._/-]{2,80}$/),
+    studentReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._/-]{2,80}$/),
     fullName: z.string().trim().min(2).max(160),
-    dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateOfBirth: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
     branchId: z.uuid().optional(),
     academicYearId: z.uuid().optional(),
     externalId: z.string().trim().min(1).max(160).optional(),
@@ -765,8 +771,8 @@ export class AcademicOperationsController {
             req.actor.tenantId,
             input.mappingId,
             input.fieldKey,
-            input.localValue ?? null,
-            input.remoteValue ?? null,
+            input.localValue === undefined ? null : JSON.stringify(input.localValue),
+            input.remoteValue === undefined ? null : JSON.stringify(input.remoteValue),
           ],
         )
       ).rows[0];
