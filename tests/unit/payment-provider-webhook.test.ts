@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
@@ -42,7 +43,7 @@ test('valid signed webhook with no matching financial attempt remains an investi
   try {
     const rawBody = Buffer.from(JSON.stringify(payload));
     const timestamp = String(Math.floor(Date.now() / 1000));
-    const signature = createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET)
+    const signature = createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET!)
       .update(timestamp).update('.').update(rawBody).digest('hex');
     const controller = new PaymentProviderController(fakeDb as never);
     const result = await controller.webhook({ rawBody } as never, payload, signature, timestamp);
