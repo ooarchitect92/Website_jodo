@@ -113,7 +113,17 @@ export class FormsController {
 @Roles('owner', 'sales')
 export class LeadsController {
   constructor(@Inject(Db) private db: Db) {}
+  private async requireLegacyWorkspace(req: AuthedRequest) {
+    const workspace = await this.db.query(
+      "SELECT id FROM tenants WHERE id=$1 AND slug='default' AND status<>'archived'",
+      [req.actor.tenantId],
+    );
+    if (!workspace.length) {
+      throw new ForbiddenException('Lead management is unavailable outside the legacy workspace');
+    }
+  }
   @Get() async list(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     await this.db.tx((c) => this.db.audit(c, req.actor.id, 'leads.read', 'list'));
     const rows = await this.db.query('SELECT * FROM leads ORDER BY created_at DESC LIMIT 200');
     return rows.map((r) => {
@@ -135,6 +145,7 @@ export class LeadsController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
+    await this.requireLegacyWorkspace(req);
     const v = z
       .object({
         stage: z.enum(['new', 'contacted', 'qualified', 'won', 'lost', 'spam']),
@@ -175,6 +186,7 @@ export class LeadsController {
     });
   }
   @Post('export') @Roles('owner') async export(@Req() req: AuthedRequest, @Res() res: Response) {
+    await this.requireLegacyWorkspace(req);
     const rows = await this.db.query('SELECT * FROM leads ORDER BY created_at DESC LIMIT 5000');
     await this.db.tx((c) =>
       this.db.audit(c, req.actor.id, 'leads.export', 'csv', { count: rows.length }),
