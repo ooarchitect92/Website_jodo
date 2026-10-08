@@ -84,6 +84,9 @@ export class PrivacyController {
       .parse(body);
     const choice = await this.choice(req);
     if (!choice?.analytics) throw new ForbiddenException('Analytics permission required');
+    if (/^\/(admin|login|privacy|contact|tools)/.test(v.route)) {
+      return { status: 'suppressed', reason: 'sensitive_route' };
+    }
     const fields = sanitizeCampaign(v.fields);
     if (!Object.keys(fields).length) return { status: 'not_collected' };
     const rows = await this.db.query(
