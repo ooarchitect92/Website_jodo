@@ -7,12 +7,13 @@ import {
   Inject,
   Param,
   Post,
+  Req,
   ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
 import { z } from 'zod';
 import { Db } from './db';
-import { AuthGuard, Roles } from './auth';
+import { AuthGuard, AuthedRequest, Roles } from './auth';
 import { payerMandateSetupSchema } from '../../../packages/core/src/contracts';
 import { digest, token } from '../../../packages/core/src/security';
 
@@ -67,7 +68,7 @@ export class PayerMandateController {
       throw new ConflictException('Portal link is invalid or expired');
     const row = (
       await this.db.query(
-        `SELECT t.schedule_id,s.account_reference,s.currency,s.total_amount_minor,s.status,
+        `SELECT t.schedule_id,s.tenant_id,s.account_reference,s.currency,s.total_amount_minor,s.status,
                 p.id AS payer_id,p.active
          FROM payer_access_tokens t
          JOIN fee_schedules s ON s.id=t.schedule_id
@@ -100,8 +101,8 @@ export class PayerMandateController {
       await this.db.query(
         `SELECT id,schedule_id,payer_id,rail,status,authorization_url,expires_at
          FROM payment_mandate_setup_requests
-         WHERE idempotency_key=$1`,
-        [v.idempotencyKey],
+         WHERE tenant_id=$1 AND idempotency_key=$2`,
+        [access.tenant_id, v.idempotencyKey],
       )
     )[0];
     if (existing) {
@@ -273,18 +274,20 @@ export class AutopayAdminController {
   constructor(@Inject(Db) private db: Db) {}
 
   @Get('mandate-setups')
-  setups() {
+  setups(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT r.id,r.schedule_id,r.rail,r.provider,r.provider_reference,r.status,
               r.failure_code,r.expires_at,r.created_at,r.updated_at,s.account_reference
        FROM payment_mandate_setup_requests r
        JOIN fee_schedules s ON s.id=r.schedule_id
+       WHERE r.tenant_id=$1
        ORDER BY r.created_at DESC LIMIT 300`,
+      [req.actor.tenantId],
     );
   }
 
   @Get('autopay-attempts')
-  attempts() {
+  attempts(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT a.id,a.schedule_id,a.installment_id,a.mandate_id,a.provider,
               a.provider_reference,a.amount_minor,a.currency,a.attempt_no,a.status,
@@ -293,7 +296,9 @@ export class AutopayAdminController {
        FROM autopay_debit_attempts a
        JOIN fee_schedules s ON s.id=a.schedule_id
        JOIN fee_installments i ON i.id=a.installment_id
+       WHERE a.tenant_id=$1
        ORDER BY a.created_at DESC LIMIT 500`,
+      [req.actor.tenantId],
     );
   }
 }

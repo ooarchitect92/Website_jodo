@@ -44,16 +44,18 @@ export class PayerAdminController {
   constructor(@Inject(Db) private db: Db) {}
 
   @Get()
-  async list() {
+  async list(@Req() req: AuthedRequest) {
     const rows = await this.db.query(
       `SELECT p.id,p.account_reference,p.encrypted_profile,p.preferred_channel,p.locale,p.active,
               p.created_at,p.updated_at,
               count(s.id)::int AS schedules
        FROM fee_payers p
-       LEFT JOIN fee_schedules s ON s.payer_id=p.id
+       LEFT JOIN fee_schedules s ON s.payer_id=p.id AND s.tenant_id=p.tenant_id
+       WHERE p.tenant_id=$1
        GROUP BY p.id
        ORDER BY p.created_at DESC
        LIMIT 300`,
+      [req.actor.tenantId],
     );
     return rows.map((row) => {
       const profile = decrypt<PayerProfile>(row.encrypted_profile);
@@ -80,10 +82,17 @@ export class PayerAdminController {
       const row = (
         await c.query(
           `INSERT INTO fee_payers(
-             account_reference,encrypted_profile,preferred_channel,locale,created_by
-           ) VALUES($1,$2,$3,$4,$5)
+             tenant_id,account_reference,encrypted_profile,preferred_channel,locale,created_by
+           ) VALUES($1,$2,$3,$4,$5,$6)
            RETURNING id,account_reference,preferred_channel,locale,active,created_at`,
-          [v.accountReference, encrypt(v), v.preferredChannel, v.locale, req.actor.id],
+          [
+            req.actor.tenantId,
+            v.accountReference,
+            encrypt(v),
+            v.preferredChannel,
+            v.locale,
+            req.actor.id,
+          ],
         )
       ).rows[0];
       await this.db.audit(c, req.actor.id, 'fees.payer.create', row.id, {
@@ -111,14 +120,19 @@ export class PayerAdminController {
       const row = (
         await c.query(
           `UPDATE fee_payers SET active=false,updated_at=now()
-           WHERE id=$1 AND active=true RETURNING id`,
-          [payerId],
+           WHERE id=$1 AND tenant_id=$2 AND active=true RETURNING id`,
+          [payerId, req.actor.tenantId],
         )
       ).rows[0];
       if (!row) throw new ConflictException('Payer profile is already inactive or missing');
       await c.query(
-        'UPDATE payer_access_tokens SET revoked_at=now() WHERE schedule_id IN (SELECT id FROM fee_schedules WHERE payer_id=$1) AND revoked_at IS NULL',
-        [payerId],
+        `UPDATE payer_access_tokens SET revoked_at=now()
+         WHERE tenant_id=$2
+           AND schedule_id IN (
+             SELECT id FROM fee_schedules WHERE payer_id=$1 AND tenant_id=$2
+           )
+           AND revoked_at IS NULL`,
+        [payerId, req.actor.tenantId],
       );
       await this.db.audit(c, req.actor.id, 'fees.payer.deactivate', payerId);
       return { status: 'inactive' };
@@ -144,8 +158,8 @@ export class PayerLinkAdminController {
           `SELECT s.id,s.payer_id,p.active
            FROM fee_schedules s
            LEFT JOIN fee_payers p ON p.id=s.payer_id
-           WHERE s.id=$1`,
-          [scheduleId],
+           WHERE s.id=$1 AND s.tenant_id=$2`,
+          [scheduleId, req.actor.tenantId],
         )
       ).rows[0];
       if (!schedule) throw new ConflictException('Fee schedule does not exist');
@@ -196,8 +210,8 @@ export class PayerLinkAdminController {
     return this.db.tx(async (c) => {
       const r = await c.query(
         `UPDATE payer_access_tokens SET revoked_at=now()
-         WHERE schedule_id=$1 AND revoked_at IS NULL AND expires_at>now()`,
-        [scheduleId],
+         WHERE schedule_id=$1 AND tenant_id=$2 AND revoked_at IS NULL AND expires_at>now()`,
+        [scheduleId, req.actor.tenantId],
       );
       await this.db.audit(c, req.actor.id, 'fees.payer_link.revoke_all', scheduleId, {
         count: r.rowCount,

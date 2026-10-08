@@ -24,7 +24,8 @@ let app: any,
   leadId = '',
   consentCookie = '',
   chatCookie = '',
-  primaryTenantId = '';
+  primaryTenantId = '',
+  secondaryTenantId = '';
 const input = {
   name: 'Synthetic Visitor',
   email: 'synthetic@example.invalid',
@@ -129,6 +130,7 @@ test('workspace membership context is explicit and tenant switching is membershi
       ['qa-' + randomUUID().slice(0, 8), 'Synthetic Second Workspace'],
     )
   ).rows[0]!;
+  secondaryTenantId = second.id;
   await owner.query('INSERT INTO onboarding_cases(tenant_id) VALUES($1)', [second.id]);
   const user = (
     await owner.query('SELECT id FROM users WHERE lower(email)=lower($1)', [
@@ -748,6 +750,95 @@ test('audit checkpoint is signed without claiming independent storage', async ()
   const r = await checkpoint(db);
   assert.ok(r.count > 0);
   assert.match(r.filename, /^audit-/);
+});
+
+test('fee administration is isolated by active workspace', async () => {
+  assert.ok(primaryTenantId);
+  assert.ok(secondaryTenantId);
+
+  const sharedReference = 'tenant_scope_' + randomUUID().slice(0, 8);
+  const primarySchedule = await call(
+    '/v1/admin/fees/schedules',
+    'POST',
+    {
+      accountReference: sharedReference,
+      currency: 'INR',
+      note: 'Primary workspace isolation fixture',
+      installments: [{ dueDate: '2027-01-15', amountMinor: 50000 }],
+    },
+    {},
+    true,
+  );
+  assert.equal(primarySchedule.r.status, 201, JSON.stringify(primarySchedule.data));
+  assert.equal(primarySchedule.data.tenant_id, primaryTenantId);
+
+  const switched = await call(
+    '/v1/auth/switch-tenant',
+    'POST',
+    { tenantId: secondaryTenantId },
+    {},
+    true,
+  );
+  assert.equal(switched.r.status, 201, JSON.stringify(switched.data));
+
+  const secondaryList = await call('/v1/admin/fees/schedules', 'GET', undefined, {}, true);
+  assert.equal(secondaryList.r.status, 200, JSON.stringify(secondaryList.data));
+  assert.ok(!secondaryList.data.some((row: any) => row.id === primarySchedule.data.id));
+
+  const crossTenantActivation = await call(
+    '/v1/admin/fees/schedules/' + primarySchedule.data.id + '/activate',
+    'POST',
+    { expectedVersion: 1 },
+    {},
+    true,
+  );
+  assert.equal(crossTenantActivation.r.status, 409);
+
+  const secondaryPayer = await call(
+    '/v1/admin/payers',
+    'POST',
+    {
+      accountReference: sharedReference,
+      displayName: 'Secondary Tenant Payer',
+      email: 'secondary-payer@example.invalid',
+      preferredChannel: 'email',
+      locale: 'en-IN',
+    },
+    {},
+    true,
+  );
+  assert.equal(secondaryPayer.r.status, 201, JSON.stringify(secondaryPayer.data));
+
+  const secondarySchedule = await call(
+    '/v1/admin/fees/schedules',
+    'POST',
+    {
+      accountReference: sharedReference,
+      payerId: secondaryPayer.data.id,
+      currency: 'INR',
+      note: 'Secondary workspace isolation fixture',
+      installments: [{ dueDate: '2027-01-15', amountMinor: 50000 }],
+    },
+    {},
+    true,
+  );
+  assert.equal(secondarySchedule.r.status, 201, JSON.stringify(secondarySchedule.data));
+  assert.equal(secondarySchedule.data.tenant_id, secondaryTenantId);
+
+  const secondaryPayments = await call('/v1/admin/fees/payments', 'GET', undefined, {}, true);
+  assert.equal(secondaryPayments.r.status, 200, JSON.stringify(secondaryPayments.data));
+  assert.ok(
+    !secondaryPayments.data.some((row: any) => row.schedule_id === primarySchedule.data.id),
+  );
+
+  const back = await call(
+    '/v1/auth/switch-tenant',
+    'POST',
+    { tenantId: primaryTenantId },
+    {},
+    true,
+  );
+  assert.equal(back.r.status, 201, JSON.stringify(back.data));
 });
 
 test('fee schedule, payment evidence and refund remain auditable and balanced', async () => {
