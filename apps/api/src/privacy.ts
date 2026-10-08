@@ -10,13 +10,21 @@ import {
   sanitizeCampaign,
 } from '../../../packages/core/src/contracts';
 import { digest, encrypt, token } from '../../../packages/core/src/security';
-const sensitiveVisitorRoute = (path: string) => {
-  const segment = path.split('/')[1];
-  return (
-    /^(admin|auth|login|privacy|contact|tools)$/.test(segment) ||
-    /^(payer|checkout|payments?|fees|mandates)$/.test(segment)
-  );
-};
+const sensitiveRouteSegments = new Set([
+  'admin',
+  'auth',
+  'login',
+  'privacy',
+  'contact',
+  'tools',
+  'payer',
+  'checkout',
+  'payment',
+  'payments',
+  'fees',
+  'mandates',
+]);
+const sensitiveVisitorRoute = (path: string) => sensitiveRouteSegments.has(path.split('/')[1]);
 @Controller('v1')
 export class PrivacyController {
   constructor(@Inject(Db) private db: Db) {}
