@@ -68,7 +68,7 @@ export class PayerMandateController {
       throw new ConflictException('Portal link is invalid or expired');
     const row = (
       await this.db.query(
-        `SELECT t.schedule_id,s.account_reference,s.currency,s.total_amount_minor,s.status,
+        `SELECT t.schedule_id,s.tenant_id,s.account_reference,s.currency,s.total_amount_minor,s.status,
                 p.id AS payer_id,p.active
          FROM payer_access_tokens t
          JOIN fee_schedules s ON s.id=t.schedule_id
@@ -101,8 +101,8 @@ export class PayerMandateController {
       await this.db.query(
         `SELECT id,schedule_id,payer_id,rail,status,authorization_url,expires_at
          FROM payment_mandate_setup_requests
-         WHERE idempotency_key=$1`,
-        [v.idempotencyKey],
+         WHERE tenant_id=$1 AND idempotency_key=$2`,
+        [access.tenant_id, v.idempotencyKey],
       )
     )[0];
     if (existing) {
