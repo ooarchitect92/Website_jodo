@@ -188,8 +188,7 @@ export class OperationsController {
         "SELECT id FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND status='active' FOR UPDATE",
         [req.actor.tenantId, userId],
       );
-      if (!member.rowCount)
-        throw new ForbiddenException('Account is outside this workspace');
+      if (!member.rowCount) throw new ForbiddenException('Account is outside this workspace');
       await c.query(
         'UPDATE sessions SET revoked_at=now() WHERE user_id=$1 AND tenant_id=$2 AND revoked_at IS NULL',
         [userId, req.actor.tenantId],
