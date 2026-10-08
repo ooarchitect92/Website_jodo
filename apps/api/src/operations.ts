@@ -36,7 +36,9 @@ export class OperationsController {
     if (!workspace.length)
       throw new ForbiddenException('This operation is unavailable outside the legacy workspace');
   }
-  @Get('overview') @Roles('owner', 'editor', 'sales', 'analyst') async overview(@Req() req: AuthedRequest) {
+  @Get('overview')
+  @Roles('owner', 'editor', 'sales', 'analyst')
+  async overview(@Req() req: AuthedRequest) {
     await this.requireLegacyWorkspace(req);
     const stats = (
       await this.db.query(
