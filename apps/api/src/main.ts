@@ -33,6 +33,7 @@ import {
   PayerMandateController,
 } from './mandate-autopay';
 import { TenancyController } from './tenancy';
+import { FeePlanController } from './fee-plans';
 import { AcademicOperationsController } from './academic';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
@@ -98,6 +99,7 @@ class Health {
     AutopayAdminController,
     TenancyController,
     AcademicOperationsController,
+    FeePlanController,
   ],
   providers: [Db, AuthGuard, LeadsService],
 })

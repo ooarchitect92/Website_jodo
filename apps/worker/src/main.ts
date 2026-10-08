@@ -93,7 +93,7 @@ export async function tick(db: Db) {
          JOIN late_fee_rules r ON r.schedule_id=s.id
          WHERE s.status='active'
            AND r.active=true
-           AND i.status NOT IN('paid','cancelled')
+           AND i.status NOT IN('paid','cancelled','adjusted')
            AND current_date > i.due_date + r.grace_days
          ORDER BY i.due_date
          FOR UPDATE OF i SKIP LOCKED
@@ -140,7 +140,7 @@ export async function tick(db: Db) {
          WHERE s.status='active'
            AND p.active=true
            AND p.preferred_channel<>'none'
-           AND i.status NOT IN('paid','cancelled')
+           AND i.status NOT IN('paid','cancelled','adjusted')
            AND (i.due_date=current_date+3 OR i.due_date=current_date OR i.due_date<current_date)
          ORDER BY i.due_date
          FOR UPDATE OF i SKIP LOCKED
@@ -191,7 +191,7 @@ export async function tick(db: Db) {
       const maxAttempts = Math.max(1, Math.min(10, Number(process.env.AUTOPAY_MAX_ATTEMPTS || 3)));
       const autopayRows = (
         await c.query(
-          `SELECT i.id AS installment_id,i.schedule_id,i.amount_minor,i.paid_amount_minor,
+          `SELECT i.id AS installment_id,i.schedule_id,i.amount_minor,i.adjustment_amount_minor,i.paid_amount_minor,
                   s.currency,m.id AS mandate_id,m.provider,
                   coalesce(last_attempt.attempt_no,0)::int AS last_attempt_no,
                   last_attempt.status AS last_attempt_status,
@@ -213,7 +213,7 @@ export async function tick(db: Db) {
              LIMIT 1
            ) last_attempt ON true
            WHERE s.status='active'
-             AND i.status NOT IN('paid','cancelled')
+             AND i.status NOT IN('paid','cancelled','adjusted')
              AND i.due_date<=current_date
              AND (
                last_attempt.attempt_no IS NULL
@@ -231,7 +231,10 @@ export async function tick(db: Db) {
         )
       ).rows;
       for (const row of autopayRows) {
-        const remaining = Number(row.amount_minor) - Number(row.paid_amount_minor);
+        const remaining =
+          Number(row.amount_minor) -
+          Number(row.adjustment_amount_minor || 0) -
+          Number(row.paid_amount_minor);
         if (remaining <= 0) continue;
         const attemptNo = Number(row.last_attempt_no || 0) + 1;
         const eventId = randomUUID();
