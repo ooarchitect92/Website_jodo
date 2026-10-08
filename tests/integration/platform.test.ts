@@ -827,7 +827,9 @@ test('fee administration is isolated by active workspace', async () => {
 
   const secondaryPayments = await call('/v1/admin/fees/payments', 'GET', undefined, {}, true);
   assert.equal(secondaryPayments.r.status, 200, JSON.stringify(secondaryPayments.data));
-  assert.ok(!secondaryPayments.data.some((row: any) => row.schedule_id === primarySchedule.data.id));
+  assert.ok(
+    !secondaryPayments.data.some((row: any) => row.schedule_id === primarySchedule.data.id),
+  );
 
   const back = await call(
     '/v1/auth/switch-tenant',
