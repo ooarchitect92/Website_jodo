@@ -636,6 +636,30 @@ test('chat requires a scoped operational session', async () => {
   );
   assert.equal(message.r.status, 201);
   assert.match(message.data.answer, /instalments|scheduled/i);
+
+  const messageId = randomUUID();
+  const first = await call(
+    '/v1/chat/messages',
+    'POST',
+    { clientId: messageId, topic: 'Pay' },
+    { Cookie: chatCookie },
+  );
+  assert.equal(first.r.status, 201);
+  const replay = await call(
+    '/v1/chat/messages',
+    'POST',
+    { clientId: messageId, topic: 'Pay' },
+    { Cookie: chatCookie },
+  );
+  assert.equal(replay.r.status, 201);
+  assert.equal(replay.data.answer, first.data.answer);
+  const conflict = await call(
+    '/v1/chat/messages',
+    'POST',
+    { clientId: messageId, topic: 'Cred' },
+    { Cookie: chatCookie },
+  );
+  assert.equal(conflict.r.status, 409);
 });
 test('chat lead uses same durable capture and a conversation link', async () => {
   const r = await call(
