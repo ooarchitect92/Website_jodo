@@ -36,7 +36,8 @@ export class OperationsController {
     if (!workspace.length)
       throw new ForbiddenException('This operation is unavailable outside the legacy workspace');
   }
-  @Get('overview') @Roles('owner', 'editor', 'sales', 'analyst') async overview() {
+  @Get('overview') @Roles('owner', 'editor', 'sales', 'analyst') async overview(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     const stats = (
       await this.db.query(
         `SELECT (SELECT count(*)::int FROM content WHERE published_revision IS NOT NULL AND deleted_at IS NULL) AS published,(SELECT count(*)::int FROM leads) AS leads,(SELECT count(*)::int FROM leads WHERE stage='new') AS new_leads,(SELECT count(*)::int FROM tasks WHERE status='open') AS open_tasks,(SELECT count(*)::int FROM outbox WHERE status IN('blocked','dead_letter','retry')) AS attention`,
@@ -51,13 +52,15 @@ export class OperationsController {
       productionAccepted: false,
     };
   }
-  @Get('tasks') @Roles('owner', 'sales') tasks() {
+  @Get('tasks') @Roles('owner', 'sales') async tasks(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query('SELECT * FROM tasks ORDER BY due_at LIMIT 200');
   }
   @Post('tasks/:id/complete') @Roles('owner', 'sales') async task(
     @Param('id') id: string,
     @Req() req: AuthedRequest,
   ) {
+    await this.requireLegacyWorkspace(req);
     await this.db.tx(async (c) => {
       const updated = await c.query(
         "UPDATE tasks SET status='done' WHERE id=$1 AND status='open' RETURNING id",
@@ -68,15 +71,18 @@ export class OperationsController {
     });
     return { status: 'done' };
   }
-  @Get('audit') async audit() {
+  @Get('audit') async audit(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query('SELECT * FROM audit ORDER BY id DESC LIMIT 200');
   }
-  @Get('outbox') outbox() {
+  @Get('outbox') async outbox(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query(
       'SELECT id,type,aggregate_id,status,attempts,last_error,created_at,available_at FROM outbox ORDER BY created_at DESC LIMIT 200',
     );
   }
   @Post('outbox/:id/retry') async retry(@Param('id') id: string, @Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     await this.db.tx(async (c) => {
       const rows = await c.query(
         "UPDATE outbox SET status='pending',available_at=now(),lease_until=NULL WHERE id=$1 AND status IN('retry','blocked','dead_letter') RETURNING id",
@@ -87,10 +93,12 @@ export class OperationsController {
     });
     return { status: 'pending' };
   }
-  @Get('campaigns') campaigns() {
+  @Get('campaigns') async campaigns(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query('SELECT * FROM campaigns ORDER BY created_at DESC LIMIT 200');
   }
   @Post('campaigns') async campaign(@Body() body: unknown, @Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     const v = campaignSchema.parse(body);
     const url = new URL(v.path, process.env.SITE_URL);
     url.search = new URLSearchParams({
@@ -109,10 +117,12 @@ export class OperationsController {
       return row;
     });
   }
-  @Get('workflows') workflows() {
+  @Get('workflows') async workflows(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query('SELECT * FROM workflows ORDER BY created_at DESC LIMIT 100');
   }
   @Post('workflows') async workflow(@Body() body: unknown, @Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     const v = workflowSchema.parse(body);
     return this.db.tx(async (c) => {
       const row = (
@@ -138,6 +148,7 @@ export class OperationsController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
+    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ active: z.boolean(), expectedVersion: z.number().int().positive() })
       .strict()
@@ -152,7 +163,8 @@ export class OperationsController {
       return r.rows[0];
     });
   }
-  @Get('workflows/runs') runs() {
+  @Get('workflows/runs') async runs(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query(
       'SELECT id,workflow_id,lead_id,next_node,status,due_at FROM workflow_runs ORDER BY due_at DESC LIMIT 200',
     );
@@ -168,7 +180,8 @@ export class OperationsController {
       encrypted_contact: undefined,
     }));
   }
-  @Get('conversations') async conversations() {
+  @Get('conversations') async conversations(@Req() req: AuthedRequest) {
+    await this.requireLegacyWorkspace(req);
     return this.db.query(
       'SELECT id,status,created_at,expires_at FROM chats ORDER BY created_at DESC LIMIT 100',
     );
