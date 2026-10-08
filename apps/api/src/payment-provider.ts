@@ -83,19 +83,19 @@ export class PaymentProviderController {
     const bodyHash = createHash('sha256').update(raw).digest('hex');
 
     return this.db.tx(async (c) => {
-      const tenant = event.type === 'mandate_status'
-        ? (
-            await c.query('SELECT tenant_id FROM fee_schedules WHERE id=$1', [event.scheduleId])
-          ).rows[0]
-        : (
-            await c.query(
-              `SELECT s.tenant_id
-               FROM fee_installments i
-               JOIN fee_schedules s ON s.id=i.schedule_id
-               WHERE i.id=$1`,
-              [event.installmentId],
-            )
-          ).rows[0];
+      const tenant =
+        event.type === 'mandate_status'
+          ? (await c.query('SELECT tenant_id FROM fee_schedules WHERE id=$1', [event.scheduleId]))
+              .rows[0]
+          : (
+              await c.query(
+                `SELECT s.tenant_id
+                 FROM fee_installments i
+                 JOIN fee_schedules s ON s.id=i.schedule_id
+                 WHERE i.id=$1`,
+                [event.installmentId],
+              )
+            ).rows[0];
       if (!tenant)
         throw new ForbiddenException('Provider event references an unknown financial record');
       const tenantId = tenant.tenant_id;
@@ -175,10 +175,10 @@ export class PaymentProviderController {
 
       if (event.type === 'mandate_status') {
         const schedule = (
-          await c.query(
-          'SELECT id FROM fee_schedules WHERE id=$1 AND tenant_id=$2 FOR UPDATE',
-          [event.scheduleId, tenantId],
-        )
+          await c.query('SELECT id FROM fee_schedules WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [
+            event.scheduleId,
+            tenantId,
+          ])
         ).rows[0];
         if (!schedule) {
           await c.query(
