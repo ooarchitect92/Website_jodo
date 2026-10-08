@@ -752,6 +752,186 @@ test('audit checkpoint is signed without claiming independent storage', async ()
   assert.match(r.filename, /^audit-/);
 });
 
+test('academic customer context is tenant-scoped, relationship-explicit and import-safe', async () => {
+  const branchRow = (
+    await db.query('SELECT id FROM branches WHERE tenant_id=$1 ORDER BY created_at LIMIT 1', [
+      primaryTenantId,
+    ])
+  )[0]!;
+  const yearRow = (
+    await db.query('SELECT id FROM academic_years WHERE tenant_id=$1 ORDER BY created_at LIMIT 1', [
+      primaryTenantId,
+    ])
+  )[0]!;
+
+  const studentRef = 'STU-' + randomUUID().slice(0, 8);
+  const student = await call(
+    '/v1/admin/academic/students',
+    'POST',
+    {
+      studentReference: studentRef,
+      fullName: 'Synthetic Learner',
+      branchId: branchRow.id,
+      academicYearId: yearRow.id,
+    },
+    {},
+    true,
+  );
+  assert.equal(student.r.status, 201, JSON.stringify(student.data));
+  assert.equal(student.data.tenant_id, primaryTenantId);
+
+  const guardian = await call(
+    '/v1/admin/academic/guardians',
+    'POST',
+    {
+      displayName: 'Synthetic Guardian',
+      email: 'guardian@example.invalid',
+    },
+    {},
+    true,
+  );
+  assert.equal(guardian.r.status, 201, JSON.stringify(guardian.data));
+  assert.equal(guardian.data.verification_status, 'unverified');
+
+  const relationship = await call(
+    '/v1/admin/academic/students/' + student.data.id + '/guardians',
+    'POST',
+    {
+      guardianId: guardian.data.id,
+      relationship: 'guardian',
+      payerRole: 'primary',
+      verified: true,
+    },
+    {},
+    true,
+  );
+  assert.equal(relationship.r.status, 201, JSON.stringify(relationship.data));
+  assert.equal(relationship.data.visibility_status, 'active');
+
+  const catalogue = await call(
+    '/v1/admin/academic/catalogue',
+    'POST',
+    {
+      kind: 'course',
+      code: 'COURSE-' + randomUUID().slice(0, 6),
+      label: 'Synthetic Course',
+    },
+    {},
+    true,
+  );
+  assert.equal(catalogue.r.status, 201, JSON.stringify(catalogue.data));
+
+  const assignment = await call(
+    '/v1/admin/academic/students/' + student.data.id + '/catalogue',
+    'POST',
+    { catalogueId: catalogue.data.id, effectiveOn: '2026-04-01' },
+    {},
+    true,
+  );
+  assert.equal(assignment.r.status, 201, JSON.stringify(assignment.data));
+
+  const detail = await call(
+    '/v1/admin/academic/students/' + student.data.id,
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(detail.r.status, 200, JSON.stringify(detail.data));
+  assert.equal(detail.data.relationships.length, 1);
+  assert.equal(detail.data.assignments.length, 1);
+
+  const importedRef = 'IMP-' + randomUUID().slice(0, 8);
+  const previewBody = {
+    sourceSystem: 'synthetic_erp',
+    rows: [
+      {
+        studentReference: importedRef,
+        fullName: 'Imported Student',
+        externalId: 'ERP-' + randomUUID().slice(0, 8),
+      },
+      {
+        studentReference: importedRef,
+        fullName: 'Duplicate Imported Student',
+      },
+    ],
+  };
+  const preview = await call('/v1/admin/academic/imports/preview', 'POST', previewBody, {}, true);
+  assert.equal(preview.r.status, 201, JSON.stringify(preview.data));
+  assert.equal(preview.data.batch.valid_count, 1);
+  assert.equal(preview.data.batch.error_count, 1);
+
+  const previewReplay = await call(
+    '/v1/admin/academic/imports/preview',
+    'POST',
+    previewBody,
+    {},
+    true,
+  );
+  assert.equal(previewReplay.r.status, 201, JSON.stringify(previewReplay.data));
+  assert.equal(previewReplay.data.replayed, true);
+  assert.equal(previewReplay.data.batch.id, preview.data.batch.id);
+
+  const committed = await call(
+    '/v1/admin/academic/imports/' + preview.data.batch.id + '/commit',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(committed.r.status, 201, JSON.stringify(committed.data));
+  assert.equal(committed.data.committed_count, 1);
+  assert.equal(committed.data.status, 'partial_failed');
+
+  const switched = await call(
+    '/v1/auth/switch-tenant',
+    'POST',
+    { tenantId: secondaryTenantId },
+    {},
+    true,
+  );
+  assert.equal(switched.r.status, 201, JSON.stringify(switched.data));
+
+  const secondaryOverview = await call('/v1/admin/academic/overview', 'GET', undefined, {}, true);
+  assert.equal(secondaryOverview.r.status, 200, JSON.stringify(secondaryOverview.data));
+  assert.ok(!secondaryOverview.data.students.some((row: any) => row.id === student.data.id));
+
+  const crossTenantDetail = await call(
+    '/v1/admin/academic/students/' + student.data.id,
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(crossTenantDetail.r.status, 409);
+
+  const sameContactDifferentWorkspace = await call(
+    '/v1/admin/academic/guardians',
+    'POST',
+    {
+      displayName: 'Independent Guardian Identity',
+      email: 'guardian@example.invalid',
+    },
+    {},
+    true,
+  );
+  assert.equal(
+    sameContactDifferentWorkspace.r.status,
+    201,
+    JSON.stringify(sameContactDifferentWorkspace.data),
+  );
+  assert.equal(sameContactDifferentWorkspace.data.tenant_id, secondaryTenantId);
+
+  const back = await call(
+    '/v1/auth/switch-tenant',
+    'POST',
+    { tenantId: primaryTenantId },
+    {},
+    true,
+  );
+  assert.equal(back.r.status, 201, JSON.stringify(back.data));
+});
+
 test('fee administration is isolated by active workspace', async () => {
   assert.ok(primaryTenantId);
   assert.ok(secondaryTenantId);

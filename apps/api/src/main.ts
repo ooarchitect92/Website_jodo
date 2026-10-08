@@ -33,6 +33,7 @@ import {
   PayerMandateController,
 } from './mandate-autopay';
 import { TenancyController } from './tenancy';
+import { AcademicOperationsController } from './academic';
 import { keyed } from '../../../packages/core/src/security';
 @Catch()
 class SafeErrors implements ExceptionFilter {
@@ -96,6 +97,7 @@ class Health {
     MandateReturnController,
     AutopayAdminController,
     TenancyController,
+    AcademicOperationsController,
   ],
   providers: [Db, AuthGuard, LeadsService],
 })
