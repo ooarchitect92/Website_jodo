@@ -126,7 +126,7 @@ export class PaymentProviderController {
       }
 
       if (event.type === 'payment_failed') {
-        await c.query(
+        const checkoutFailure = await c.query(
           `UPDATE payment_checkout_sessions
            SET status='failed',failure_code=$4,updated_at=now()
            WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
@@ -135,7 +135,7 @@ export class PaymentProviderController {
           [tenantId, provider, event.providerReference, event.reasonCode,
            event.installmentId, event.amountMinor, event.currency],
         );
-        await c.query(
+        const debitFailure = await c.query(
           `UPDATE autopay_debit_attempts
            SET status='failed',failure_code=$4,
                next_retry_at=CASE
@@ -162,6 +162,28 @@ export class PaymentProviderController {
             event.currency,
           ],
         );
+        // A signed event is not necessarily a valid transaction outcome.
+        // Only apply a failure if it changed the exact outstanding checkout
+        // or debit attempt; otherwise keep the discrepancy for investigation.
+        if (!checkoutFailure.rowCount && !debitFailure.rowCount) {
+          await c.query(
+            `UPDATE payment_provider_events
+             SET status='failed',failure_code='UNMATCHED_PAYMENT_FAILURE'
+             WHERE id=$1`,
+            [inserted.id],
+          );
+          await this.db.audit(c, 'provider:' + provider, 'payment.provider_unmatched_failure', inserted.id, {
+            providerEventId: event.eventId,
+            providerReference: event.providerReference,
+            installmentId: event.installmentId,
+          });
+          return {
+            accepted: false,
+            duplicate: false,
+            status: 'failed',
+            code: 'UNMATCHED_PAYMENT_FAILURE',
+          };
+        }
         await c.query(
           `UPDATE payment_provider_events
            SET status='applied',applied_at=now()
