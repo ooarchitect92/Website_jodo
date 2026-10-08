@@ -69,7 +69,7 @@ export class FeeOperationsController {
   constructor(@Inject(Db) private db: Db) {}
 
   @Get('overview')
-  async overview() {
+  async overview(@Req() req: AuthedRequest) {
     const [summary, upcoming, mandates, reconciliation] = await Promise.all([
       this.db.query(
         `SELECT
@@ -79,7 +79,9 @@ export class FeeOperationsController {
           coalesce((SELECT sum(amount_minor-refunded_amount_minor) FROM payment_records),0)::bigint AS confirmed_minor,
           coalesce((SELECT sum(amount_minor-paid_amount_minor) FROM fee_installments WHERE status NOT IN('paid','cancelled')),0)::bigint AS outstanding_minor,
           coalesce((SELECT sum(amount_minor-paid_amount_minor) FROM fee_installments WHERE due_date<current_date AND status NOT IN('paid','cancelled')),0)::bigint AS overdue_minor
-        FROM fee_schedules`,
+        FROM fee_schedules
+        WHERE tenant_id=$1`,
+        [req.actor.tenantId],
       ),
       this.db.query(
         `SELECT i.id,i.schedule_id,s.account_reference,i.sequence,i.due_date,i.amount_minor,i.paid_amount_minor,
@@ -91,15 +93,20 @@ export class FeeOperationsController {
           END AS effective_status
         FROM fee_installments i
         JOIN fee_schedules s ON s.id=i.schedule_id
-        WHERE s.status='active' AND i.status<>'cancelled'
+        WHERE s.tenant_id=$1 AND s.status='active' AND i.status<>'cancelled'
         ORDER BY i.due_date,i.sequence
         LIMIT 100`,
+        [req.actor.tenantId],
       ),
       this.db.query(
-        `SELECT status,count(*)::int AS count FROM payment_mandates GROUP BY status ORDER BY status`,
+        `SELECT status,count(*)::int AS count
+         FROM payment_mandates WHERE tenant_id=$1 GROUP BY status ORDER BY status`,
+        [req.actor.tenantId],
       ),
       this.db.query(
-        `SELECT status,count(*)::int AS count FROM reconciliation_entries GROUP BY status ORDER BY status`,
+        `SELECT status,count(*)::int AS count
+         FROM reconciliation_entries WHERE tenant_id=$1 GROUP BY status ORDER BY status`,
+        [req.actor.tenantId],
       ),
     ]);
     return {
@@ -114,7 +121,7 @@ export class FeeOperationsController {
   }
 
   @Get('schedules')
-  async schedules() {
+  async schedules(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT s.*,
         coalesce((
@@ -161,8 +168,10 @@ export class FeeOperationsController {
           FROM late_fee_rules lf WHERE lf.schedule_id=s.id
         ) AS late_fee
       FROM fee_schedules s
+      WHERE s.tenant_id=$1
       ORDER BY s.created_at DESC
       LIMIT 200`,
+      [req.actor.tenantId],
     );
   }
 
@@ -173,13 +182,23 @@ export class FeeOperationsController {
     if (!Number.isSafeInteger(total))
       throw new UnprocessableEntityException('Schedule total is outside supported limits');
     return this.db.tx(async (c) => {
+      if (v.payerId) {
+        const payer = (
+          await c.query('SELECT id FROM fee_payers WHERE id=$1 AND tenant_id=$2 AND active=true', [
+            v.payerId,
+            req.actor.tenantId,
+          ])
+        ).rows[0];
+        if (!payer) throw new ConflictException('Payer profile is outside this workspace or inactive');
+      }
       const schedule = (
         await c.query(
           `INSERT INTO fee_schedules(
-             account_reference,payer_id,scope_type,scope_reference,currency,total_amount_minor,
+             tenant_id,account_reference,payer_id,scope_type,scope_reference,currency,total_amount_minor,
              gross_amount_minor,concession_amount_minor,note,created_by
-           ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+           ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
           [
+            req.actor.tenantId,
             v.accountReference,
             v.payerId || null,
             v.scopeType,
@@ -262,7 +281,10 @@ export class FeeOperationsController {
     const v = feeScheduleActivationSchema.parse(body);
     return this.db.tx(async (c) => {
       const schedule = (
-        await c.query('SELECT * FROM fee_schedules WHERE id=$1 FOR UPDATE', [scheduleId])
+        await c.query('SELECT * FROM fee_schedules WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [
+          scheduleId,
+          req.actor.tenantId,
+        ])
       ).rows[0];
       if (!schedule) throw new ConflictException('Fee schedule does not exist');
       if (schedule.version !== v.expectedVersion)
@@ -281,8 +303,8 @@ export class FeeOperationsController {
         await c.query(
           `UPDATE fee_schedules
            SET status='active',version=version+1,updated_at=now()
-           WHERE id=$1 RETURNING *`,
-          [scheduleId],
+           WHERE id=$1 AND tenant_id=$2 RETURNING *`,
+          [scheduleId, req.actor.tenantId],
         )
       ).rows[0];
       await this.db.audit(c, req.actor.id, 'fees.schedule.activate', scheduleId);
@@ -291,7 +313,7 @@ export class FeeOperationsController {
   }
 
   @Get('analytics')
-  async analytics() {
+  async analytics(@Req() req: AuthedRequest) {
     const [byScope, byComponent, collectionTrend, lateFees] = await Promise.all([
       this.db.query(
         `SELECT scope_type,scope_reference,
@@ -306,43 +328,53 @@ export class FeeOperationsController {
             WHERE i.schedule_id=s.id AND i.status NOT IN('paid','cancelled')
           )),0)::bigint AS outstanding_minor
          FROM fee_schedules s
+         WHERE s.tenant_id=$1
          GROUP BY scope_type,scope_reference
          ORDER BY scheduled_minor DESC,scope_reference
          LIMIT 200`,
+        [req.actor.tenantId],
       ),
       this.db.query(
         `SELECT code,label,coalesce(sum(amount_minor),0)::bigint AS configured_minor,
           count(DISTINCT schedule_id)::int AS schedules
          FROM fee_schedule_components
+         WHERE tenant_id=$1
          GROUP BY code,label
          ORDER BY configured_minor DESC,code
          LIMIT 100`,
+        [req.actor.tenantId],
       ),
       this.db.query(
         `SELECT date_trunc('month',recorded_at)::date AS month,
           coalesce(sum(amount_minor-refunded_amount_minor),0)::bigint AS net_collected_minor,
           count(*)::int AS payments
          FROM payment_records
+         WHERE tenant_id=$1
          GROUP BY 1 ORDER BY 1 DESC LIMIT 24`,
+        [req.actor.tenantId],
       ),
       this.db.query(
         `SELECT status,count(*)::int AS count,coalesce(sum(amount_minor),0)::bigint AS amount_minor
-         FROM late_fee_assessments GROUP BY status ORDER BY status`,
+         FROM late_fee_assessments
+         WHERE tenant_id=$1 GROUP BY status ORDER BY status`,
+        [req.actor.tenantId],
       ),
     ]);
     return { byScope, byComponent, collectionTrend, lateFees };
   }
 
   @Get('late-fees')
-  async lateFees() {
+  async lateFees(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT a.id,a.schedule_id,a.installment_id,a.assessment_date,a.amount_minor,a.status,
               a.waived_reason,s.account_reference,s.scope_type,s.scope_reference,i.sequence,i.due_date
        FROM late_fee_assessments a
        JOIN fee_schedules s ON s.id=a.schedule_id
        JOIN fee_installments i ON i.id=a.installment_id
+       WHERE a.tenant_id=$1
        ORDER BY a.assessment_date DESC,a.created_at DESC
        LIMIT 300`,
+      [req.actor.tenantId],
     );
   }
 
@@ -355,9 +387,9 @@ export class FeeOperationsController {
         await c.query(
           `UPDATE late_fee_assessments
            SET status='waived',waived_reason=$2
-           WHERE id=$1 AND status='assessed'
+           WHERE id=$1 AND tenant_id=$3 AND status='assessed'
            RETURNING *`,
-          [assessmentId, v.reason],
+          [assessmentId, v.reason, req.actor.tenantId],
         )
       ).rows[0];
       if (!row) throw new ConflictException('Late fee is missing or no longer assessable');
@@ -372,7 +404,7 @@ export class FeeOperationsController {
   }
 
   @Get('payments')
-  async payments() {
+  async payments(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT p.id,p.schedule_id,p.installment_id,p.provider,p.provider_reference,
         p.amount_minor,p.refunded_amount_minor,p.currency,p.status,p.evidence_note,p.recorded_at,
@@ -380,8 +412,10 @@ export class FeeOperationsController {
        FROM payment_records p
        JOIN fee_schedules s ON s.id=p.schedule_id
        JOIN fee_installments i ON i.id=p.installment_id
+       WHERE p.tenant_id=$1
        ORDER BY p.recorded_at DESC
        LIMIT 300`,
+      [req.actor.tenantId],
     );
   }
 
@@ -391,7 +425,10 @@ export class FeeOperationsController {
     return this.db.tx(async (c) => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['payment:' + v.idempotencyKey]);
       const replay = (
-        await c.query('SELECT * FROM payment_records WHERE idempotency_key=$1', [v.idempotencyKey])
+        await c.query(
+          'SELECT * FROM payment_records WHERE tenant_id=$1 AND idempotency_key=$2',
+          [req.actor.tenantId, v.idempotencyKey],
+        )
       ).rows[0];
       if (replay) return { ...replay, replayed: true };
 
@@ -402,9 +439,9 @@ export class FeeOperationsController {
            FROM fee_installments i
            JOIN fee_schedules s ON s.id=i.schedule_id
            LEFT JOIN fee_payers p ON p.id=s.payer_id
-           WHERE i.id=$1
+           WHERE i.id=$1 AND s.tenant_id=$2
            FOR UPDATE OF i,s`,
-          [v.installmentId],
+          [v.installmentId, req.actor.tenantId],
         )
       ).rows[0];
       if (!installment) throw new ConflictException('Installment does not exist');
@@ -532,11 +569,17 @@ export class FeeOperationsController {
     return this.db.tx(async (c) => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['refund:' + v.idempotencyKey]);
       const replay = (
-        await c.query('SELECT * FROM payment_refunds WHERE idempotency_key=$1', [v.idempotencyKey])
+        await c.query(
+          'SELECT * FROM payment_refunds WHERE tenant_id=$1 AND idempotency_key=$2',
+          [req.actor.tenantId, v.idempotencyKey],
+        )
       ).rows[0];
       if (replay) return { ...replay, replayed: true };
       const payment = (
-        await c.query('SELECT * FROM payment_records WHERE id=$1 FOR UPDATE', [v.paymentId])
+        await c.query('SELECT * FROM payment_records WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [
+          v.paymentId,
+          req.actor.tenantId,
+        ])
       ).rows[0];
       if (!payment) throw new ConflictException('Payment record does not exist');
       const refundable = Number(payment.amount_minor) - Number(payment.refunded_amount_minor);
@@ -602,23 +645,27 @@ export class FeeOperationsController {
   }
 
   @Get('communications')
-  communications() {
+  communications(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT c.id,c.event_id,c.schedule_id,c.installment_id,c.channel,c.kind,c.status,
               c.provider_reference,c.last_error,c.created_at,c.updated_at,s.account_reference
        FROM fee_communication_log c
        JOIN fee_schedules s ON s.id=c.schedule_id
+       WHERE c.tenant_id=$1
        ORDER BY c.created_at DESC
        LIMIT 300`,
+      [req.actor.tenantId],
     );
   }
 
   @Get('mandates')
-  mandates() {
+  mandates(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT m.*,s.account_reference
        FROM payment_mandates m JOIN fee_schedules s ON s.id=m.schedule_id
+       WHERE m.tenant_id=$1
        ORDER BY m.last_event_at DESC LIMIT 300`,
+      [req.actor.tenantId],
     );
   }
 
@@ -627,14 +674,17 @@ export class FeeOperationsController {
     const v = mandateRecordSchema.parse(body);
     return this.db.tx(async (c) => {
       const schedule = (
-        await c.query('SELECT id,status FROM fee_schedules WHERE id=$1', [v.scheduleId])
+        await c.query('SELECT id,status FROM fee_schedules WHERE id=$1 AND tenant_id=$2', [
+          v.scheduleId,
+          req.actor.tenantId,
+        ])
       ).rows[0];
       if (!schedule) throw new ConflictException('Fee schedule does not exist');
       const old = (
         await c.query(
           `SELECT * FROM payment_mandates
-           WHERE provider='external' AND provider_reference=$1 FOR UPDATE`,
-          [v.providerReference],
+           WHERE tenant_id=$1 AND provider='external' AND provider_reference=$2 FOR UPDATE`,
+          [req.actor.tenantId, v.providerReference],
         )
       ).rows[0];
       const row = old
@@ -663,7 +713,7 @@ export class FeeOperationsController {
   }
 
   @Get('settlements')
-  settlements() {
+  settlements(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT s.*,
         coalesce(
@@ -673,9 +723,11 @@ export class FeeOperationsController {
         ) AS allocations
        FROM settlement_records s
        LEFT JOIN settlement_payments sp ON sp.settlement_id=s.id
+       WHERE s.tenant_id=$1
        GROUP BY s.id
        ORDER BY s.created_at DESC
        LIMIT 200`,
+      [req.actor.tenantId],
     );
   }
 
@@ -686,10 +738,11 @@ export class FeeOperationsController {
       const row = (
         await c.query(
           `INSERT INTO settlement_records(
-             provider_reference,currency,amount_minor,expected_on,settled_at,status,recorded_by
-           ) VALUES($1,$2,$3,$4,CASE WHEN $5='settled' THEN now() ELSE NULL END,$5,$6)
+             tenant_id,provider_reference,currency,amount_minor,expected_on,settled_at,status,recorded_by
+           ) VALUES($1,$2,$3,$4,$5,CASE WHEN $6='settled' THEN now() ELSE NULL END,$6,$7)
            RETURNING *`,
           [
+            req.actor.tenantId,
             v.providerReference,
             v.currency,
             v.amountMinor,
@@ -701,9 +754,10 @@ export class FeeOperationsController {
       ).rows[0];
       for (const allocation of v.allocations) {
         const payment = (
-          await c.query('SELECT id,currency FROM payment_records WHERE id=$1', [
-            allocation.paymentId,
-          ])
+          await c.query(
+            'SELECT id,currency FROM payment_records WHERE id=$1 AND tenant_id=$2',
+            [allocation.paymentId, req.actor.tenantId],
+          )
         ).rows[0];
         if (!payment) throw new ConflictException('Settlement references an unknown payment');
         if (payment.currency !== v.currency)
@@ -730,14 +784,16 @@ export class FeeOperationsController {
   }
 
   @Get('reconciliation')
-  reconciliation() {
+  reconciliation(@Req() req: AuthedRequest) {
     return this.db.query(
       `SELECT r.*,p.provider_reference AS payment_reference,s.provider_reference AS settlement_reference
        FROM reconciliation_entries r
        LEFT JOIN payment_records p ON p.id=r.payment_id
        LEFT JOIN settlement_records s ON s.id=r.settlement_id
+       WHERE r.tenant_id=$1
        ORDER BY r.created_at DESC
        LIMIT 300`,
+      [req.actor.tenantId],
     );
   }
 }
