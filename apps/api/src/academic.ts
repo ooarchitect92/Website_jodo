@@ -16,9 +16,15 @@ import { AuthGuard, AuthedRequest, Roles } from './auth';
 
 const studentSchema = z
   .object({
-    studentReference: z.string().trim().regex(/^[A-Za-z0-9._/-]{2,80}$/),
+    studentReference: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._/-]{2,80}$/),
     fullName: z.string().trim().min(2).max(160),
-    dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateOfBirth: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
     branchId: z.uuid().optional(),
     academicYearId: z.uuid().optional(),
   })
@@ -28,7 +34,11 @@ const guardianSchema = z
   .object({
     displayName: z.string().trim().min(2).max(160),
     email: z.email().max(200).optional(),
-    phone: z.string().trim().regex(/^\+?[\d ()-]{8,20}$/).optional(),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^\+?[\d ()-]{8,20}$/)
+      .optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -52,7 +62,10 @@ const guardianLinkSchema = z
 const catalogueSchema = z
   .object({
     kind: z.enum(['course', 'grade', 'batch', 'transport', 'hostel']),
-    code: z.string().trim().regex(/^[A-Za-z0-9._/-]{2,60}$/),
+    code: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._/-]{2,60}$/),
     label: z.string().trim().min(2).max(160),
     parentId: z.uuid().optional(),
   })
@@ -61,7 +74,10 @@ const catalogueSchema = z
 const assignmentSchema = z
   .object({
     catalogueId: z.uuid(),
-    effectiveOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    effectiveOn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
   })
   .strict();
 
@@ -96,7 +112,10 @@ const externalIdSchema = z
 const conflictSchema = z
   .object({
     mappingId: z.uuid(),
-    fieldKey: z.string().trim().regex(/^[a-z][a-z0-9_.-]{1,79}$/),
+    fieldKey: z
+      .string()
+      .trim()
+      .regex(/^[a-z][a-z0-9_.-]{1,79}$/),
     localValue: z.unknown().optional(),
     remoteValue: z.unknown().optional(),
   })
@@ -308,11 +327,7 @@ export class AcademicOperationsController {
   }
 
   @Post('students/:id/guardians')
-  async linkGuardian(
-    @Req() req: AuthedRequest,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async linkGuardian(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: unknown) {
     const studentId = uuid(id);
     const input = guardianLinkSchema.parse(body);
     return this.db.tx(async (c) => {
@@ -395,7 +410,8 @@ export class AcademicOperationsController {
           [input.parentId, req.actor.tenantId, 'active'],
         )
       )[0];
-      if (!parent) throw new ConflictException('Catalogue parent is outside this workspace or retired');
+      if (!parent)
+        throw new ConflictException('Catalogue parent is outside this workspace or retired');
     }
     return this.db.tx(async (c) => {
       const row = (
@@ -442,11 +458,7 @@ export class AcademicOperationsController {
   }
 
   @Post('students/:id/catalogue')
-  async assignCatalogue(
-    @Req() req: AuthedRequest,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async assignCatalogue(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: unknown) {
     const studentId = uuid(id);
     const input = assignmentSchema.parse(body);
     return this.db.tx(async (c) => {
@@ -601,10 +613,9 @@ export class AcademicOperationsController {
       if (batch.status !== 'previewed')
         throw new ConflictException('Only a previewed import batch can be committed');
 
-      await c.query(
-        "UPDATE academic_import_batches SET status='committing' WHERE id=$1",
-        [batchId],
-      );
+      await c.query("UPDATE academic_import_batches SET status='committing' WHERE id=$1", [
+        batchId,
+      ]);
       const rows = (
         await c.query(
           `SELECT id,row_number,payload,status
@@ -631,10 +642,10 @@ export class AcademicOperationsController {
           c,
         );
         if (!scopeOk) {
-          await c.query(
-            "UPDATE academic_import_rows SET status='error',errors=$2 WHERE id=$1",
-            [row.id, JSON.stringify(['branchId/academicYearId: outside this workspace'])],
-          );
+          await c.query("UPDATE academic_import_rows SET status='error',errors=$2 WHERE id=$1", [
+            row.id,
+            JSON.stringify(['branchId/academicYearId: outside this workspace']),
+          ]);
           skipped++;
           continue;
         }
@@ -736,12 +747,13 @@ export class AcademicOperationsController {
   async createConflict(@Req() req: AuthedRequest, @Body() body: unknown) {
     const input = conflictSchema.parse(body);
     const mapping = (
-      await this.db.query(
-        'SELECT id FROM external_id_mappings WHERE id=$1 AND tenant_id=$2',
-        [input.mappingId, req.actor.tenantId],
-      )
+      await this.db.query('SELECT id FROM external_id_mappings WHERE id=$1 AND tenant_id=$2', [
+        input.mappingId,
+        req.actor.tenantId,
+      ])
     )[0];
-    if (!mapping) throw new ConflictException('External-ID mapping does not exist in this workspace');
+    if (!mapping)
+      throw new ConflictException('External-ID mapping does not exist in this workspace');
     return this.db.tx(async (c) => {
       const row = (
         await c.query(
@@ -767,11 +779,7 @@ export class AcademicOperationsController {
   }
 
   @Post('conflicts/:id/resolve')
-  async resolveConflict(
-    @Req() req: AuthedRequest,
-    @Param('id') id: string,
-    @Body() body: unknown,
-  ) {
+  async resolveConflict(@Req() req: AuthedRequest, @Param('id') id: string, @Body() body: unknown) {
     const conflictId = uuid(id);
     const input = conflictResolutionSchema.parse(body);
     return this.db.tx(async (c) => {
@@ -799,13 +807,14 @@ export class AcademicOperationsController {
     client?: { query: (sql: string, args?: unknown[]) => Promise<{ rows: any[] }> },
   ) {
     const q = client || {
-      query: async (sql: string, args: unknown[] = []) => ({ rows: await this.db.query(sql, args) }),
+      query: async (sql: string, args: unknown[] = []) => ({
+        rows: await this.db.query(sql, args),
+      }),
     };
     if (branchId) {
-      const branch = (await q.query('SELECT id FROM branches WHERE id=$1 AND tenant_id=$2', [
-        branchId,
-        tenantId,
-      ])).rows[0];
+      const branch = (
+        await q.query('SELECT id FROM branches WHERE id=$1 AND tenant_id=$2', [branchId, tenantId])
+      ).rows[0];
       if (!branch) {
         if (client) return false;
         throw new ConflictException('Branch is outside this workspace');
@@ -826,17 +835,20 @@ export class AcademicOperationsController {
     return true;
   }
 
-  private async ensureEntity(tenantId: string, type: 'student' | 'guardian' | 'catalogue', id: string) {
+  private async ensureEntity(
+    tenantId: string,
+    type: 'student' | 'guardian' | 'catalogue',
+    id: string,
+  ) {
     const table =
       type === 'student'
         ? 'academic_students'
         : type === 'guardian'
           ? 'academic_guardians'
           : 'academic_catalogue';
-    const row = (await this.db.query(`SELECT id FROM ${table} WHERE id=$1 AND tenant_id=$2`, [
-      id,
-      tenantId,
-    ]))[0];
+    const row = (
+      await this.db.query(`SELECT id FROM ${table} WHERE id=$1 AND tenant_id=$2`, [id, tenantId])
+    )[0];
     if (!row) throw new ConflictException('Mapped record does not exist in this workspace');
   }
 }
