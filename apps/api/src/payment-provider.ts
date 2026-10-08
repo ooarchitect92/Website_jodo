@@ -16,6 +16,7 @@ import { Request } from 'express';
 import { Db } from './db';
 import { AuthGuard, AuthedRequest, Roles } from './auth';
 import { paymentProviderEventSchema } from '../../../packages/core/src/contracts';
+import { isNewerMandateEvent } from '../../../packages/core/src/mandate-events';
 
 function safeEqualHex(a: string, b: string) {
   if (!/^[a-f0-9]{64}$/i.test(a) || !/^[a-f0-9]{64}$/i.test(b)) return false;
@@ -214,6 +215,28 @@ export class PaymentProviderController {
             duplicate: false,
             status: 'failed',
             code: 'MANDATE_REFERENCE_MISMATCH',
+          };
+        }
+
+        if (
+          existingMandate &&
+          !isNewerMandateEvent(event.occurredAt, existingMandate.last_event_at)
+        ) {
+          await c.query(
+            `UPDATE payment_provider_events
+             SET status='ignored',failure_code='STALE_MANDATE_STATUS',applied_at=now()
+             WHERE id=$1`,
+            [inserted.id],
+          );
+          await this.db.audit(c, 'provider:' + provider, 'fees.mandate.stale_status_ignored', existingMandate.id, {
+            providerEventId: event.eventId,
+            incomingOccurredAt: event.occurredAt,
+          });
+          return {
+            accepted: true,
+            duplicate: false,
+            status: 'ignored',
+            code: 'STALE_MANDATE_STATUS',
           };
         }
 
