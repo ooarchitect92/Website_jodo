@@ -77,8 +77,8 @@ export class FeeOperationsController {
           count(*) FILTER (WHERE status='active')::int AS active_schedules,
           coalesce(sum(total_amount_minor),0)::bigint AS scheduled_minor,
           coalesce((SELECT sum(amount_minor-refunded_amount_minor) FROM payment_records WHERE tenant_id=$1),0)::bigint AS confirmed_minor,
-          coalesce((SELECT sum(amount_minor-adjustment_amount_minor-paid_amount_minor) FROM fee_installments WHERE tenant_id=$1 AND status NOT IN('paid','cancelled')),0)::bigint AS outstanding_minor,
-          coalesce((SELECT sum(amount_minor-adjustment_amount_minor-paid_amount_minor) FROM fee_installments WHERE tenant_id=$1 AND due_date<current_date AND status NOT IN('paid','cancelled')),0)::bigint AS overdue_minor
+          coalesce((SELECT sum(amount_minor-adjustment_amount_minor-paid_amount_minor) FROM fee_installments WHERE tenant_id=$1 AND status NOT IN('paid','cancelled','adjusted')),0)::bigint AS outstanding_minor,
+          coalesce((SELECT sum(amount_minor-adjustment_amount_minor-paid_amount_minor) FROM fee_installments WHERE tenant_id=$1 AND due_date<current_date AND status NOT IN('paid','cancelled','adjusted')),0)::bigint AS overdue_minor
         FROM fee_schedules
         WHERE tenant_id=$1`,
         [req.actor.tenantId],
@@ -93,7 +93,7 @@ export class FeeOperationsController {
           END AS effective_status
         FROM fee_installments i
         JOIN fee_schedules s ON s.id=i.schedule_id
-        WHERE s.tenant_id=$1 AND s.status='active' AND i.status<>'cancelled'
+        WHERE s.tenant_id=$1 AND s.status='active' AND i.status NOT IN('cancelled','adjusted')
         ORDER BY i.due_date,i.sequence
         LIMIT 100`,
         [req.actor.tenantId],
@@ -134,8 +134,8 @@ export class FeeOperationsController {
               'paidAmountMinor',i.paid_amount_minor,
               'status',CASE
                 WHEN i.status='paid' THEN 'paid'
-                WHEN i.due_date<current_date AND i.status NOT IN('paid','cancelled') THEN 'overdue'
-                WHEN i.due_date=current_date AND i.status NOT IN('paid','cancelled') THEN 'due'
+                WHEN i.due_date<current_date AND i.status NOT IN('paid','cancelled','adjusted') THEN 'overdue'
+                WHEN i.due_date=current_date AND i.status NOT IN('paid','cancelled','adjusted') THEN 'due'
                 ELSE i.status
               END
             ) ORDER BY i.sequence
@@ -326,7 +326,7 @@ export class FeeOperationsController {
           coalesce(sum((
             SELECT sum(i.amount_minor-i.paid_amount_minor)
             FROM fee_installments i
-            WHERE i.schedule_id=s.id AND i.status NOT IN('paid','cancelled')
+            WHERE i.schedule_id=s.id AND i.status NOT IN('paid','cancelled','adjusted')
           )),0)::bigint AS outstanding_minor
          FROM fee_schedules s
          WHERE s.tenant_id=$1
@@ -494,7 +494,7 @@ export class FeeOperationsController {
       const open = (
         await c.query(
           `SELECT count(*)::int AS count FROM fee_installments
-           WHERE schedule_id=$1 AND status NOT IN('paid','cancelled')`,
+           WHERE schedule_id=$1 AND status NOT IN('paid','cancelled','adjusted')`,
           [installment.schedule_id],
         )
       ).rows[0]!.count;
