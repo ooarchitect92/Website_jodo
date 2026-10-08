@@ -220,10 +220,20 @@ export class AuthController {
     if (!membership)
       throw new ForbiddenException('That workspace is not available to this account');
     await this.db.tx(async (c) => {
-      await c.query('UPDATE sessions SET tenant_id=$2 WHERE id=$1', [
-        req.actor.sessionId,
-        membership.tenant_id,
-      ]);
+      const switched = await c.query(
+        `UPDATE sessions s SET tenant_id=$2
+         WHERE s.id=$1 AND s.user_id=$3
+           AND s.revoked_at IS NULL AND s.expires_at>now()
+           AND EXISTS (
+             SELECT 1 FROM memberships m JOIN tenants t ON t.id=m.tenant_id
+             WHERE m.user_id=s.user_id AND m.tenant_id=$2
+               AND m.status='active' AND t.status<>'archived'
+           )
+         RETURNING s.id`,
+        [req.actor.sessionId, membership.tenant_id, req.actor.id],
+      );
+      if (!switched.rowCount)
+        throw new ForbiddenException('Workspace or session is no longer available');
       await this.db.audit(c, req.actor.id, 'membership.switch', membership.tenant_id, {
         fromTenantId: req.actor.tenantId,
         role: membership.role_key,
