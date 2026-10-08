@@ -65,7 +65,7 @@ export class PayerCheckoutController {
       throw new ConflictException('Portal link is invalid or expired');
     const row = (
       await this.db.query(
-        `SELECT t.schedule_id,t.payment_mode,t.allow_custom_amount,t.allow_component_selection,
+        `SELECT t.schedule_id,s.tenant_id,t.payment_mode,t.allow_custom_amount,t.allow_component_selection,
                 t.min_amount_minor,s.account_reference,s.currency,s.status,
                 p.id AS payer_id,p.active
          FROM payer_access_tokens t
@@ -99,8 +99,8 @@ export class PayerCheckoutController {
       await this.db.query(
         `SELECT id,schedule_id,installment_id,payer_id,amount_minor,currency,status,checkout_url,expires_at
          FROM payment_checkout_sessions
-         WHERE idempotency_key=$1`,
-        [v.idempotencyKey],
+         WHERE tenant_id=$1 AND idempotency_key=$2`,
+        [access.tenant_id, v.idempotencyKey],
       )
     )[0];
     if (existing) {
