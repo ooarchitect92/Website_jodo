@@ -167,12 +167,35 @@ test('workspace membership context is explicit and tenant switching is membershi
     '/v1/admin/privacy-requests',
     '/v1/admin/content',
     '/v1/admin/settings',
-    '/v1/admin/leads',
     '/v1/admin/media',
   ]) {
     const denied = await call(route, 'GET', undefined, {}, true);
     assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
   }
+  // Tenant-owned CRM is available in both workspaces, but the secondary tenant
+  // must never see or mutate the primary tenant's lead records.
+  const isolatedLeads = await call('/v1/admin/leads', 'GET', undefined, {}, true);
+  assert.equal(isolatedLeads.r.status, 200);
+  assert.deepEqual(isolatedLeads.data, []);
+  const primaryLead = (
+    await owner.query('SELECT id FROM leads WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 1', [
+      primaryTenantId,
+    ])
+  ).rows[0];
+  if (primaryLead) {
+    const crossStage = await call(
+      '/v1/admin/leads/' + primaryLead.id + '/stage',
+      'POST',
+      { stage: 'contacted', expectedVersion: 1, reason: 'Cross tenant denied' },
+      {},
+      true,
+    );
+    assert.equal(crossStage.r.status, 409);
+  }
+  const isolatedExport = await call('/v1/admin/leads/export', 'POST', {}, {}, true);
+  assert.equal(isolatedExport.r.status, 201);
+  assert.ok(!String(isolatedExport.data).includes('Synthetic QA Institute'));
+
   // Record lookup is also tenant-protected, not just the collection index.
   const deniedDetail = await call('/v1/admin/content/' + randomUUID(), 'GET', undefined, {}, true);
   assert.equal(deniedDetail.r.status, 403);
@@ -188,8 +211,6 @@ test('workspace membership context is explicit and tenant switching is membershi
     ['/v1/admin/workflows', 'POST', {}],
     ['/v1/admin/workflows/' + randomUUID(), 'PATCH', {}],
     ['/v1/admin/outbox/' + randomUUID() + '/retry', 'POST', {}],
-    ['/v1/admin/leads/' + randomUUID() + '/stage', 'POST', {}],
-    ['/v1/admin/leads/export', 'POST', {}],
     ['/v1/admin/content', 'POST', {}],
     ['/v1/admin/content/' + randomUUID() + '/draft', 'PATCH', {}],
     ['/v1/admin/content/' + randomUUID() + '/action', 'POST', {}],
