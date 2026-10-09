@@ -119,7 +119,9 @@ export class OperationsController {
         )
       )[0];
       if (!domain) {
-        throw new ConflictException('Activate a tenant website domain before creating campaign links');
+        throw new ConflictException(
+          'Activate a tenant website domain before creating campaign links',
+        );
       }
       origin = 'https://' + domain.hostname;
     }
