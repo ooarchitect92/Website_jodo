@@ -54,10 +54,10 @@ export class TenantNotificationsController {
         )
       ).rows[0];
       const exists = (
-        await c.query(
-          'SELECT id FROM tenant_inbox_notifications WHERE id=$1 AND tenant_id=$2',
-          [uuid(id), req.actor.tenantId],
-        )
+        await c.query('SELECT id FROM tenant_inbox_notifications WHERE id=$1 AND tenant_id=$2', [
+          uuid(id),
+          req.actor.tenantId,
+        ])
       ).rows[0];
       if (!exists) throw new NotFoundException('Notification not found');
       if (result)

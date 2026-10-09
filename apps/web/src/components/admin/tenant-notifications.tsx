@@ -88,8 +88,8 @@ export function TenantNotifications({ openEnquiries }: { openEnquiries: () => vo
         )}
       />
       <p className="small muted">
-        Notifications appear after the durable background worker processes accepted enquiries.
-        Each staff member has independent read status.
+        Notifications appear after the durable background worker processes accepted enquiries. Each
+        staff member has independent read status.
       </p>
     </section>
   );
