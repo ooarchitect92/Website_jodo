@@ -46,7 +46,7 @@ export class PublicContentController {
   @Get('pages') async pages(@Query('kind') kind?: string) {
     if (kind) z.enum(['page', 'post', 'case']).parse(kind);
     const rows = await this.db.query(
-      'SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at FROM content c JOIN revisions r ON r.id=c.published_revision WHERE c.deleted_at IS NULL AND ($1::text IS NULL OR c.kind=$1) ORDER BY c.slug LIMIT 200',
+      "SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at FROM content c JOIN revisions r ON r.id=c.published_revision JOIN tenants t ON t.id=c.tenant_id WHERE t.slug='default' AND c.deleted_at IS NULL AND ($1::text IS NULL OR c.kind=$1) ORDER BY c.slug LIMIT 200",
       [kind || null],
     );
     return rows.map(publicRow);
@@ -57,7 +57,7 @@ export class PublicContentController {
   ) {
     safePath.parse(path);
     const rows = await this.db.query(
-      'SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at FROM content c JOIN revisions r ON r.id=c.published_revision WHERE c.slug=$1 AND c.deleted_at IS NULL',
+      "SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at FROM content c JOIN revisions r ON r.id=c.published_revision JOIN tenants t ON t.id=c.tenant_id WHERE t.slug='default' AND c.slug=$1 AND c.deleted_at IS NULL",
       [path],
     );
     if (!rows[0]) throw new NotFoundException('Page not found');
@@ -80,14 +80,18 @@ export class ContentController {
     }
   }
   @Get() async list(@Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
     return this.db.query(
-      "SELECT id,slug,kind,draft->>'title' AS title,state,version,deleted_at,published_revision,scheduled_at,updated_at FROM content ORDER BY updated_at DESC LIMIT 200",
+      "SELECT id,slug,kind,draft->>'title' AS title,state,version,deleted_at,published_revision,scheduled_at,updated_at FROM content WHERE tenant_id=$1 ORDER BY updated_at DESC LIMIT 200",
+      [req.actor.tenantId],
     );
   }
   @Get(':id') async detail(@Param('id') id: string, @Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
-    const row = (await this.db.query('SELECT * FROM content WHERE id=$1', [uuid(id)]))[0];
+    const row = (
+      await this.db.query('SELECT * FROM content WHERE id=$1 AND tenant_id=$2', [
+        uuid(id),
+        req.actor.tenantId,
+      ])
+    )[0];
     if (!row) throw new NotFoundException();
     const revisions = await this.db.query(
       'SELECT id,created_at,created_by,body FROM revisions WHERE content_id=$1 ORDER BY created_at DESC LIMIT 50',
@@ -96,7 +100,6 @@ export class ContentController {
     return { ...row, revisions };
   }
   @Post() async create(@Body() body: unknown, @Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ slug: safePath, kind: z.enum(['page', 'post', 'case']), body: pageSchema })
       .strict()
@@ -108,11 +111,10 @@ export class ContentController {
     )
       throw new ConflictException('Reserved route');
     return this.db.tx(async (c) => {
-      const r = await c.query('INSERT INTO content(slug,kind,draft) VALUES($1,$2,$3) RETURNING *', [
-        v.slug,
-        v.kind,
-        v.body,
-      ]);
+      const r = await c.query(
+        'INSERT INTO content(slug,kind,draft,tenant_id) VALUES($1,$2,$3,$4) RETURNING *',
+        [v.slug, v.kind, v.body, req.actor.tenantId],
+      );
       await this.db.audit(c, req.actor.id, 'content.create', r.rows[0].id);
       return r.rows[0];
     });
@@ -122,15 +124,14 @@ export class ContentController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
-    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ expectedVersion: z.number().int().positive(), body: pageSchema })
       .strict()
       .parse(body);
     return this.db.tx(async (c) => {
       const r = await c.query(
-        "UPDATE content SET draft=$2,version=version+1,state='draft',approved_by=NULL,scheduled_at=NULL,updated_at=now() WHERE id=$1 AND version=$3 AND deleted_at IS NULL RETURNING *",
-        [uuid(id), v.body, v.expectedVersion],
+        "UPDATE content SET draft=$2,version=version+1,state='draft',approved_by=NULL,scheduled_at=NULL,updated_at=now() WHERE id=$1 AND version=$3 AND tenant_id=$4 AND deleted_at IS NULL RETURNING *",
+        [uuid(id), v.body, v.expectedVersion, req.actor.tenantId],
       );
       if (!r.rowCount)
         throw new ConflictException(
@@ -145,7 +146,6 @@ export class ContentController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
-    await this.requireLegacyWorkspace(req);
     const v = z
       .object({
         action: z.enum([
@@ -166,7 +166,12 @@ export class ContentController {
       .strict()
       .parse(body);
     return this.db.tx(async (c) => {
-      const r = (await c.query('SELECT * FROM content WHERE id=$1 FOR UPDATE', [uuid(id)])).rows[0];
+      const r = (
+        await c.query('SELECT * FROM content WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [
+          uuid(id),
+          req.actor.tenantId,
+        ])
+      ).rows[0];
       if (!r) throw new NotFoundException();
       if (r.version !== v.expectedVersion)
         throw new ConflictException('Version changed. Reload the editor.');
