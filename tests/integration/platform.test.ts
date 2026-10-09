@@ -205,13 +205,7 @@ test('workspace membership context is explicit and tenant switching is membershi
     "INSERT INTO tenant_domains(tenant_id,hostname,challenge,created_by,status) VALUES($1,$2,$3,$4,'active')",
     [secondaryTenantId, 'qa-' + randomUUID().slice(0, 8) + '.example.test', 'qa-only', user.id],
   );
-  const createdCampaign = await call(
-    '/v1/admin/campaigns',
-    'POST',
-    campaignInput,
-    {},
-    true,
-  );
+  const createdCampaign = await call('/v1/admin/campaigns', 'POST', campaignInput, {}, true);
   assert.equal(createdCampaign.r.status, 201, JSON.stringify(createdCampaign.data));
   assert.equal(createdCampaign.data.tenant_id, secondaryTenantId);
   assert.ok(new URL(createdCampaign.data.url).hostname.endsWith('.example.test'));
