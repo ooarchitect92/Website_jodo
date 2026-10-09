@@ -185,12 +185,14 @@ export class AuthController {
         name: activeMembership.display_name,
         role: activeMembership.role_key,
         status: activeMembership.status,
+        readOnly: activeMembership.status === 'suspended',
       },
       workspaces: memberships.map((m) => ({
         id: m.tenant_id,
         name: m.display_name,
         role: m.role_key,
         status: m.status,
+        readOnly: m.status === 'suspended',
       })),
       csrf,
     };
@@ -217,7 +219,10 @@ export class AuthController {
         readOnly: req.actor.tenantStatus === 'suspended',
         role: req.actor.tenantRole,
       },
-      workspaces,
+      workspaces: workspaces.map((m) => ({
+        ...m,
+        readOnly: m.status === 'suspended',
+      })),
       csrf: req.actor.csrf,
     };
   }
