@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ForbiddenException } from '@nestjs/common';
 import { AuthGuard, isTenantReadOnly } from '../../apps/api/src/auth';
+import { digest, keyed } from '../../packages/core/src/security';
 
 function fixture(
   accountRole: string,
@@ -20,7 +21,7 @@ function fixture(
         email: 'test@example.invalid',
         role: accountRole,
         session_id: 'session-id',
-        csrf_hash: 'not-needed-for-get',
+        csrf_hash: digest(keyed('csrf:fake-session-token')),
         tenant_id: 'tenant-id',
         tenant_name: 'Institution',
         tenant_role: membershipRole,
@@ -41,7 +42,7 @@ function fixture(
     method,
     path,
     route: { path },
-    headers: {},
+    headers: { 'x-csrf-token': keyed('csrf:fake-session-token') },
   };
   const ctx = {
     switchToHttp: () => ({ getRequest: () => req }),
@@ -96,4 +97,29 @@ test('only suspended institution status is reported read-only', () => {
   for (const status of ['active', 'pilot', 'restricted', 'archived']) {
     assert.equal(isTenantReadOnly(status), false);
   }
+});
+
+test('suspended tenant may switch to another authorised workspace', async () => {
+  const { guard, ctx } = fixture(
+    'owner',
+    'owner',
+    ['owner'],
+    'suspended',
+    'POST',
+    '/v1/auth/switch-tenant',
+  );
+  assert.equal(await guard.canActivate(ctx as never), true);
+});
+
+test('suspended tenant still cannot mutate financial commands', async () => {
+  const { guard, ctx, auditActions } = fixture(
+    'owner',
+    'owner',
+    ['owner'],
+    'suspended',
+    'POST',
+    '/v1/admin/payments',
+  );
+  await assert.rejects(() => guard.canActivate(ctx as never), ForbiddenException);
+  assert.deepEqual(auditActions, ['access.denied']);
 });
