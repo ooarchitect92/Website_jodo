@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/client';
 import { AdminContext, Session } from './context';
+import { canViewAdminArea, safeAdminArea } from './access';
 import { ContentList } from './content-list';
 import { Leads } from './leads';
 import { Workflows } from './workflows';
@@ -31,12 +32,6 @@ const sections = [
   ['users', 'Staff sessions'],
   ['integrations', 'Integration status'],
 ];
-const allowed: Record<string, string[]> = {
-  owner: sections.map((s) => s[0]!),
-  editor: ['overview', 'content', 'media'],
-  sales: ['overview', 'leads', 'tasks'],
-  analyst: ['overview'],
-};
 export function AdminShell() {
   const [session, setSession] = useState<Session | null>(null),
     [loading, setLoading] = useState(true),
@@ -162,8 +157,9 @@ export function AdminShell() {
         </form>
       </main>
     );
+  const activeArea = safeAdminArea(session.tenant.role, area);
   const render = () => {
-    switch (area) {
+    switch (activeArea) {
       case 'overview':
         return <Dashboard />;
       case 'content':
@@ -187,7 +183,7 @@ export function AdminShell() {
       case 'settings':
         return <Settings />;
       default:
-        return <Records key={area} area={area} />;
+        return <Records key={activeArea} area={activeArea} />;
     }
   };
   return (
@@ -200,10 +196,10 @@ export function AdminShell() {
           <p>TENANT CONSOLE · SAAS BLUEPRINT 2.0</p>
           <nav className="admin-nav" aria-label="Owner navigation">
             {sections
-              .filter(([key]) => allowed[session.tenant.role]?.includes(key!))
+              .filter(([key]) => canViewAdminArea(session.tenant.role, key!))
               .map(([key, title]) => (
                 <button
-                  className={area === key ? 'selected' : ''}
+                  className={activeArea === key ? 'selected' : ''}
                   key={key}
                   onClick={() => setArea(key!)}
                 >
@@ -218,7 +214,7 @@ export function AdminShell() {
         <main id="main" className="admin-main">
           <div className="admin-topbar">
             <div>
-              <h1>{sections.find((s) => s[0] === area)?.[1]}</h1>
+              <h1>{sections.find((s) => s[0] === activeArea)?.[1]}</h1>
               <p>
                 {session.user.email} · {session.tenant.name} · {session.tenant.role}
               </p>
