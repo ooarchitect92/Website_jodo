@@ -27,6 +27,30 @@ export async function tick(db: Db) {
       if (job.type === 'autopay.debit.requested')
         delivery = await submitAutopayDebit(db, job.event_id);
       await db.tx(async (c) => {
+        if (job.type === 'tenant.enquiry.accepted') {
+          const projected = await c.query(
+            `INSERT INTO tenant_inbox_notifications(
+               tenant_id,source_event_id,enquiry_id,title
+             )
+             SELECT e.tenant_id,e.event_id,e.id,'New institution enquiry ' || e.receipt
+             FROM tenant_enquiries e
+             WHERE e.id=$1 AND e.event_id=$2
+             ON CONFLICT(source_event_id) DO NOTHING
+             RETURNING id`,
+            [job.aggregate_id, job.event_id],
+          );
+          if (projected.rowCount) {
+            await db.audit(c, 'worker', 'tenant.notification.created', projected.rows[0].id, {
+              sourceEventId: job.event_id,
+            });
+          } else {
+            const existing = await c.query(
+              'SELECT id FROM tenant_inbox_notifications WHERE source_event_id=$1',
+              [job.event_id],
+            );
+            if (!existing.rowCount) throw new Error('Tenant notification source missing');
+          }
+        }
         if (job.type === 'lead.accepted') {
           await c.query(
             "INSERT INTO tasks(lead_id,title,execution_key,tenant_id) SELECT id,'Review new enquiry and arrange follow-up',$2,tenant_id FROM leads WHERE id=$1 ON CONFLICT(execution_key) DO NOTHING",

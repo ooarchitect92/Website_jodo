@@ -25,6 +25,7 @@ import {
   TenantEnquiryPublicController,
 } from './tenant-enquiries';
 import { PrivacyController } from './privacy';
+import { TenantNotificationsController } from './tenant-notifications';
 import { OperationsController } from './operations';
 import { ChatController } from './chat';
 import { MediaController } from './media';
@@ -89,6 +90,7 @@ class Health {
     TenantEnquiryPublicController,
     TenantEnquiryFormAdminController,
     TenantEnquiriesAdminController,
+    TenantNotificationsController,
     LeadsController,
     PrivacyController,
     OperationsController,

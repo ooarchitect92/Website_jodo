@@ -7,6 +7,7 @@ import { canViewAdminArea, safeAdminArea } from './access';
 import { ContentList } from './content-list';
 import { Leads } from './leads';
 import { TenantEnquiries } from './tenant-enquiries';
+import { TenantNotifications } from './tenant-notifications';
 import { Workflows } from './workflows';
 import { Dashboard, Campaigns, Media, Settings, Records } from './panels';
 import { FeeOperations } from './fees';
@@ -18,6 +19,7 @@ const sections = [
   ['content', 'Content & publishing'],
   ['leads', 'Leads'],
   ['enquiries', 'Institution enquiries'],
+  ['notifications', 'Notifications'],
   ['fees', 'Fee operations'],
   ['fee-plans', 'Fee plans & receivables'],
   ['academic', 'Students & academic'],
@@ -170,6 +172,8 @@ export function AdminShell() {
         return <Leads />;
       case 'enquiries':
         return <TenantEnquiries />;
+      case 'notifications':
+        return <TenantNotifications openEnquiries={() => setArea('enquiries')} />;
       case 'campaigns':
         return <Campaigns />;
       case 'workflows':
