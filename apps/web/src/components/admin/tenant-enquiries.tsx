@@ -82,7 +82,9 @@ export function TenantEnquiries() {
         enabled: values.get('enabled') === 'on',
       });
       setConfig(saved);
-      setNotice('Institution enquiry settings saved. Changes take effect on the next public visit.');
+      setNotice(
+        'Institution enquiry settings saved. Changes take effect on the next public visit.',
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -104,9 +106,7 @@ export function TenantEnquiries() {
       });
       setNotice('Enquiry stage saved with an audit record.');
       await load();
-      setHistory(
-        await request<History[]>('admin/tenant/enquiries/' + selected.id + '/history'),
-      );
+      setHistory(await request<History[]>('admin/tenant/enquiries/' + selected.id + '/history'));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -169,9 +169,7 @@ export function TenantEnquiries() {
             ['stage', 'Stage'],
             ['createdAt', 'Received'],
           ]}
-          actions={(row) => (
-            <button onClick={() => showHistory(row as Enquiry)}>Review</button>
-          )}
+          actions={(row) => <button onClick={() => showHistory(row as Enquiry)}>Review</button>}
         />
       </section>
       {selected && (
@@ -220,7 +218,13 @@ export function TenantEnquiries() {
           <form key={String(config.revision || 0)} onSubmit={configure}>
             <label className="field">
               Form title
-              <input name="title" defaultValue={config.title || ''} minLength={3} maxLength={120} required />
+              <input
+                name="title"
+                defaultValue={config.title || ''}
+                minLength={3}
+                maxLength={120}
+                required
+              />
             </label>
             <label className="field">
               Visitor privacy notice
