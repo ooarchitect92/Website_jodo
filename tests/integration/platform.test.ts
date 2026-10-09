@@ -176,36 +176,42 @@ test('workspace membership context is explicit and tenant switching is membershi
   const emptyRuns = await call('/v1/admin/workflows/runs', 'GET', undefined, {}, true);
   assert.equal(emptyRuns.r.status, 200);
   assert.deepEqual(emptyRuns.data, []);
-  const primaryWorkflow = (
-    await owner.query(
-      'INSERT INTO workflows(definition,created_by,tenant_id) VALUES($1,$2,$3) RETURNING id',
-      [
-        { name: 'Primary-only workflow', nodes: [{ type: 'task', title: 'Primary only' }] },
-        user.id,
-        primaryTenantId,
-      ],
-    )
-  ).rows[0];
+
+  const primaryDefinition = {
+    name: 'Primary-only workflow',
+    nodes: [{ type: 'task', title: 'Primary only' }],
+  };
+  const primaryWorkflow = await owner.query(
+    'INSERT INTO workflows(definition,created_by,tenant_id) VALUES($1,$2,$3) RETURNING id',
+    [primaryDefinition, user.id, primaryTenantId],
+  );
+  const primaryRoute = '/v1/admin/workflows/' + primaryWorkflow.rows[0].id;
   const deniedToggle = await call(
-    '/v1/admin/workflows/' + primaryWorkflow.id,
+    primaryRoute,
     'PATCH',
     { active: true, expectedVersion: 1 },
     {},
     true,
   );
   assert.equal(deniedToggle.r.status, 409);
+
+  const secondaryDefinition = {
+    name: 'Secondary follow-up',
+    nodes: [{ type: 'task', title: 'Secondary only' }],
+  };
   const secondaryWorkflow = await call(
     '/v1/admin/workflows',
     'POST',
-    { name: 'Secondary follow-up', nodes: [{ type: 'task', title: 'Secondary only' }] },
+    secondaryDefinition,
     {},
     true,
   );
-  assert.equal(secondaryWorkflow.r.status, 201, JSON.stringify(secondaryWorkflow.data));
+  assert.equal(secondaryWorkflow.r.status, 201);
   assert.equal(secondaryWorkflow.data.tenant_id, secondaryTenantId);
   secondaryWorkflowId = secondaryWorkflow.data.id;
+  const secondaryRoute = '/v1/admin/workflows/' + secondaryWorkflowId;
   const activated = await call(
-    '/v1/admin/workflows/' + secondaryWorkflowId,
+    secondaryRoute,
     'PATCH',
     { active: true, expectedVersion: 1 },
     {},
@@ -590,29 +596,24 @@ test('background workflow enrollment rejects cross-institution lead references',
   assert.ok(secondaryWorkflowId);
   assert.ok(leadId);
   await tick(db);
-  const foreignRuns = await db.query(
-    'SELECT id FROM workflow_runs WHERE workflow_id=$1',
-    [secondaryWorkflowId],
-  );
+  const foreignRuns = await db.query('SELECT id FROM workflow_runs WHERE workflow_id=$1', [
+    secondaryWorkflowId,
+  ]);
   assert.deepEqual(foreignRuns, []);
+
+  const badDefinition = { name: 'Wrong tenant', nodes: [{ type: 'task', title: 'Must reject' }] };
+  const wrongRunSql =
+    'INSERT INTO workflow_runs(workflow_id,lead_id,definition,tenant_id) VALUES($1,$2,$3,$4)';
   await assert.rejects(
-    owner.query(
-      'INSERT INTO workflow_runs(workflow_id,lead_id,definition,tenant_id) VALUES($1,$2,$3,$4)',
-      [
-        secondaryWorkflowId,
-        leadId,
-        { name: 'Wrong tenant', nodes: [{ type: 'task', title: 'Must reject' }] },
-        secondaryTenantId,
-      ],
-    ),
-    (error: any) => error.code === '23503',
+    owner.query(wrongRunSql, [secondaryWorkflowId, leadId, badDefinition, secondaryTenantId]),
+    { code: '23503' },
   );
+  const wrongTaskSql =
+    'INSERT INTO tasks(lead_id,title,execution_key,tenant_id) VALUES($1,$2,$3,$4)';
+  const taskKey = 'qa-cross-tenant-' + randomUUID();
   await assert.rejects(
-    owner.query(
-      'INSERT INTO tasks(lead_id,title,execution_key,tenant_id) VALUES($1,$2,$3,$4)',
-      [leadId, 'Forbidden task', 'qa-cross-tenant-' + randomUUID(), secondaryTenantId],
-    ),
-    (error: any) => error.code === '23503',
+    owner.query(wrongTaskSql, [leadId, 'Forbidden task', taskKey, secondaryTenantId]),
+    { code: '23503' },
   );
 });
 
