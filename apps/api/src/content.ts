@@ -112,9 +112,12 @@ export class ContentController {
       throw new ConflictException('Reserved route');
     return this.db.tx(async (c) => {
       const r = await c.query(
-        'INSERT INTO content(slug,kind,draft,tenant_id) VALUES($1,$2,$3,$4) RETURNING *',
+        `INSERT INTO content(slug,kind,draft,tenant_id)
+         VALUES($1,$2,$3,$4)
+         ON CONFLICT(tenant_id,slug) DO NOTHING RETURNING *`,
         [v.slug, v.kind, v.body, req.actor.tenantId],
       );
+      if (!r.rowCount) throw new ConflictException('Page path already exists in this workspace');
       await this.db.audit(c, req.actor.id, 'content.create', r.rows[0].id);
       return r.rows[0];
     });

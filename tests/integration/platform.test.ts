@@ -203,18 +203,53 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(isolatedContent.r.status, 200);
   assert.deepEqual(isolatedContent.data, []);
   const primaryPage = (
-    await owner.query('SELECT id FROM content WHERE tenant_id=$1 LIMIT 1', [primaryTenantId])
+    await owner.query(
+      'SELECT id,slug,kind,draft FROM content WHERE tenant_id=$1 ORDER BY slug LIMIT 1',
+      [primaryTenantId],
+    )
   ).rows[0];
-  if (primaryPage) {
-    const deniedDetail = await call(
-      '/v1/admin/content/' + primaryPage.id,
-      'GET',
-      undefined,
-      {},
-      true,
-    );
-    assert.equal(deniedDetail.r.status, 404);
-  }
+  assert.ok(primaryPage, 'Seeded public website must include a page');
+  const deniedDetail = await call(
+    '/v1/admin/content/' + primaryPage.id,
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(deniedDetail.r.status, 404);
+
+  // Two institutions may use the same page path without overwriting one another.
+  const secondaryPage = await call(
+    '/v1/admin/content',
+    'POST',
+    { slug: primaryPage.slug, kind: primaryPage.kind, body: primaryPage.draft },
+    {},
+    true,
+  );
+  assert.equal(secondaryPage.r.status, 201, JSON.stringify(secondaryPage.data));
+  assert.equal(secondaryPage.data.tenant_id, secondaryTenantId);
+  assert.notEqual(secondaryPage.data.id, primaryPage.id);
+  const duplicate = await call(
+    '/v1/admin/content',
+    'POST',
+    { slug: primaryPage.slug, kind: primaryPage.kind, body: primaryPage.draft },
+    {},
+    true,
+  );
+  assert.equal(duplicate.r.status, 409);
+  const isolatedDetails = await call(
+    '/v1/admin/content/' + secondaryPage.data.id,
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(isolatedDetails.r.status, 200);
+  const publicPage = await call(
+    '/v1/public/pages/by-path?path=' + encodeURIComponent(primaryPage.slug),
+  );
+  assert.equal(publicPage.r.status, 200);
+  assert.equal(publicPage.data.id, primaryPage.id);
 
   const deniedExport = await call('/v1/admin/content-export', 'POST', {}, {}, true);
   assert.equal(deniedExport.r.status, 403);
