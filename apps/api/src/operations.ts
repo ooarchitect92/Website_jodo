@@ -55,18 +55,18 @@ export class OperationsController {
     };
   }
   @Get('tasks') @Roles('owner', 'sales') async tasks(@Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
-    return this.db.query('SELECT * FROM tasks ORDER BY due_at LIMIT 200');
+    return this.db.query('SELECT * FROM tasks WHERE tenant_id=$1 ORDER BY due_at LIMIT 200', [
+      req.actor.tenantId,
+    ]);
   }
   @Post('tasks/:id/complete') @Roles('owner', 'sales') async task(
     @Param('id') id: string,
     @Req() req: AuthedRequest,
   ) {
-    await this.requireLegacyWorkspace(req);
     await this.db.tx(async (c) => {
       const updated = await c.query(
-        "UPDATE tasks SET status='done' WHERE id=$1 AND status='open' RETURNING id",
-        [uuid(id)],
+        "UPDATE tasks SET status='done' WHERE id=$1 AND tenant_id=$2 AND status='open' RETURNING id",
+        [uuid(id), req.actor.tenantId],
       );
       if (!updated.rowCount) throw new ConflictException('Task is missing or no longer open');
       await this.db.audit(c, req.actor.id, 'task.complete', id);
@@ -145,18 +145,19 @@ export class OperationsController {
     });
   }
   @Get('workflows') async workflows(@Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
-    return this.db.query('SELECT * FROM workflows ORDER BY created_at DESC LIMIT 100');
+    return this.db.query(
+      'SELECT * FROM workflows WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 100',
+      [req.actor.tenantId],
+    );
   }
   @Post('workflows') async workflow(@Body() body: unknown, @Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
     const v = workflowSchema.parse(body);
     return this.db.tx(async (c) => {
       const row = (
-        await c.query('INSERT INTO workflows(definition,created_by) VALUES($1,$2) RETURNING *', [
-          v,
-          req.actor.id,
-        ])
+        await c.query(
+          'INSERT INTO workflows(definition,created_by,tenant_id) VALUES($1,$2,$3) RETURNING *',
+          [v, req.actor.id, req.actor.tenantId],
+        )
       ).rows[0];
       await this.db.audit(c, req.actor.id, 'workflow.create', row.id);
       return row;
@@ -175,15 +176,14 @@ export class OperationsController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
-    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ active: z.boolean(), expectedVersion: z.number().int().positive() })
       .strict()
       .parse(body);
     return this.db.tx(async (c) => {
       const r = await c.query(
-        'UPDATE workflows SET active=$2,version=version+1 WHERE id=$1 AND version=$3 RETURNING *',
-        [uuid(id), v.active, v.expectedVersion],
+        'UPDATE workflows SET active=$2,version=version+1 WHERE id=$1 AND version=$3 AND tenant_id=$4 RETURNING *',
+        [uuid(id), v.active, v.expectedVersion, req.actor.tenantId],
       );
       if (!r.rowCount) throw new ConflictException('Workflow version changed');
       await this.db.audit(c, req.actor.id, v.active ? 'workflow.activate' : 'workflow.pause', id);
@@ -191,9 +191,9 @@ export class OperationsController {
     });
   }
   @Get('workflows/runs') async runs(@Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
     return this.db.query(
-      'SELECT id,workflow_id,lead_id,next_node,status,due_at FROM workflow_runs ORDER BY due_at DESC LIMIT 200',
+      'SELECT id,workflow_id,lead_id,next_node,status,due_at FROM workflow_runs WHERE tenant_id=$1 ORDER BY due_at DESC LIMIT 200',
+      [req.actor.tenantId],
     );
   }
   @Get('privacy-requests') async rights(@Req() req: AuthedRequest) {
