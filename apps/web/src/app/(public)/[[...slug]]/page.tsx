@@ -18,6 +18,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const data = await pages();
   const found = data.find((p) => p.slug === path);
   const config = await site();
+  const origin = config.canonicalOrigin || baseUrl();
   const isListing = [
     '/blog/',
     '/blog/engineering/',
@@ -42,7 +43,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   return {
     title,
     description: found?.body.description || 'Browse the education payments platform.',
-    alternates: { canonical: new URL(path, baseUrl()).toString() },
+    alternates: { canonical: new URL(path, origin).toString() },
     robots: {
       index: !!config.indexing && !isPrivateUtility && (!!found?.body.indexable || isListing),
       follow: !!config.indexing,
@@ -50,8 +51,8 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     openGraph: {
       title,
       description: found?.body.description || process.env.NEXT_PUBLIC_BRAND_NAME || 'YourCompany',
-      url: new URL(path, baseUrl()).toString(),
-      ...(found?.body.cover ? { images: [new URL(found.body.cover, baseUrl()).toString()] } : {}),
+      url: new URL(path, origin).toString(),
+      ...(found?.body.cover ? { images: [new URL(found.body.cover, origin).toString()] } : {}),
     },
   };
 }
@@ -59,8 +60,17 @@ export default async function Page({ params, searchParams }: Props) {
   const { slug } = await params;
   const path = pathFor(slug);
   const all = await pages();
+  const config = await site();
   const search = await searchParams;
-  if (path === '/cookie-preferences/') return <CookiePreferences />;
+  if (path === '/cookie-preferences/')
+    return config.tenantSite ? (
+      <section className="wrap narrow section">
+        <h1>Optional tracking disabled</h1>
+        <p>This institution website does not send marketing analytics.</p>
+      </section>
+    ) : (
+      <CookiePreferences />
+    );
   const blog = path === '/blog/' || /^\/blog\/(engineering|insight|product)\/$/.test(path),
     cases = path === '/case-studies/',
     isSearch = path === '/search/';
@@ -177,9 +187,9 @@ export default async function Page({ params, searchParams }: Props) {
           )}
         </header>
       )}
-      <BlockRenderer blocks={p.body.blocks} entries={all} />
-      {path === '/privacy-policy/' && <PrivacyRequest />}
-      {path === '/login/' && (
+      <BlockRenderer blocks={p.body.blocks} entries={all} allowLeadCapture={!config.tenantSite} />
+      {path === '/privacy-policy/' && !config.tenantSite && <PrivacyRequest />}
+      {path === '/login/' && !config.tenantSite && (
         <section className="wrap portal-grid">
           {[
             ['Students and parents', process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || '/contact-us/'],

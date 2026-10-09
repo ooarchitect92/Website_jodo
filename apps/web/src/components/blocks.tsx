@@ -53,9 +53,11 @@ export function ArticleCards({ items }: { items: PublicPage[] }) {
 export function BlockRenderer({
   blocks,
   entries = [],
+  allowLeadCapture = true,
 }: {
   blocks: Block[];
   entries?: PublicPage[];
+  allowLeadCapture?: boolean;
 }) {
   return (
     <>
@@ -338,7 +340,13 @@ export function BlockRenderer({
                   <SmartLink href="/products/">Explore platform capabilities</SmartLink>
                 </div>
               </div>
-              <LeadForm />
+              {allowLeadCapture ? (
+                <LeadForm />
+              ) : (
+                <p role="status" className="small muted">
+                  Enquiries are unavailable until this institution activates isolated lead capture.
+                </p>
+              )}
             </section>
           );
         if (b.type === 'calculator')

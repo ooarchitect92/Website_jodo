@@ -1,4 +1,4 @@
-import { pages, baseUrl } from '@/lib/published';
+import { pages, baseUrl, site } from '@/lib/published';
 export const dynamic = 'force-dynamic';
 const x = (s: string) =>
   s.replace(
@@ -6,6 +6,8 @@ const x = (s: string) =>
     (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[c]!,
   );
 export async function GET() {
+  const config = await site();
+  if (config.tenantSite) return new Response('Not Found', { status: 404 });
   const posts = (await pages()).filter((p) => p.kind === 'post');
   return new Response(
     '<?xml version="1.0"?><rss version="2.0"><channel><title>Website Jodo perspectives</title><link>' +

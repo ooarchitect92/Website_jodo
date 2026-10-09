@@ -6,8 +6,7 @@ import { site } from '@/lib/published';
 export const dynamic = 'force-dynamic';
 export default async function Layout({ children }: { children: React.ReactNode }) {
   const config = await site();
-  return (
-    <ConsentProvider>
+  const shell = (
       <div
         style={
           {
@@ -23,8 +22,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
         </div>
         <main id="main">{children}</main>
         <Footer name={config.settings.brand.name} />
-        <Chat />
+        {!config.tenantSite && <Chat />}
       </div>
-    </ConsentProvider>
   );
+  return config.tenantSite ? shell : <ConsentProvider>{shell}</ConsentProvider>;
 }
