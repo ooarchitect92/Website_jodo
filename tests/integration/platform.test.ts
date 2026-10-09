@@ -382,6 +382,95 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(originalPages.r.status, 200);
   assert.ok(!originalPages.data.some((page: any) => page.id === secondaryPage.data.id));
 
+  // Institution-specific intake is disabled until the workspace owner activates it.
+  const tenantPayload = {
+    hostname: tenantHostname,
+    revision: 1,
+    name: 'QA Enquiry Visitor',
+    email: 'tenant-visitor@example.invalid',
+    phone: '+919999999999',
+    message: 'Please contact me about admission availability.',
+    noticeAccepted: true,
+    website: '',
+  };
+  const tenantOrigin = { Origin: 'https://' + tenantHostname };
+  const disabledEnquiry = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    tenantPayload,
+    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(disabledEnquiry.r.status, 404);
+
+  const settings = await call(
+    '/v1/admin/tenant/enquiry-form',
+    'POST',
+    {
+      title: 'Contact this institution',
+      notice: 'I consent to this institution storing my details to respond to my enquiry.',
+      success: 'Institution staff will review your enquiry.',
+      enabled: true,
+    },
+    {},
+    true,
+  );
+  assert.equal(settings.r.status, 201, JSON.stringify(settings.data));
+  assert.equal(settings.data.enabled, true);
+  const enabledSite = await call('/v1/public/site?hostname=' + tenantHostname);
+  assert.equal(enabledSite.r.status, 200);
+  assert.equal(enabledSite.data.settings.form.revision, settings.data.revision);
+  assert.equal(enabledSite.data.indexing, false);
+
+  const activePayload = { ...tenantPayload, revision: settings.data.revision };
+  const enquiryKey = randomUUID();
+  const accepted = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    activePayload,
+    { ...tenantOrigin, 'Idempotency-Key': enquiryKey },
+  );
+  assert.equal(accepted.r.status, 201, JSON.stringify(accepted.data));
+  assert.equal(accepted.data.status, 'accepted');
+  const replay = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    activePayload,
+    { ...tenantOrigin, 'Idempotency-Key': enquiryKey },
+  );
+  assert.equal(replay.r.status, 201);
+  assert.equal(replay.data.replayed, true);
+  assert.equal(replay.data.receipt, accepted.data.receipt);
+  const conflict = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    { ...activePayload, name: 'Changed Person' },
+    { ...tenantOrigin, 'Idempotency-Key': enquiryKey },
+  );
+  assert.equal(conflict.r.status, 409);
+  const wrongOrigin = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    activePayload,
+    { Origin: process.env.SITE_URL!, 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(wrongOrigin.r.status, 403);
+
+  const tenantEnquiries = await call('/v1/admin/tenant/enquiries', 'GET', undefined, {}, true);
+  assert.equal(tenantEnquiries.r.status, 200);
+  assert.equal(tenantEnquiries.data.length, 1);
+  assert.equal(tenantEnquiries.data[0].fields.name, activePayload.name);
+  assert.equal(tenantEnquiries.data[0].receipt, accepted.data.receipt);
+  const encrypted = (
+    await owner.query(
+      'SELECT encrypted_fields,tenant_id FROM tenant_enquiries WHERE receipt=$1',
+      [accepted.data.receipt],
+    )
+  ).rows[0];
+  assert.equal(encrypted.tenant_id, secondaryTenantId);
+  assert.ok(!encrypted.encrypted_fields.includes(activePayload.name));
+  const reviewTasks = await call('/v1/admin/tasks', 'GET', undefined, {}, true);
+  assert.ok(reviewTasks.data.some((task: any) => task.title.includes(accepted.data.receipt)));
+
   const publicPage = await call(
     '/v1/public/pages/by-path?path=' + encodeURIComponent(primaryPage.slug),
   );
