@@ -590,6 +590,118 @@ test('workspace membership context is explicit and tenant switching is membershi
 
   const reviewTasks = await call('/v1/admin/tasks', 'GET', undefined, {}, true);
   assert.ok(reviewTasks.data.some((task: any) => task.title.includes(accepted.data.receipt)));
+  // Institution owners can publish bounded custom questions without losing earlier versions.
+  const questions = [
+    {
+      key: 'preferred_campus',
+      label: 'Preferred campus',
+      kind: 'choice',
+      required: true,
+      options: ['North', 'South'],
+    },
+    {
+      key: 'additional_details',
+      label: 'Additional details',
+      kind: 'long_text',
+      required: false,
+      options: [],
+    },
+  ];
+  const customSettings = {
+    title: 'Contact this institution',
+    notice: 'I consent to this institution storing my details to respond to my enquiry.',
+    success: 'Institution staff will review your enquiry.',
+    enabled: true,
+    expectedRevision: settings.data.revision,
+    fields: questions,
+  };
+  const invalidQuestions = await call(
+    '/v1/admin/tenant/enquiry-form',
+    'POST',
+    { ...customSettings, fields: [questions[0], questions[0]] },
+    {},
+    true,
+  );
+  assert.equal(invalidQuestions.r.status, 422);
+  const configuredForm = await call(
+    '/v1/admin/tenant/enquiry-form',
+    'POST',
+    customSettings,
+    {},
+    true,
+  );
+  assert.equal(configuredForm.r.status, 201, JSON.stringify(configuredForm.data));
+  assert.equal(configuredForm.data.revision, settings.data.revision + 1);
+  assert.equal(configuredForm.data.fields.length, 2);
+  const staleFormSave = await call(
+    '/v1/admin/tenant/enquiry-form',
+    'POST',
+    customSettings,
+    {},
+    true,
+  );
+  assert.equal(staleFormSave.r.status, 409);
+  const newSite = await call('/v1/public/site?hostname=' + tenantHostname);
+  assert.equal(newSite.r.status, 200);
+  assert.deepEqual(newSite.data.settings.form.fields, questions);
+  const historicalForm = (
+    await owner.query(
+      'SELECT definition FROM tenant_form_revisions WHERE tenant_id=$1 AND revision=$2',
+      [secondaryTenantId, settings.data.revision],
+    )
+  ).rows[0];
+  assert.deepEqual(historicalForm.definition.fields, []);
+  const rejectedStaleRevision = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    activePayload,
+    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(rejectedStaleRevision.r.status, 422);
+  const nextPayload = { ...activePayload, revision: configuredForm.data.revision };
+  const missingRequired = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    nextPayload,
+    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(missingRequired.r.status, 422);
+  const injectedAnswer = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    { ...nextPayload, answers: { unknown_key: 'Hidden' } },
+    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(injectedAnswer.r.status, 422);
+  const invalidChoice = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    { ...nextPayload, answers: { preferred_campus: 'Unapproved campus' } },
+    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(invalidChoice.r.status, 422);
+  const validCustom = await call(
+    '/v1/forms/tenant/submissions',
+    'POST',
+    {
+      ...nextPayload,
+      answers: { preferred_campus: 'North', additional_details: 'Synthetic QA enquiry' },
+    },
+    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
+  );
+  assert.equal(validCustom.r.status, 201, JSON.stringify(validCustom.data));
+  const encryptedCustom = (
+    await owner.query(
+      'SELECT encrypted_fields,form_revision FROM tenant_enquiries WHERE receipt=$1',
+      [validCustom.data.receipt],
+    )
+  ).rows[0];
+  assert.equal(encryptedCustom.form_revision, configuredForm.data.revision);
+  assert.ok(!encryptedCustom.encrypted_fields.includes('Synthetic QA enquiry'));
+  const customEnquiries = await call('/v1/admin/tenant/enquiries', 'GET', undefined, {}, true);
+  const customRow = customEnquiries.data.find((row: any) => row.receipt === validCustom.data.receipt);
+  assert.equal(customRow.fields.answers.preferred_campus, 'North');
+
 
   const publicPage = await call(
     '/v1/public/pages/by-path?path=' + encodeURIComponent(primaryPage.slug),
