@@ -394,12 +394,10 @@ test('workspace membership context is explicit and tenant switching is membershi
     website: '',
   };
   const tenantOrigin = { Origin: 'https://' + tenantHostname };
-  const disabledEnquiry = await call(
-    '/v1/forms/tenant/submissions',
-    'POST',
-    tenantPayload,
-    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
-  );
+  const disabledEnquiry = await call('/v1/forms/tenant/submissions', 'POST', tenantPayload, {
+    ...tenantOrigin,
+    'Idempotency-Key': randomUUID(),
+  });
   assert.equal(disabledEnquiry.r.status, 404);
 
   const settings = await call(
@@ -423,20 +421,16 @@ test('workspace membership context is explicit and tenant switching is membershi
 
   const activePayload = { ...tenantPayload, revision: settings.data.revision };
   const enquiryKey = randomUUID();
-  const accepted = await call(
-    '/v1/forms/tenant/submissions',
-    'POST',
-    activePayload,
-    { ...tenantOrigin, 'Idempotency-Key': enquiryKey },
-  );
+  const accepted = await call('/v1/forms/tenant/submissions', 'POST', activePayload, {
+    ...tenantOrigin,
+    'Idempotency-Key': enquiryKey,
+  });
   assert.equal(accepted.r.status, 201, JSON.stringify(accepted.data));
   assert.equal(accepted.data.status, 'accepted');
-  const replay = await call(
-    '/v1/forms/tenant/submissions',
-    'POST',
-    activePayload,
-    { ...tenantOrigin, 'Idempotency-Key': enquiryKey },
-  );
+  const replay = await call('/v1/forms/tenant/submissions', 'POST', activePayload, {
+    ...tenantOrigin,
+    'Idempotency-Key': enquiryKey,
+  });
   assert.equal(replay.r.status, 201);
   assert.equal(replay.data.replayed, true);
   assert.equal(replay.data.receipt, accepted.data.receipt);
@@ -447,12 +441,10 @@ test('workspace membership context is explicit and tenant switching is membershi
     { ...tenantOrigin, 'Idempotency-Key': enquiryKey },
   );
   assert.equal(conflict.r.status, 409);
-  const wrongOrigin = await call(
-    '/v1/forms/tenant/submissions',
-    'POST',
-    activePayload,
-    { Origin: process.env.SITE_URL!, 'Idempotency-Key': randomUUID() },
-  );
+  const wrongOrigin = await call('/v1/forms/tenant/submissions', 'POST', activePayload, {
+    Origin: process.env.SITE_URL!,
+    'Idempotency-Key': randomUUID(),
+  });
   assert.equal(wrongOrigin.r.status, 403);
 
   const tenantEnquiries = await call('/v1/admin/tenant/enquiries', 'GET', undefined, {}, true);
@@ -461,10 +453,9 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(tenantEnquiries.data[0].fields.name, activePayload.name);
   assert.equal(tenantEnquiries.data[0].receipt, accepted.data.receipt);
   const encrypted = (
-    await owner.query(
-      'SELECT encrypted_fields,tenant_id FROM tenant_enquiries WHERE receipt=$1',
-      [accepted.data.receipt],
-    )
+    await owner.query('SELECT encrypted_fields,tenant_id FROM tenant_enquiries WHERE receipt=$1', [
+      accepted.data.receipt,
+    ])
   ).rows[0];
   assert.equal(encrypted.tenant_id, secondaryTenantId);
   assert.ok(!encrypted.encrypted_fields.includes(activePayload.name));

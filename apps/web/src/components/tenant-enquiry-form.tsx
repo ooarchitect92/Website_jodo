@@ -58,7 +58,9 @@ export function TenantEnquiryForm({ config }: { config: Settings }) {
       <div className="success-card" role="status">
         <h2>Enquiry received</h2>
         <p>{config.success}</p>
-        <p>Receipt: <strong>{receipt}</strong></p>
+        <p>
+          Receipt: <strong>{receipt}</strong>
+        </p>
         <button className="button outline" onClick={() => setReceipt('')}>
           Submit another enquiry
         </button>
@@ -90,12 +92,17 @@ export function TenantEnquiryForm({ config }: { config: Settings }) {
         <input type="checkbox" name="notice" required />
         <span>{config.notice}</span>
       </label>
-      {error && <p role="alert" className="error-card">{error}</p>}
+      {error && (
+        <p role="alert" className="error-card">
+          {error}
+        </p>
+      )}
       <button className="button primary" type="submit" disabled={busy}>
         {busy ? 'Saving…' : 'Send enquiry'}
       </button>
       <p className="small muted">
-        This enquiry is saved for this institution. No payment or external notification is confirmed.
+        This enquiry is saved for this institution. No payment or external notification is
+        confirmed.
       </p>
     </form>
   );
