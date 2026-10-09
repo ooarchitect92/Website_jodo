@@ -27,12 +27,54 @@ const domainSchema = z
   .string()
   .max(253)
   .regex(/^[a-z0-9-]+(?:[.][a-z0-9-]+)+$/);
+// A constrained question builder: no arbitrary code, uploads or payment fields.
+export const tenantQuestionSchema = z
+  .object({
+    key: z.string().regex(/^[a-z][a-z0-9_]{1,39}$/),
+    label: z.string().trim().min(2).max(80),
+    kind: z.enum(['short_text', 'long_text', 'choice']),
+    required: z.boolean(),
+    options: z.array(z.string().trim().min(1).max(80)).max(12).default([]),
+  })
+  .strict();
+export const tenantQuestionListSchema = z
+  .array(tenantQuestionSchema)
+  .max(8)
+  .superRefine((fields, ctx) => {
+    const keys = new Set<string>();
+    for (const [index, field] of fields.entries()) {
+      if (keys.has(field.key))
+        ctx.addIssue({
+          code: 'custom',
+          path: [index, 'key'],
+          message: 'Question keys must be unique',
+        });
+      keys.add(field.key);
+      const choices = field.options.map((option) => option.toLowerCase());
+      if (field.kind === 'choice') {
+        if (choices.length < 2 || choices.length !== new Set(choices).size)
+          ctx.addIssue({
+            code: 'custom',
+            path: [index, 'options'],
+            message: 'Choices need at least two distinct options',
+          });
+      } else if (choices.length)
+        ctx.addIssue({
+          code: 'custom',
+          path: [index, 'options'],
+          message: 'Only choice questions may define options',
+        });
+    }
+  });
+
 const formSettingsSchema = z
   .object({
     title: z.string().trim().min(3).max(120),
     notice: z.string().trim().min(30).max(1000),
     success: z.string().trim().min(5).max(240),
     enabled: z.boolean(),
+    fields: tenantQuestionListSchema.optional(),
+    expectedRevision: z.number().int().positive().optional(),
   })
   .strict();
 const enquirySchema = z
@@ -48,6 +90,7 @@ const enquirySchema = z
     message: z.string().trim().min(5).max(1500),
     noticeAccepted: z.literal(true),
     website: z.string().max(0).default(''),
+    answers: z.record(z.string(), z.string().trim().max(1000)).optional(),
   })
   .strict();
 
@@ -211,7 +254,7 @@ export class TenantEnquiryFormAdminController {
     return (
       (
         await this.db.query(
-          'SELECT revision,enabled,title,notice,success,updated_at FROM tenant_form_settings WHERE tenant_id=$1',
+          'SELECT revision,enabled,title,notice,success,fields,updated_at FROM tenant_form_settings WHERE tenant_id=$1',
           [req.actor.tenantId],
         )
       )[0] || { enabled: false }
@@ -235,21 +278,46 @@ export class TenantEnquiryFormAdminController {
         if (!ready)
           throw new ConflictException('Activate a website domain before enabling public enquiries');
       }
+      const previous = (
+        await c.query(
+          'SELECT revision,fields FROM tenant_form_settings WHERE tenant_id=$1 FOR UPDATE',
+          [req.actor.tenantId],
+        )
+      ).rows[0];
+      if (data.expectedRevision && previous?.revision !== data.expectedRevision)
+        throw new ConflictException('Form changed; reload before saving');
+      const fields = data.fields || previous?.fields || [];
       const result = (
         await c.query(
-          `INSERT INTO tenant_form_settings(tenant_id,title,notice,success,enabled,updated_by)
-           VALUES($1,$2,$3,$4,$5,$6)
+          `INSERT INTO tenant_form_settings(
+             tenant_id,title,notice,success,enabled,updated_by,fields
+           ) VALUES($1,$2,$3,$4,$5,$6,$7)
            ON CONFLICT(tenant_id) DO UPDATE
              SET title=excluded.title,notice=excluded.notice,success=excluded.success,
                  enabled=excluded.enabled,updated_by=excluded.updated_by,
+                 fields=excluded.fields,
                  revision=tenant_form_settings.revision+1,updated_at=now()
-           RETURNING revision,enabled,title,notice,success`,
-          [req.actor.tenantId, data.title, data.notice, data.success, data.enabled, req.actor.id],
+           RETURNING revision,enabled,title,notice,success,fields`,
+          [
+            req.actor.tenantId,
+            data.title,
+            data.notice,
+            data.success,
+            data.enabled,
+            req.actor.id,
+            JSON.stringify(fields),
+          ],
         )
       ).rows[0];
+      await c.query(
+        `INSERT INTO tenant_form_revisions(tenant_id,revision,definition,created_by)
+         VALUES($1,$2,$3,$4)`,
+        [req.actor.tenantId, result.revision, JSON.stringify(result), req.actor.id],
+      );
       await this.db.audit(c, req.actor.id, 'tenant.form.configure', req.actor.tenantId, {
         enabled: data.enabled,
         revision: result.revision,
+        questionKeys: result.fields.map((field: { key: string }) => field.key),
       });
       return result;
     });
@@ -277,7 +345,7 @@ export class TenantEnquiryPublicController {
     return this.db.tx(async (c) => {
       const active = (
         await c.query(
-          `SELECT t.id,f.revision
+          `SELECT t.id,f.revision,f.fields
            FROM tenant_domains d JOIN tenants t ON t.id=d.tenant_id
            JOIN tenant_form_settings f ON f.tenant_id=t.id
            WHERE d.hostname=$1 AND d.status='active'
@@ -302,6 +370,24 @@ export class TenantEnquiryPublicController {
       }
       if (active.revision !== v.revision)
         throw new UnprocessableEntityException('Form settings changed; reload before submitting');
+
+      const configured = tenantQuestionListSchema.parse(active.fields);
+      const answers = v.answers || {};
+      const expected = new Map(configured.map((field) => [field.key, field]));
+      for (const [key, value] of Object.entries(answers)) {
+        const field = expected.get(key);
+        if (!field)
+          throw new UnprocessableEntityException('Unknown enquiry question; reload the form');
+        const maxLength = field.kind === 'long_text' ? 1000 : 160;
+        if (value.length > maxLength)
+          throw new UnprocessableEntityException('Answer exceeds the allowed length');
+        if (field.kind === 'choice' && value && !field.options.includes(value))
+          throw new UnprocessableEntityException('Unrecognized choice; reload the form');
+      }
+      for (const field of configured) {
+        if (field.required && !answers[field.key]?.trim())
+          throw new UnprocessableEntityException('Please answer all required questions');
+      }
 
       const id = randomUUID();
       const eventId = randomUUID();

@@ -57,7 +57,7 @@ export class PublicContentController {
     if (tenant) {
       const form = (
         await this.db.query(
-          `SELECT title,notice,success,revision FROM tenant_form_settings
+          `SELECT title,notice,success,revision,fields FROM tenant_form_settings
            WHERE tenant_id=$1 AND enabled=true`,
           [tenant.id],
         )
