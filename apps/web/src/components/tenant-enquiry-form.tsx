@@ -3,7 +3,13 @@ import { FormEvent, useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/client';
 import type { TenantQuestion } from './tenant-questions';
 
-type Settings = { title: string; notice: string; success: string; revision: number; fields?: TenantQuestion[] };
+type Settings = {
+  title: string;
+  notice: string;
+  success: string;
+  revision: number;
+  fields?: TenantQuestion[];
+};
 export function TenantEnquiryForm({ config }: { config: Settings }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');

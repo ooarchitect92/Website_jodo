@@ -70,7 +70,12 @@ export function TenantFormBuilder({
             Required answer
           </label>
           <div className="admin-toolbar">
-            <button className="button outline" type="button" disabled={index === 0} onClick={() => move(index, -1)}>
+            <button
+              className="button outline"
+              type="button"
+              disabled={index === 0}
+              onClick={() => move(index, -1)}
+            >
               Move up
             </button>
             <button

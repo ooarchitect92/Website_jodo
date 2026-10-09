@@ -651,20 +651,16 @@ test('workspace membership context is explicit and tenant switching is membershi
     )
   ).rows[0];
   assert.deepEqual(historicalForm.definition.fields, []);
-  const rejectedStaleRevision = await call(
-    '/v1/forms/tenant/submissions',
-    'POST',
-    activePayload,
-    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
-  );
+  const rejectedStaleRevision = await call('/v1/forms/tenant/submissions', 'POST', activePayload, {
+    ...tenantOrigin,
+    'Idempotency-Key': randomUUID(),
+  });
   assert.equal(rejectedStaleRevision.r.status, 422);
   const nextPayload = { ...activePayload, revision: configuredForm.data.revision };
-  const missingRequired = await call(
-    '/v1/forms/tenant/submissions',
-    'POST',
-    nextPayload,
-    { ...tenantOrigin, 'Idempotency-Key': randomUUID() },
-  );
+  const missingRequired = await call('/v1/forms/tenant/submissions', 'POST', nextPayload, {
+    ...tenantOrigin,
+    'Idempotency-Key': randomUUID(),
+  });
   assert.equal(missingRequired.r.status, 422);
   const injectedAnswer = await call(
     '/v1/forms/tenant/submissions',
@@ -699,9 +695,10 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(encryptedCustom.form_revision, configuredForm.data.revision);
   assert.ok(!encryptedCustom.encrypted_fields.includes('Synthetic QA enquiry'));
   const customEnquiries = await call('/v1/admin/tenant/enquiries', 'GET', undefined, {}, true);
-  const customRow = customEnquiries.data.find((row: any) => row.receipt === validCustom.data.receipt);
+  const customRow = customEnquiries.data.find(
+    (row: any) => row.receipt === validCustom.data.receipt,
+  );
   assert.equal(customRow.fields.answers.preferred_campus, 'North');
-
 
   const publicPage = await call(
     '/v1/public/pages/by-path?path=' + encodeURIComponent(primaryPage.slug),
