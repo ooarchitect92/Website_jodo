@@ -92,9 +92,11 @@ test('suspended tenant retains read-only access for existing records', async () 
   assert.equal(await guard.canActivate(ctx as never), true);
 });
 
-test('only suspended institution status is reported read-only', () => {
-  assert.equal(isTenantReadOnly('suspended'), true);
-  for (const status of ['active', 'pilot', 'restricted', 'archived']) {
+test('restricted tenant states are read-only while onboarding remains editable', () => {
+  for (const status of ['restricted', 'suspended', 'offboarding', 'rejected']) {
+    assert.equal(isTenantReadOnly(status), true);
+  }
+  for (const status of ['active', 'pilot', 'live', 'profile_draft', 'needs_information']) {
     assert.equal(isTenantReadOnly(status), false);
   }
 });
@@ -122,4 +124,29 @@ test('suspended tenant still cannot mutate financial commands', async () => {
   );
   await assert.rejects(() => guard.canActivate(ctx as never), ForbiddenException);
   assert.deepEqual(auditActions, ['access.denied']);
+});
+
+test('restricted tenant cannot create payment instructions', async () => {
+  const { guard, ctx, auditActions } = fixture(
+    'owner',
+    'owner',
+    ['owner'],
+    'restricted',
+    'POST',
+    '/v1/admin/payments',
+  );
+  await assert.rejects(() => guard.canActivate(ctx as never), ForbiddenException);
+  assert.deepEqual(auditActions, ['access.denied']);
+});
+
+test('offboarding tenant can still switch to another authorised workspace', async () => {
+  const { guard, ctx } = fixture(
+    'owner',
+    'owner',
+    ['owner'],
+    'offboarding',
+    'POST',
+    '/v1/auth/switch-tenant',
+  );
+  assert.equal(await guard.canActivate(ctx as never), true);
 });
