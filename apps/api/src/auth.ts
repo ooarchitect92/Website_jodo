@@ -27,6 +27,7 @@ export interface Actor {
   role: string;
   tenantId: string;
   tenantName: string;
+  tenantStatus: string;
   tenantRole: string;
   sessionId: string;
   csrf: string;
@@ -73,6 +74,7 @@ export class AuthGuard implements CanActivate {
       role: row.role,
       tenantId: row.tenant_id,
       tenantName: row.tenant_name,
+      tenantStatus: row.tenant_status,
       tenantRole: row.tenant_role,
       sessionId: row.session_id,
       csrf,
@@ -211,6 +213,8 @@ export class AuthController {
       tenant: {
         id: req.actor.tenantId,
         name: req.actor.tenantName,
+        status: req.actor.tenantStatus,
+        readOnly: req.actor.tenantStatus === 'suspended',
         role: req.actor.tenantRole,
       },
       workspaces,
