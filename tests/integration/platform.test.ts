@@ -516,13 +516,7 @@ test('workspace membership context is explicit and tenant switching is membershi
   );
   assert.equal(foreignHistory.r.status, 404);
   // Protected CSV contains only this workspace's encrypted enquiries.
-  const scopedExport = await call(
-    '/v1/admin/tenant/enquiries/export',
-    'POST',
-    {},
-    {},
-    true,
-  );
+  const scopedExport = await call('/v1/admin/tenant/enquiries/export', 'POST', {}, {}, true);
   assert.ok(scopedExport.r.status >= 200 && scopedExport.r.status < 300);
   assert.match(String(scopedExport.r.headers.get('content-type')), /text\/csv/);
   assert.match(String(scopedExport.r.headers.get('cache-control')), /no-store/);
@@ -560,13 +554,7 @@ test('workspace membership context is explicit and tenant switching is membershi
   );
   assert.equal(back.r.status, 201, JSON.stringify(back.data));
   assert.equal(back.data.tenant.id, primaryTenantId);
-  const otherTenantExport = await call(
-    '/v1/admin/tenant/enquiries/export',
-    'POST',
-    {},
-    {},
-    true,
-  );
+  const otherTenantExport = await call('/v1/admin/tenant/enquiries/export', 'POST', {}, {}, true);
   assert.ok(otherTenantExport.r.status >= 200 && otherTenantExport.r.status < 300);
   assert.ok(!String(otherTenantExport.data).includes('QA Enquiry Visitor'));
 

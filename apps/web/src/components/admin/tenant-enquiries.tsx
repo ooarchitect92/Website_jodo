@@ -161,11 +161,7 @@ export function TenantEnquiries() {
           </div>
           <div className="admin-toolbar">
             {session.tenant.role === 'owner' && (
-              <button
-                className="button outline"
-                onClick={exportEnquiries}
-                disabled={busy}
-              >
+              <button className="button outline" onClick={exportEnquiries} disabled={busy}>
                 Export protected CSV
               </button>
             )}

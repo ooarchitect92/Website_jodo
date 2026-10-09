@@ -116,9 +116,7 @@ export class TenantEnquiriesAdminController {
     res.setHeader('Content-Disposition', 'attachment; filename="institution-enquiries.csv"');
     res.setHeader('Cache-Control', 'no-store, private');
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.send(
-      ['Receipt,Name,Email,Phone,Message,Stage,Received', ...cells].join('\r\n'),
-    );
+    res.send(['Receipt,Name,Email,Phone,Message,Stage,Received', ...cells].join('\r\n'));
   }
 
   @Post(':id/stage')
