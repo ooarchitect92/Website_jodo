@@ -167,7 +167,6 @@ test('workspace membership context is explicit and tenant switching is membershi
     '/v1/admin/privacy-requests',
     '/v1/admin/content',
     '/v1/admin/settings',
-    '/v1/admin/media',
   ]) {
     const denied = await call(route, 'GET', undefined, {}, true);
     assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
@@ -195,6 +194,10 @@ test('workspace membership context is explicit and tenant switching is membershi
   const isolatedExport = await call('/v1/admin/leads/export', 'POST', {}, {}, true);
   assert.equal(isolatedExport.r.status, 201);
   assert.ok(!String(isolatedExport.data).includes('Synthetic QA Institute'));
+
+  const isolatedMedia = await call('/v1/admin/media', 'GET', undefined, {}, true);
+  assert.equal(isolatedMedia.r.status, 200);
+  assert.deepEqual(isolatedMedia.data, []);
 
   // Record lookup is also tenant-protected, not just the collection index.
   const deniedDetail = await call('/v1/admin/content/' + randomUUID(), 'GET', undefined, {}, true);
