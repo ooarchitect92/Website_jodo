@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '../../apps/api/src/auth';
 
-function fixture(accountRole: string, membershipRole: string, allowed: string[]) {
+function fixture(accountRole: string, membershipRole: string, allowed: string[], tenantStatus = 'active', method = 'GET', path = '/v1/admin/tenant') {
   const auditActions: string[] = [];
   const db = {
     query: async () => [
@@ -17,6 +17,7 @@ function fixture(accountRole: string, membershipRole: string, allowed: string[])
         tenant_id: 'tenant-id',
         tenant_name: 'Institution',
         tenant_role: membershipRole,
+      tenant_status: tenantStatus,
       },
     ],
     tx: async (fn: (client: object) => Promise<unknown>) => fn({}),
@@ -30,8 +31,9 @@ function fixture(accountRole: string, membershipRole: string, allowed: string[])
   const guard = new AuthGuard(db as never, reflector as never);
   const req = {
     cookies: { jodo_session: 'fake-session-token' },
-    method: 'GET',
-    route: { path: '/v1/admin/tenant' },
+    method,
+    path,
+    route: { path },
     headers: {},
   };
   const ctx = {
@@ -62,4 +64,17 @@ test('tenant analyst membership allows read-only analyst routes', async () => {
 test('custom tenant role does not acquire global owner rights', async () => {
   const { guard, ctx } = fixture('owner', 'finance_maker', ['owner']);
   await assert.rejects(() => guard.canActivate(ctx as never), ForbiddenException);
+});
+
+test('suspended tenant cannot mutate configuration even with an owner membership', async () => {
+  const { guard, ctx, auditActions } = fixture(
+    'owner', 'owner', ['owner'], 'suspended', 'POST', '/v1/admin/tenant/brand',
+  );
+  await assert.rejects(() => guard.canActivate(ctx as never), ForbiddenException);
+  assert.deepEqual(auditActions, ['access.denied']);
+});
+
+test('suspended tenant retains read-only access for existing records', async () => {
+  const { guard, ctx } = fixture('owner', 'owner', ['owner'], 'suspended');
+  assert.equal(await guard.canActivate(ctx as never), true);
 });
