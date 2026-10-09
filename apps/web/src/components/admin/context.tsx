@@ -24,10 +24,7 @@ export function useAdminApi() {
   return {
     session,
     request: async <T = any,>(path: string, method = 'GET', body?: unknown) => {
-      if (
-        session.tenant.readOnly &&
-        !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
-      ) {
+      if (session.tenant.readOnly && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
         throw new Error(
           'This institution is suspended. Changes are disabled; switch to an active workspace.',
         );
