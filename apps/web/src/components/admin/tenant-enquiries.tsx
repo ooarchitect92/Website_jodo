@@ -1,0 +1,255 @@
+'use client';
+import { FormEvent, useEffect, useState } from 'react';
+import { DataTable, useAdminApi } from './context';
+
+type FormConfig = {
+  enabled: boolean;
+  revision?: number;
+  title?: string;
+  notice?: string;
+  success?: string;
+};
+type Enquiry = {
+  id: string;
+  receipt: string;
+  stage: string;
+  version: number;
+  createdAt: string;
+  fields: {
+    name: string;
+    email: string;
+    phone: string;
+    message: string;
+  };
+};
+type History = {
+  id: string;
+  from: string;
+  to: string;
+  staff: string;
+  reason: string;
+  createdAt: string;
+};
+
+export function TenantEnquiries() {
+  const { request, session } = useAdminApi();
+  const [rows, setRows] = useState<Enquiry[]>([]);
+  const [config, setConfig] = useState<FormConfig>({ enabled: false });
+  const [selected, setSelected] = useState<Enquiry | null>(null);
+  const [history, setHistory] = useState<History[]>([]);
+  const [filter, setFilter] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    try {
+      const records = await request<Enquiry[]>('admin/tenant/enquiries');
+      setRows(records);
+      setSelected((current) => records.find((r) => r.id === current?.id) || null);
+      if (session.tenant.role === 'owner')
+        setConfig(await request<FormConfig>('admin/tenant/enquiry-form'));
+      setError('');
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  useEffect(() => {
+    setSelected(null);
+    setHistory([]);
+    void load();
+  }, [session.tenant.id]);
+
+  async function showHistory(row: Enquiry) {
+    setSelected(row);
+    try {
+      setHistory(await request<History[]>('admin/tenant/enquiries/' + row.id + '/history'));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function configure(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    const values = new FormData(event.currentTarget);
+    try {
+      const saved = await request<FormConfig>('admin/tenant/enquiry-form', 'POST', {
+        title: values.get('title'),
+        notice: values.get('notice'),
+        success: values.get('success'),
+        enabled: values.get('enabled') === 'on',
+      });
+      setConfig(saved);
+      setNotice('Institution enquiry settings saved. Changes take effect on the next public visit.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeStage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) return;
+    setBusy(true);
+    setError('');
+    const values = new FormData(event.currentTarget);
+    try {
+      await request('admin/tenant/enquiries/' + selected.id + '/stage', 'POST', {
+        stage: values.get('stage'),
+        expectedVersion: selected.version,
+        reason: values.get('reason'),
+      });
+      setNotice('Enquiry stage saved with an audit record.');
+      await load();
+      await showHistory({ ...selected, version: selected.version + 1 });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const stageChoices: Record<string, string[]> = {
+    new: ['contacted', 'closed', 'spam'],
+    contacted: ['qualified', 'closed', 'spam'],
+    qualified: ['contacted', 'closed'],
+    closed: ['contacted'],
+    spam: ['new'],
+  };
+  const shown = rows.filter((row) =>
+    (row.receipt + ' ' + row.fields.name + ' ' + row.fields.email)
+      .toLowerCase()
+      .includes(filter.toLowerCase()),
+  );
+  return (
+    <>
+      <section className="admin-panel">
+        <div className="admin-toolbar">
+          <div>
+            <h2>Institution enquiry inbox</h2>
+            <p>Only this institution's accepted enquiries are shown. No external reply is sent.</p>
+          </div>
+          <button className="button outline" onClick={load}>
+            Refresh
+          </button>
+        </div>
+        <label className="field">
+          Search this institution's enquiries
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Receipt, name or email"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="error-card">
+            {error}
+          </p>
+        )}
+        {notice && (
+          <p role="status" className="admin-feedback">
+            {notice}
+          </p>
+        )}
+        <DataTable
+          rows={shown.map((r) => ({
+            ...r,
+            name: r.fields.name,
+            email: r.fields.email,
+          }))}
+          columns={[
+            ['receipt', 'Receipt'],
+            ['name', 'Name'],
+            ['email', 'Email'],
+            ['stage', 'Stage'],
+            ['createdAt', 'Received'],
+          ]}
+          actions={(row) => (
+            <button onClick={() => showHistory(row as Enquiry)}>Review</button>
+          )}
+        />
+      </section>
+      {selected && (
+        <section className="admin-panel">
+          <h2>Review {selected.receipt}</h2>
+          <p>
+            <strong>{selected.fields.name}</strong> · {selected.fields.email} ·{' '}
+            {selected.fields.phone}
+          </p>
+          <p>{selected.fields.message}</p>
+          <form onSubmit={changeStage}>
+            <label className="field">
+              Next stage
+              <select name="stage" required>
+                {(stageChoices[selected.stage] || []).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Internal reason (encrypted)
+              <textarea name="reason" minLength={3} maxLength={500} required />
+            </label>
+            <button className="button primary" disabled={busy || session.tenant.readOnly}>
+              {busy ? 'Saving…' : 'Record stage change'}
+            </button>
+          </form>
+          <h3>Review history</h3>
+          {history.length === 0 && <p>No stage changes recorded yet.</p>}
+          {history.map((entry) => (
+            <p key={entry.id}>
+              {entry.from} → {entry.to} · {entry.staff} · {entry.reason}
+            </p>
+          ))}
+        </section>
+      )}
+      {session.tenant.role === 'owner' && (
+        <section className="admin-panel">
+          <h2>Public enquiry form controls</h2>
+          <p>
+            Enabling requires an active institution website. Submissions remain within this
+            institution; WhatsApp, SMS and email are not activated by this setting.
+          </p>
+          <form key={String(config.revision || 0)} onSubmit={configure}>
+            <label className="field">
+              Form title
+              <input name="title" defaultValue={config.title || ''} minLength={3} maxLength={120} required />
+            </label>
+            <label className="field">
+              Visitor privacy notice
+              <textarea
+                name="notice"
+                defaultValue={config.notice || ''}
+                minLength={30}
+                maxLength={1000}
+                required
+              />
+            </label>
+            <label className="field">
+              Confirmation text
+              <input
+                name="success"
+                defaultValue={config.success || ''}
+                minLength={5}
+                maxLength={240}
+                required
+              />
+            </label>
+            <label className="checkbox-row">
+              <input name="enabled" type="checkbox" defaultChecked={config.enabled} />
+              Enable public enquiry capture
+            </label>
+            <button className="button primary" disabled={busy || session.tenant.readOnly}>
+              Save form controls
+            </button>
+          </form>
+        </section>
+      )}
+    </>
+  );
+}

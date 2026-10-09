@@ -7,6 +7,7 @@ import {
   Headers,
   Inject,
   NotFoundException,
+  Param,
   Post,
   Req,
   UseGuards,
@@ -18,6 +19,7 @@ import { z } from 'zod';
 import { Db } from './db';
 import { AuthGuard, AuthedRequest, Roles } from './auth';
 import { decrypt, encrypt, keyed } from '../../../packages/core/src/security';
+import { uuid } from './content';
 
 const domainSchema = z
   .string()
@@ -68,6 +70,91 @@ export class TenantEnquiriesAdminController {
       version: r.version,
       createdAt: r.created_at,
       fields: decrypt(r.encrypted_fields),
+    }));
+  }
+
+  @Post(':id/stage')
+  async stage(
+    @Param('id') id: string,
+    @Body() body: unknown,
+    @Req() req: AuthedRequest,
+  ) {
+    const v = z
+      .object({
+        stage: z.enum(['new', 'contacted', 'qualified', 'closed', 'spam']),
+        expectedVersion: z.number().int().positive(),
+        reason: z.string().trim().min(3).max(500),
+      })
+      .strict()
+      .parse(body);
+    return this.db.tx(async (c) => {
+      const row = (
+        await c.query(
+          'SELECT id,stage,version FROM tenant_enquiries WHERE id=$1 AND tenant_id=$2 FOR UPDATE',
+          [uuid(id), req.actor.tenantId],
+        )
+      ).rows[0];
+      if (!row || row.version !== v.expectedVersion)
+        throw new ConflictException('Enquiry changed; reload before updating');
+      const allowed: Record<string, string[]> = {
+        new: ['contacted', 'closed', 'spam'],
+        contacted: ['qualified', 'closed', 'spam'],
+        qualified: ['contacted', 'closed'],
+        closed: ['contacted'],
+        spam: ['new'],
+      };
+      if (!allowed[row.stage]?.includes(v.stage))
+        throw new ConflictException('That enquiry transition is not allowed');
+      const updated = (
+        await c.query(
+          'UPDATE tenant_enquiries SET stage=$3,version=version+1,updated_at=now() WHERE id=$1 AND tenant_id=$2 RETURNING version',
+          [row.id, req.actor.tenantId, v.stage],
+        )
+      ).rows[0];
+      await c.query(
+        `INSERT INTO tenant_enquiry_activities(
+          enquiry_id,tenant_id,actor_id,from_stage,to_stage,encrypted_reason
+        ) VALUES($1,$2,$3,$4,$5,$6)`,
+        [row.id, req.actor.tenantId, req.actor.id, row.stage, v.stage, encrypt(v.reason)],
+      );
+      await this.db.audit(c, req.actor.id, 'tenant.enquiry.stage', row.id, {
+        tenantId: req.actor.tenantId,
+        from: row.stage,
+        to: v.stage,
+      });
+      return { status: 'updated', stage: v.stage, version: updated.version };
+    });
+  }
+
+  @Get(':id/history')
+  async history(@Param('id') id: string, @Req() req: AuthedRequest) {
+    const rows = await this.db.query(
+      `SELECT a.id,a.from_stage,a.to_stage,a.encrypted_reason,a.created_at,u.email
+       FROM tenant_enquiry_activities a
+       JOIN users u ON u.id=a.actor_id
+       JOIN tenant_enquiries e ON e.id=a.enquiry_id AND e.tenant_id=a.tenant_id
+       WHERE a.enquiry_id=$1 AND a.tenant_id=$2
+       ORDER BY a.created_at ASC,a.id ASC LIMIT 200`,
+      [uuid(id), req.actor.tenantId],
+    );
+    // Keep the same response for missing and foreign-tenant enquiries.
+    const exists = await this.db.query(
+      'SELECT id FROM tenant_enquiries WHERE id=$1 AND tenant_id=$2',
+      [uuid(id), req.actor.tenantId],
+    );
+    if (!exists.length) throw new NotFoundException('Enquiry not found');
+    await this.db.tx((c) =>
+      this.db.audit(c, req.actor.id, 'tenant.enquiry.history.read', id, {
+        tenantId: req.actor.tenantId,
+      }),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      from: r.from_stage,
+      to: r.to_stage,
+      reason: decrypt<string>(r.encrypted_reason),
+      staff: r.email,
+      createdAt: r.created_at,
     }));
   }
 }

@@ -459,6 +459,62 @@ test('workspace membership context is explicit and tenant switching is membershi
   ).rows[0];
   assert.equal(encrypted.tenant_id, secondaryTenantId);
   assert.ok(!encrypted.encrypted_fields.includes(activePayload.name));
+  // The intake lifecycle uses tenant-scoped optimistic locking and encrypted staff notes.
+  const recordId = tenantEnquiries.data[0].id;
+  const reviewed = await call(
+    '/v1/admin/tenant/enquiries/' + recordId + '/stage',
+    'POST',
+    { stage: 'contacted', expectedVersion: 1, reason: 'Called from synthetic QA queue' },
+    {},
+    true,
+  );
+  assert.equal(reviewed.r.status, 201, JSON.stringify(reviewed.data));
+  assert.equal(reviewed.data.version, 2);
+  const stale = await call(
+    '/v1/admin/tenant/enquiries/' + recordId + '/stage',
+    'POST',
+    { stage: 'qualified', expectedVersion: 1, reason: 'Must reject stale update' },
+    {},
+    true,
+  );
+  assert.equal(stale.r.status, 409);
+  const invalidMove = await call(
+    '/v1/admin/tenant/enquiries/' + recordId + '/stage',
+    'POST',
+    { stage: 'new', expectedVersion: 2, reason: 'Unapproved backward transition' },
+    {},
+    true,
+  );
+  assert.equal(invalidMove.r.status, 409);
+  const changed = await call('/v1/admin/tenant/enquiries', 'GET', undefined, {}, true);
+  assert.equal(changed.data[0].stage, 'contacted');
+  assert.equal(changed.data[0].version, 2);
+  const recordHistory = await call(
+    '/v1/admin/tenant/enquiries/' + recordId + '/history',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(recordHistory.r.status, 200);
+  assert.equal(recordHistory.data.length, 1);
+  assert.equal(recordHistory.data[0].reason, 'Called from synthetic QA queue');
+  const storedNote = (
+    await owner.query(
+      'SELECT encrypted_reason,tenant_id FROM tenant_enquiry_activities WHERE enquiry_id=$1',
+      [recordId],
+    )
+  ).rows[0];
+  assert.equal(storedNote.tenant_id, secondaryTenantId);
+  assert.ok(!storedNote.encrypted_reason.includes('synthetic QA queue'));
+  const foreignHistory = await call(
+    '/v1/admin/tenant/enquiries/' + randomUUID() + '/history',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(foreignHistory.r.status, 404);
   const reviewTasks = await call('/v1/admin/tasks', 'GET', undefined, {}, true);
   assert.ok(reviewTasks.data.some((task: any) => task.title.includes(accepted.data.receipt)));
 
@@ -489,6 +545,24 @@ test('workspace membership context is explicit and tenant switching is membershi
   );
   assert.equal(back.r.status, 201, JSON.stringify(back.data));
   assert.equal(back.data.tenant.id, primaryTenantId);
+  // The original institution cannot read or modify the secondary institution's review.
+  const foreignTenantHistory = await call(
+    '/v1/admin/tenant/enquiries/' + recordId + '/history',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(foreignTenantHistory.r.status, 404);
+  const foreignTenantChange = await call(
+    '/v1/admin/tenant/enquiries/' + recordId + '/stage',
+    'POST',
+    { stage: 'qualified', expectedVersion: 2, reason: 'Cross-tenant attempt' },
+    {},
+    true,
+  );
+  assert.equal(foreignTenantChange.r.status, 409);
+
 });
 
 test('tenant organisation, brand and maker-checker role controls are functional', async () => {

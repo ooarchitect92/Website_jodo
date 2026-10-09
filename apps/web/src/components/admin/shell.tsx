@@ -6,6 +6,7 @@ import { AdminContext, Session } from './context';
 import { canViewAdminArea, safeAdminArea } from './access';
 import { ContentList } from './content-list';
 import { Leads } from './leads';
+import { TenantEnquiries } from './tenant-enquiries';
 import { Workflows } from './workflows';
 import { Dashboard, Campaigns, Media, Settings, Records } from './panels';
 import { FeeOperations } from './fees';
@@ -16,6 +17,7 @@ const sections = [
   ['overview', 'Overview'],
   ['content', 'Content & publishing'],
   ['leads', 'Leads'],
+  ['enquiries', 'Institution enquiries'],
   ['fees', 'Fee operations'],
   ['fee-plans', 'Fee plans & receivables'],
   ['academic', 'Students & academic'],
@@ -166,6 +168,8 @@ export function AdminShell() {
         return <ContentList />;
       case 'leads':
         return <Leads />;
+      case 'enquiries':
+        return <TenantEnquiries />;
       case 'campaigns':
         return <Campaigns />;
       case 'workflows':
