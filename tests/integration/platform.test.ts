@@ -25,7 +25,8 @@ let app: any,
   consentCookie = '',
   chatCookie = '',
   primaryTenantId = '',
-  secondaryTenantId = '';
+  secondaryTenantId = '',
+  secondaryWorkflowId = '';
 const input = {
   name: 'Synthetic Visitor',
   email: 'synthetic@example.invalid',
@@ -153,15 +154,11 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === primaryTenantId));
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === second.id));
 
-  // Legacy administrative operations remain restricted until their records
-  // and background jobs are tenant-owned.
+  // Remaining legacy administration stays gated until tenant-scoped.
   for (const route of [
     '/v1/admin/overview',
-    '/v1/admin/tasks',
     '/v1/admin/audit',
     '/v1/admin/outbox',
-    '/v1/admin/workflows',
-    '/v1/admin/workflows/runs',
     '/v1/admin/conversations',
     '/v1/admin/privacy-requests',
     '/v1/admin/settings',
@@ -169,6 +166,56 @@ test('workspace membership context is explicit and tenant switching is membershi
     const denied = await call(route, 'GET', undefined, {}, true);
     assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
   }
+  // Tenant ownership applies to workflow definitions and follow-up tasks.
+  const emptyWorkflows = await call('/v1/admin/workflows', 'GET', undefined, {}, true);
+  assert.equal(emptyWorkflows.r.status, 200);
+  assert.deepEqual(emptyWorkflows.data, []);
+  const emptyTasks = await call('/v1/admin/tasks', 'GET', undefined, {}, true);
+  assert.equal(emptyTasks.r.status, 200);
+  assert.deepEqual(emptyTasks.data, []);
+  const emptyRuns = await call('/v1/admin/workflows/runs', 'GET', undefined, {}, true);
+  assert.equal(emptyRuns.r.status, 200);
+  assert.deepEqual(emptyRuns.data, []);
+  const primaryWorkflow = (
+    await owner.query(
+      'INSERT INTO workflows(definition,created_by,tenant_id) VALUES($1,$2,$3) RETURNING id',
+      [
+        { name: 'Primary-only workflow', nodes: [{ type: 'task', title: 'Primary only' }] },
+        user.id,
+        primaryTenantId,
+      ],
+    )
+  ).rows[0];
+  const deniedToggle = await call(
+    '/v1/admin/workflows/' + primaryWorkflow.id,
+    'PATCH',
+    { active: true, expectedVersion: 1 },
+    {},
+    true,
+  );
+  assert.equal(deniedToggle.r.status, 409);
+  const secondaryWorkflow = await call(
+    '/v1/admin/workflows',
+    'POST',
+    { name: 'Secondary follow-up', nodes: [{ type: 'task', title: 'Secondary only' }] },
+    {},
+    true,
+  );
+  assert.equal(secondaryWorkflow.r.status, 201, JSON.stringify(secondaryWorkflow.data));
+  assert.equal(secondaryWorkflow.data.tenant_id, secondaryTenantId);
+  secondaryWorkflowId = secondaryWorkflow.data.id;
+  const activated = await call(
+    '/v1/admin/workflows/' + secondaryWorkflowId,
+    'PATCH',
+    { active: true, expectedVersion: 1 },
+    {},
+    true,
+  );
+  assert.equal(activated.r.status, 200);
+  const tenantWorkflows = await call('/v1/admin/workflows', 'GET', undefined, {}, true);
+  assert.equal(tenantWorkflows.data.length, 1);
+  assert.equal(tenantWorkflows.data[0].id, secondaryWorkflowId);
+
   // Campaign URLs and reads must never cross tenant boundaries.
   const primaryCampaign = (
     await owner.query(
@@ -300,12 +347,8 @@ test('workspace membership context is explicit and tenant switching is membershi
   const deniedExport = await call('/v1/admin/content-export', 'POST', {}, {}, true);
   assert.equal(deniedExport.r.status, 403);
 
-  // A second workspace must not modify legacy tasks or workflow state.
-  // These fail-closed checks happen before business payload validation.
+  // Shared outbox and global branding mutations remain fail-closed.
   for (const [route, method, payload] of [
-    ['/v1/admin/tasks/' + randomUUID() + '/complete', 'POST', {}],
-    ['/v1/admin/workflows', 'POST', {}],
-    ['/v1/admin/workflows/' + randomUUID(), 'PATCH', {}],
     ['/v1/admin/outbox/' + randomUUID() + '/retry', 'POST', {}],
     ['/v1/admin/settings/brand', 'PATCH', {}],
   ] as const) {
@@ -543,6 +586,36 @@ test('worker retries cannot duplicate follow-up tasks', async () => {
     'blocked',
   );
 });
+test('background workflow enrollment rejects cross-institution lead references', async () => {
+  assert.ok(secondaryWorkflowId);
+  assert.ok(leadId);
+  await tick(db);
+  const foreignRuns = await db.query(
+    'SELECT id FROM workflow_runs WHERE workflow_id=$1',
+    [secondaryWorkflowId],
+  );
+  assert.deepEqual(foreignRuns, []);
+  await assert.rejects(
+    owner.query(
+      'INSERT INTO workflow_runs(workflow_id,lead_id,definition,tenant_id) VALUES($1,$2,$3,$4)',
+      [
+        secondaryWorkflowId,
+        leadId,
+        { name: 'Wrong tenant', nodes: [{ type: 'task', title: 'Must reject' }] },
+        secondaryTenantId,
+      ],
+    ),
+    (error: any) => error.code === '23503',
+  );
+  await assert.rejects(
+    owner.query(
+      'INSERT INTO tasks(lead_id,title,execution_key,tenant_id) VALUES($1,$2,$3,$4)',
+      [leadId, 'Forbidden task', 'qa-cross-tenant-' + randomUUID(), secondaryTenantId],
+    ),
+    (error: any) => error.code === '23503',
+  );
+});
+
 test('expired worker lease is recovered', async () => {
   await db.query(
     "UPDATE outbox SET status='processing',lease_until=now()-interval '1 minute' WHERE event_id=$1",
