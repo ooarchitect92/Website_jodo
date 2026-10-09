@@ -82,12 +82,14 @@ export class AuthGuard implements CanActivate {
     };
     // A suspended institution may inspect existing records, but it may not
     // issue new financial or configuration instructions until reinstated.
-    // The logout route is retained for safe session termination.
+    // Logout and switching to another authorised workspace remain available
+    // so a suspended institution cannot trap the user in that workspace.
     const path = String(req.path || req.route?.path || '');
     if (
       row.tenant_status === 'suspended' &&
       !['GET', 'HEAD', 'OPTIONS'].includes(req.method) &&
-      path !== '/v1/auth/logout'
+      path !== '/v1/auth/logout' &&
+      path !== '/v1/auth/switch-tenant'
     ) {
       await this.db.tx((c) =>
         this.db.audit(c, row.id, 'access.denied', path, { reason: 'tenant_suspended' }),
@@ -272,6 +274,7 @@ export class AuthController {
         name: membership.display_name,
         role: membership.role_key,
         status: membership.status,
+        readOnly: isTenantReadOnly(membership.status),
       },
     };
   }
