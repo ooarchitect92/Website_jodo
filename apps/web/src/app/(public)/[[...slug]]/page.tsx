@@ -191,7 +191,7 @@ export default async function Page({ params, searchParams }: Props) {
         blocks={p.body.blocks}
         entries={all}
         allowLeadCapture={!config.tenantSite}
-        tenantForm={config.settings.form}
+        tenantForm={config.tenantSite ? config.settings.form : null}
       />
       {path === '/privacy-policy/' && !config.tenantSite && <PrivacyRequest />}
       {path === '/login/' && !config.tenantSite && (
