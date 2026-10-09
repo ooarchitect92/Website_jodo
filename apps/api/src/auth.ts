@@ -34,6 +34,7 @@ export interface Actor {
 }
 export type AuthedRequest = Request & { actor: Actor };
 export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
+export const isTenantReadOnly = (status: string) => status === 'suspended';
 export const secureCookie = () => ({
   httpOnly: true,
   secure: process.env.DEPLOYMENT_MODE === 'production',
@@ -185,14 +186,14 @@ export class AuthController {
         name: activeMembership.display_name,
         role: activeMembership.role_key,
         status: activeMembership.status,
-        readOnly: activeMembership.status === 'suspended',
+        readOnly: isTenantReadOnly(activeMembership.status),
       },
       workspaces: memberships.map((m) => ({
         id: m.tenant_id,
         name: m.display_name,
         role: m.role_key,
         status: m.status,
-        readOnly: m.status === 'suspended',
+        readOnly: isTenantReadOnly(m.status),
       })),
       csrf,
     };
@@ -216,12 +217,12 @@ export class AuthController {
         id: req.actor.tenantId,
         name: req.actor.tenantName,
         status: req.actor.tenantStatus,
-        readOnly: req.actor.tenantStatus === 'suspended',
+        readOnly: isTenantReadOnly(req.actor.tenantStatus),
         role: req.actor.tenantRole,
       },
       workspaces: workspaces.map((m) => ({
         ...m,
-        readOnly: m.status === 'suspended',
+        readOnly: isTenantReadOnly(m.status),
       })),
       csrf: req.actor.csrf,
     };
