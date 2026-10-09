@@ -367,12 +367,11 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(scopedPages.r.status, 200);
   assert.equal(scopedPages.data.length, 1);
   assert.equal(scopedPages.data[0].id, secondaryPage.data.id);
-  const scopedPath = await call(
-    '/v1/public/pages/by-path?path=' +
-      encodeURIComponent(primaryPage.slug) +
-      '&hostname=' +
-      tenantHostname,
-  );
+  const scopedPathQuery = new URLSearchParams({
+    path: primaryPage.slug,
+    hostname: tenantHostname,
+  });
+  const scopedPath = await call('/v1/public/pages/by-path?' + scopedPathQuery);
   assert.equal(scopedPath.r.status, 200);
   assert.equal(scopedPath.data.id, secondaryPage.data.id);
   const unknownDomain = await call('/v1/public/pages?hostname=unregistered.example.test');

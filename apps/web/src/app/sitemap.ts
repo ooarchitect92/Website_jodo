@@ -6,5 +6,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!config.indexing) return [];
   return (await pages())
     .filter((p) => p.body.indexable)
-    .map((p) => ({ url: new URL(p.slug, config.canonicalOrigin || baseUrl()).toString(), lastModified: p.modifiedAt }));
+    .map((p) => ({
+      url: new URL(p.slug, config.canonicalOrigin || baseUrl()).toString(),
+      lastModified: p.modifiedAt,
+    }));
 }

@@ -36,11 +36,9 @@ export class PublicContentController {
   // Missing hostname preserves the original public website and all existing URLs.
   private async tenantFor(hostname?: string) {
     if (!hostname) return null;
-    const parsed = z
-      .string()
-      .regex(/^(?=.{4,253}$)[a-z0-9-]+(?:\\.[a-z0-9-]+)+$/)
-      .safeParse(hostname);
-    if (!parsed.success) throw new NotFoundException('Website domain not found');
+    const validDomain = /^[a-z0-9-]+(?:[.][a-z0-9-]+)+$/.test(hostname);
+    if (!validDomain || hostname.length < 4 || hostname.length > 253)
+      throw new NotFoundException('Website domain not found');
     const tenant = (
       await this.db.query(
         `SELECT t.id,t.display_name,d.hostname
@@ -95,10 +93,7 @@ export class PublicContentController {
     };
   }
 
-  @Get('pages') async pages(
-    @Query('kind') kind?: string,
-    @Query('hostname') hostname?: string,
-  ) {
+  @Get('pages') async pages(@Query('kind') kind?: string, @Query('hostname') hostname?: string) {
     if (kind) z.enum(['page', 'post', 'case']).parse(kind);
     const tenant = await this.tenantFor(hostname);
     const rows = await this.db.query(
