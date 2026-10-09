@@ -261,7 +261,7 @@ export function AdminShell() {
           {session.tenant.readOnly && (
             <div role="status" className="admin-notice">
               <strong>Read-only institution.</strong>
-              <p>This workspace is suspended. Existing records remain available for review.</p>
+              <p>This workspace is restricted. Existing records remain available for review.</p>
               <p>Changes are blocked. Switch to another active institution if you have access.</p>
             </div>
           )}
