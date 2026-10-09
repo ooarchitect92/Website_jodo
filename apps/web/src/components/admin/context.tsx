@@ -4,7 +4,13 @@ import { api } from '@/lib/client';
 export type Session = {
   user: { id: string; email: string; role: string };
   tenant: { id: string; name: string; role: string; status?: string; readOnly?: boolean };
-  workspaces: Array<{ id: string; name: string; role: string; status?: string; readOnly?: boolean }>;
+  workspaces: Array<{
+    id: string;
+    name: string;
+    role: string;
+    status?: string;
+    readOnly?: boolean;
+  }>;
   csrf: string;
 };
 export const AdminContext = createContext<Session>({
@@ -18,7 +24,10 @@ export function useAdminApi() {
   return {
     session,
     request: async <T = any,>(path: string, method = 'GET', body?: unknown) => {
-      if (session.tenant.readOnly && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
+      if (
+        session.tenant.readOnly &&
+        !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
+      ) {
         throw new Error(
           'This institution is suspended. Changes are disabled; switch to an active workspace.',
         );
