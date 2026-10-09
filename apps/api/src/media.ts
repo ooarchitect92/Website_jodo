@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
   Inject,
   Param,
@@ -26,15 +25,6 @@ import { digest } from '../../../packages/core/src/security';
 @Controller('v1')
 export class MediaController {
   constructor(@Inject(Db) private db: Db) {}
-  private async requireLegacyWorkspace(req: AuthedRequest) {
-    const workspace = await this.db.query(
-      "SELECT id FROM tenants WHERE id=$1 AND slug='default' AND status<>'archived'",
-      [req.actor.tenantId],
-    );
-    if (!workspace.length) {
-      throw new ForbiddenException('Media management is unavailable outside the legacy workspace');
-    }
-  }
   @Get('media/:filename') async serve(@Param('filename') name: string, @Res() res: Response) {
     if (!/^[a-f0-9-]{36}\.webp$/.test(name))
       throw new UnprocessableEntityException('Invalid media reference');
@@ -46,8 +36,10 @@ export class MediaController {
   @UseGuards(AuthGuard)
   @Roles('owner', 'editor')
   async list(@Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
-    return this.db.query('SELECT * FROM media ORDER BY created_at DESC LIMIT 200');
+    return this.db.query(
+      'SELECT * FROM media WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200',
+      [req.actor.tenantId],
+    );
   }
   @Post('admin/media')
   @UseGuards(AuthGuard)
@@ -60,7 +52,6 @@ export class MediaController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
-    await this.requireLegacyWorkspace(req);
     const v = z
       .object({ alt: z.string().min(3).max(200), rights: z.string().min(5).max(300) })
       .strict()
@@ -88,8 +79,8 @@ export class MediaController {
     try {
       return await this.db.tx(async (c) => {
         await c.query(
-          'INSERT INTO media(id,path,alt,rights,checksum,created_by) VALUES($1,$2,$3,$4,$5,$6)',
-          [id, path, v.alt, v.rights, digest(bytes.toString('base64')), req.actor.id],
+          'INSERT INTO media(id,path,alt,rights,checksum,created_by,tenant_id) VALUES($1,$2,$3,$4,$5,$6,$7)',
+          [id, path, v.alt, v.rights, digest(bytes.toString('base64')), req.actor.id, req.actor.tenantId],
         );
         await this.db.audit(c, req.actor.id, 'media.create', id);
         return { id, path, alt: v.alt };
