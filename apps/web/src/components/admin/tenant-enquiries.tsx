@@ -1,6 +1,8 @@
 'use client';
 import { FormEvent, useEffect, useState } from 'react';
 import { DataTable, useAdminApi } from './context';
+import { TenantFormBuilder } from '../tenant-form-builder';
+import type { TenantQuestion } from '../tenant-questions';
 
 type FormConfig = {
   enabled: boolean;
@@ -8,6 +10,7 @@ type FormConfig = {
   title?: string;
   notice?: string;
   success?: string;
+  fields?: TenantQuestion[];
 };
 type Enquiry = {
   id: string;
@@ -20,6 +23,7 @@ type Enquiry = {
     email: string;
     phone: string;
     message: string;
+    answers?: Record<string, string>;
   };
 };
 type History = {
@@ -35,6 +39,7 @@ export function TenantEnquiries() {
   const { request, session } = useAdminApi();
   const [rows, setRows] = useState<Enquiry[]>([]);
   const [config, setConfig] = useState<FormConfig>({ enabled: false });
+  const [questions, setQuestions] = useState<TenantQuestion[]>([]);
   const [selected, setSelected] = useState<Enquiry | null>(null);
   const [history, setHistory] = useState<History[]>([]);
   const [filter, setFilter] = useState('');
@@ -47,8 +52,11 @@ export function TenantEnquiries() {
       const records = await request<Enquiry[]>('admin/tenant/enquiries');
       setRows(records);
       setSelected((current) => records.find((r) => r.id === current?.id) || null);
-      if (session.tenant.role === 'owner')
-        setConfig(await request<FormConfig>('admin/tenant/enquiry-form'));
+      if (session.tenant.role === 'owner') {
+        const saved = await request<FormConfig>('admin/tenant/enquiry-form');
+        setConfig(saved);
+        setQuestions(saved.fields || []);
+      }
       setError('');
     } catch (e) {
       setError((e as Error).message);
@@ -105,8 +113,11 @@ export function TenantEnquiries() {
         notice: values.get('notice'),
         success: values.get('success'),
         enabled: values.get('enabled') === 'on',
+        fields: questions,
+        expectedRevision: config.revision,
       });
       setConfig(saved);
+      setQuestions(saved.fields || []);
       setNotice(
         'Institution enquiry settings saved. Changes take effect on the next public visit.',
       );
@@ -212,6 +223,11 @@ export function TenantEnquiries() {
             {selected.fields.phone}
           </p>
           <p>{selected.fields.message}</p>
+          {Object.entries(selected.fields.answers || {}).map(([key, value]) => (
+            <p key={key}>
+              <strong>{key}:</strong> {value}
+            </p>
+          ))}
           <form onSubmit={changeStage}>
             <label className="field">
               Next stage
@@ -282,6 +298,7 @@ export function TenantEnquiries() {
               <input name="enabled" type="checkbox" defaultChecked={config.enabled} />
               Enable public enquiry capture
             </label>
+            <TenantFormBuilder fields={questions} onChange={setQuestions} />
             <button className="button primary" disabled={busy || session.tenant.readOnly}>
               Save form controls
             </button>

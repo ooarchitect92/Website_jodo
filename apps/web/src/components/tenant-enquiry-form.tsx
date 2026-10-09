@@ -1,8 +1,9 @@
 'use client';
 import { FormEvent, useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/client';
+import type { TenantQuestion } from './tenant-questions';
 
-type Settings = { title: string; notice: string; success: string; revision: number };
+type Settings = { title: string; notice: string; success: string; revision: number; fields?: TenantQuestion[] };
 export function TenantEnquiryForm({ config }: { config: Settings }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +25,9 @@ export function TenantEnquiryForm({ config }: { config: Settings }) {
       message: String(data.get('message') || ''),
       noticeAccepted: data.get('notice') === 'on',
       website: String(data.get('website') || ''),
+      answers: Object.fromEntries(
+        (config.fields || []).map((field) => [field.key, String(data.get(field.key) || '')]),
+      ),
     };
     const serialized = JSON.stringify(payload);
     if (previous.current && previous.current !== serialized) {
@@ -85,6 +89,25 @@ export function TenantEnquiryForm({ config }: { config: Settings }) {
         <span>Your enquiry</span>
         <textarea name="message" required minLength={5} maxLength={1500} rows={4} />
       </label>
+      {(config.fields || []).map((field) => (
+        <label className="field" key={field.key}>
+          <span>{field.label}</span>
+          {field.kind === 'long_text' ? (
+            <textarea name={field.key} maxLength={1000} rows={4} required={field.required} />
+          ) : field.kind === 'choice' ? (
+            <select name={field.key} required={field.required} defaultValue="">
+              <option value="">Choose an option</option>
+              {field.options.map((choice) => (
+                <option key={choice} value={choice}>
+                  {choice}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input name={field.key} maxLength={160} required={field.required} />
+          )}
+        </label>
+      ))}
       <div className="honey" aria-hidden="true">
         <input name="website" tabIndex={-1} autoComplete="off" aria-label="Leave blank" />
       </div>
