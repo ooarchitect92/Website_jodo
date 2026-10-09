@@ -80,7 +80,15 @@ export class MediaController {
       return await this.db.tx(async (c) => {
         await c.query(
           'INSERT INTO media(id,path,alt,rights,checksum,created_by,tenant_id) VALUES($1,$2,$3,$4,$5,$6,$7)',
-          [id, path, v.alt, v.rights, digest(bytes.toString('base64')), req.actor.id, req.actor.tenantId],
+          [
+            id,
+            path,
+            v.alt,
+            v.rights,
+            digest(bytes.toString('base64')),
+            req.actor.id,
+            req.actor.tenantId,
+          ],
         );
         await this.db.audit(c, req.actor.id, 'media.create', id);
         return { id, path, alt: v.alt };
