@@ -14,7 +14,9 @@ export function TenantFormBuilder({
     const target = index + delta;
     if (target < 0 || target >= fields.length) return;
     const next = [...fields];
-    [next[index], next[target]] = [next[target], next[index]];
+    const moving = next[index]!;
+    next[index] = next[target]!;
+    next[target] = moving;
     onChange(next);
   };
   return (
