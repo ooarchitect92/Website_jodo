@@ -8,7 +8,9 @@ if (process.env.NODE_ENV && process.env.NODE_ENV !== 'production')
 const isTrue = (key) => process.env[key] === 'true';
 const evidence = (key) => {
   const id = process.env[key]?.trim() || '';
-  return id.length >= 8 && !/^(change.?me|todo|pending|example|placeholder|not.?run|none|n\\/?a)$/i.test(id);
+  const normalized = id.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const placeholders = new Set(['changeme', 'todo', 'pending', 'example', 'placeholder', 'notrun', 'none', 'na']);
+  return id.length >= 8 && !placeholders.has(normalized);
 };
 const requiredTrue = ['SITE_APPROVED', 'PRODUCTION_RELEASE_APPROVED'];
 for (const key of requiredTrue) if (!isTrue(key)) missing.push(key + ' must be true after independent sign-off');
