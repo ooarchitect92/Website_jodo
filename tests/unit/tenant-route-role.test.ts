@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ForbiddenException } from '@nestjs/common';
-import { AuthGuard } from '../../apps/api/src/auth';
+import { AuthGuard, isTenantReadOnly } from '../../apps/api/src/auth';
 
 function fixture(
   accountRole: string,
@@ -89,4 +89,11 @@ test('suspended tenant cannot mutate configuration even with an owner membership
 test('suspended tenant retains read-only access for existing records', async () => {
   const { guard, ctx } = fixture('owner', 'owner', ['owner'], 'suspended');
   assert.equal(await guard.canActivate(ctx as never), true);
+});
+
+test('only suspended institution status is reported read-only', () => {
+  assert.equal(isTenantReadOnly('suspended'), true);
+  for (const status of ['active', 'pilot', 'restricted', 'archived']) {
+    assert.equal(isTenantReadOnly(status), false);
+  }
 });
