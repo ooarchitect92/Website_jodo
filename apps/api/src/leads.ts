@@ -150,7 +150,12 @@ export class LeadsController {
       .strict()
       .parse(body);
     return this.db.tx(async (c) => {
-      const row = (await c.query('SELECT * FROM leads WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [uuid(id), req.actor.tenantId])).rows[0];
+      const row = (
+        await c.query('SELECT * FROM leads WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [
+          uuid(id),
+          req.actor.tenantId,
+        ])
+      ).rows[0];
       if (!row || row.version !== v.expectedVersion)
         throw new ConflictException('Lead changed; reload');
       const allowed: Record<string, string[]> = {
@@ -163,11 +168,10 @@ export class LeadsController {
       };
       if (!allowed[row.stage]?.includes(v.stage))
         throw new ConflictException('That transition is not allowed');
-      await c.query('UPDATE leads SET stage=$2,version=version+1,updated_at=now() WHERE id=$1 AND tenant_id=$3', [
-        id,
-        v.stage,
-        req.actor.tenantId,
-      ]);
+      await c.query(
+        'UPDATE leads SET stage=$2,version=version+1,updated_at=now() WHERE id=$1 AND tenant_id=$3',
+        [id, v.stage, req.actor.tenantId],
+      );
       await c.query(
         'INSERT INTO lead_activities(lead_id,actor_id,type,encrypted_note) VALUES($1,$2,$3,$4)',
         [id, req.actor.id, 'stage.' + v.stage, encrypt(v.reason)],
