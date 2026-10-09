@@ -31,7 +31,58 @@ const publicRow = (r: Record<string, any>) => ({
 @Controller('v1/public')
 export class PublicContentController {
   constructor(@Inject(Db) private db: Db) {}
-  @Get('site') async site() {
+
+  // An optional hostname may select only an activated, launch-approved tenant.
+  // Missing hostname preserves the original public website and all existing URLs.
+  private async tenantFor(hostname?: string) {
+    if (!hostname) return null;
+    const parsed = z
+      .string()
+      .regex(/^(?=.{4,253}$)[a-z0-9-]+(?:\\.[a-z0-9-]+)+$/)
+      .safeParse(hostname);
+    if (!parsed.success) throw new NotFoundException('Website domain not found');
+    const tenant = (
+      await this.db.query(
+        `SELECT t.id,t.display_name,d.hostname
+         FROM tenant_domains d JOIN tenants t ON t.id=d.tenant_id
+         WHERE d.hostname=$1 AND d.status='active'
+           AND t.status IN('pilot','live')`,
+        [hostname],
+      )
+    )[0];
+    if (!tenant) throw new NotFoundException('Website domain not active');
+    return tenant;
+  }
+
+  @Get('site') async site(@Query('hostname') hostname?: string) {
+    const tenant = await this.tenantFor(hostname);
+    if (tenant) {
+      const brand = (
+        await this.db.query(
+          `SELECT name,primary_colour FROM tenant_brand_versions
+           WHERE tenant_id=$1 AND status='published'
+           ORDER BY version DESC LIMIT 1`,
+          [tenant.id],
+        )
+      )[0];
+      return {
+        mode: process.env.DEPLOYMENT_MODE,
+        policyVersion: '2026-10-v1',
+        tenantSite: true,
+        canonicalOrigin: 'https://' + tenant.hostname,
+        // Tenant lead capture and tracking require distinct consent and ownership.
+        // Until those integrations are ready the site is read-only and noindexed.
+        settings: {
+          navigation: [],
+          brand: {
+            name: brand?.name || tenant.display_name,
+            primary: brand?.primary_colour || '#0f766e',
+          },
+          form: null,
+        },
+        indexing: false,
+      };
+    }
     const rows = await this.db.query(
       "SELECT key,value FROM settings WHERE key IN('navigation','brand','form')",
     );
@@ -43,22 +94,39 @@ export class PublicContentController {
         process.env.PUBLIC_INDEXING_ENABLED === 'true' && process.env.SITE_APPROVED === 'true',
     };
   }
-  @Get('pages') async pages(@Query('kind') kind?: string) {
+
+  @Get('pages') async pages(
+    @Query('kind') kind?: string,
+    @Query('hostname') hostname?: string,
+  ) {
     if (kind) z.enum(['page', 'post', 'case']).parse(kind);
+    const tenant = await this.tenantFor(hostname);
     const rows = await this.db.query(
-      "SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at FROM content c JOIN revisions r ON r.id=c.published_revision JOIN tenants t ON t.id=c.tenant_id WHERE t.slug='default' AND c.deleted_at IS NULL AND ($1::text IS NULL OR c.kind=$1) ORDER BY c.slug LIMIT 200",
-      [kind || null],
+      `SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at
+       FROM content c JOIN revisions r ON r.id=c.published_revision
+       JOIN tenants t ON t.id=c.tenant_id
+       WHERE ${tenant ? 'c.tenant_id=$2' : "t.slug='default'"}
+         AND c.deleted_at IS NULL AND ($1::text IS NULL OR c.kind=$1)
+       ORDER BY c.slug LIMIT 200`,
+      tenant ? [kind || null, tenant.id] : [kind || null],
     );
     return rows.map(publicRow);
   }
+
   @Get('pages/by-path') async page(
     @Query('path') path: string,
     @Res({ passthrough: true }) res: Response,
+    @Query('hostname') hostname?: string,
   ) {
     safePath.parse(path);
+    const tenant = await this.tenantFor(hostname);
     const rows = await this.db.query(
-      "SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at FROM content c JOIN revisions r ON r.id=c.published_revision JOIN tenants t ON t.id=c.tenant_id WHERE t.slug='default' AND c.slug=$1 AND c.deleted_at IS NULL",
-      [path],
+      `SELECT c.id,c.slug,c.kind,r.body,r.id AS revision,c.updated_at
+       FROM content c JOIN revisions r ON r.id=c.published_revision
+       JOIN tenants t ON t.id=c.tenant_id
+       WHERE ${tenant ? 'c.tenant_id=$2' : "t.slug='default'"}
+         AND c.slug=$1 AND c.deleted_at IS NULL`,
+      tenant ? [path, tenant.id] : [path],
     );
     if (!rows[0]) throw new NotFoundException('Page not found');
     res.setHeader('Cache-Control', 'no-store');

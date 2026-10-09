@@ -344,6 +344,45 @@ test('workspace membership context is explicit and tenant switching is membershi
     true,
   );
   assert.equal(isolatedDetails.r.status, 200);
+  // Public pages must resolve exclusively through their active institution domain.
+  const tenantHostname = new URL(createdCampaign.data.url).hostname;
+  await owner.query("UPDATE tenants SET status='pilot' WHERE id=$1", [secondaryTenantId]);
+  const publishedRevision = (
+    await owner.query(
+      'INSERT INTO revisions(content_id,body,created_by) VALUES($1,$2,$3) RETURNING id',
+      [secondaryPage.data.id, primaryPage.draft, user.id],
+    )
+  ).rows[0];
+  await owner.query(
+    "UPDATE content SET published_revision=$2,state='published' WHERE id=$1",
+    [secondaryPage.data.id, publishedRevision.id],
+  );
+  const scopedSite = await call('/v1/public/site?hostname=' + tenantHostname);
+  assert.equal(scopedSite.r.status, 200);
+  assert.equal(scopedSite.data.tenantSite, true);
+  assert.equal(scopedSite.data.indexing, false);
+  assert.equal(scopedSite.data.settings.form, null);
+  assert.equal(scopedSite.data.settings.brand.name, 'Synthetic Second Workspace');
+  const scopedPages = await call('/v1/public/pages?hostname=' + tenantHostname);
+  assert.equal(scopedPages.r.status, 200);
+  assert.equal(scopedPages.data.length, 1);
+  assert.equal(scopedPages.data[0].id, secondaryPage.data.id);
+  const scopedPath = await call(
+    '/v1/public/pages/by-path?path=' +
+      encodeURIComponent(primaryPage.slug) +
+      '&hostname=' +
+      tenantHostname,
+  );
+  assert.equal(scopedPath.r.status, 200);
+  assert.equal(scopedPath.data.id, secondaryPage.data.id);
+  const unknownDomain = await call('/v1/public/pages?hostname=unregistered.example.test');
+  assert.equal(unknownDomain.r.status, 404);
+  const invalidDomain = await call('/v1/public/site?hostname=example.test:443');
+  assert.equal(invalidDomain.r.status, 404);
+  const originalPages = await call('/v1/public/pages');
+  assert.equal(originalPages.r.status, 200);
+  assert.ok(!originalPages.data.some((page: any) => page.id === secondaryPage.data.id));
+
   const publicPage = await call(
     '/v1/public/pages/by-path?path=' + encodeURIComponent(primaryPage.slug),
   );
