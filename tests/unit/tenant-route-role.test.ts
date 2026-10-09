@@ -4,7 +4,14 @@ import assert from 'node:assert/strict';
 import { ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '../../apps/api/src/auth';
 
-function fixture(accountRole: string, membershipRole: string, allowed: string[], tenantStatus = 'active', method = 'GET', path = '/v1/admin/tenant') {
+function fixture(
+  accountRole: string,
+  membershipRole: string,
+  allowed: string[],
+  tenantStatus = 'active',
+  method = 'GET',
+  path = '/v1/admin/tenant',
+) {
   const auditActions: string[] = [];
   const db = {
     query: async () => [
@@ -17,7 +24,7 @@ function fixture(accountRole: string, membershipRole: string, allowed: string[],
         tenant_id: 'tenant-id',
         tenant_name: 'Institution',
         tenant_role: membershipRole,
-      tenant_status: tenantStatus,
+        tenant_status: tenantStatus,
       },
     ],
     tx: async (fn: (client: object) => Promise<unknown>) => fn({}),
@@ -68,7 +75,12 @@ test('custom tenant role does not acquire global owner rights', async () => {
 
 test('suspended tenant cannot mutate configuration even with an owner membership', async () => {
   const { guard, ctx, auditActions } = fixture(
-    'owner', 'owner', ['owner'], 'suspended', 'POST', '/v1/admin/tenant/brand',
+    'owner',
+    'owner',
+    ['owner'],
+    'suspended',
+    'POST',
+    '/v1/admin/tenant/brand',
   );
   await assert.rejects(() => guard.canActivate(ctx as never), ForbiddenException);
   assert.deepEqual(auditActions, ['access.denied']);
