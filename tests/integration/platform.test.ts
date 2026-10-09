@@ -562,7 +562,6 @@ test('workspace membership context is explicit and tenant switching is membershi
     true,
   );
   assert.equal(foreignTenantChange.r.status, 409);
-
 });
 
 test('tenant organisation, brand and maker-checker role controls are functional', async () => {
