@@ -15,7 +15,9 @@ async function main() {
     ]);
     for (const s of seedPages) {
       const added = await c.query(
-        'INSERT INTO content(slug,kind,draft,state) VALUES($1,$2,$3,$4) ON CONFLICT(slug) DO NOTHING RETURNING id',
+        `INSERT INTO content(slug,kind,draft,state,tenant_id)
+         VALUES($1,$2,$3,$4,(SELECT id FROM tenants WHERE slug='default'))
+         ON CONFLICT(slug) DO NOTHING RETURNING id`,
         [s.slug, s.kind, s.body, 'published'],
       );
       if (added.rows[0]) {
