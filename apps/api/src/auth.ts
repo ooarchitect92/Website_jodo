@@ -51,7 +51,7 @@ export class AuthGuard implements CanActivate {
     if (typeof sid !== 'string') throw new UnauthorizedException('Sign in to the owner console');
     const rows = await this.db.query(
       `SELECT u.id,u.email,u.role,s.id AS session_id,s.csrf_hash,s.tenant_id,
-              t.display_name AS tenant_name,m.role_key AS tenant_role,m.status AS membership_status
+              t.display_name AS tenant_name,t.status AS tenant_status,m.role_key AS tenant_role,m.status AS membership_status
        FROM sessions s
        JOIN users u ON u.id=s.user_id
        JOIN tenants t ON t.id=s.tenant_id
@@ -77,6 +77,20 @@ export class AuthGuard implements CanActivate {
       sessionId: row.session_id,
       csrf,
     };
+    // A suspended institution may inspect existing records, but it may not
+    // issue new financial or configuration instructions until reinstated.
+    // The logout route is retained for safe session termination.
+    const path = String(req.path || req.route?.path || '');
+    if (
+      row.tenant_status === 'suspended' &&
+      !['GET', 'HEAD', 'OPTIONS'].includes(req.method) &&
+      path !== '/v1/auth/logout'
+    ) {
+      await this.db.tx((c) =>
+        this.db.audit(c, row.id, 'access.denied', path, { reason: 'tenant_suspended' }),
+      );
+      throw new ForbiddenException('This institution is suspended for new changes');
+    }
     const roles = this.reflector.getAllAndOverride<string[]>('roles', [
       ctx.getHandler(),
       ctx.getClass(),
