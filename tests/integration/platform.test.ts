@@ -165,7 +165,6 @@ test('workspace membership context is explicit and tenant switching is membershi
     '/v1/admin/workflows/runs',
     '/v1/admin/conversations',
     '/v1/admin/privacy-requests',
-    '/v1/admin/content',
     '/v1/admin/settings',
   ]) {
     const denied = await call(route, 'GET', undefined, {}, true);
@@ -199,9 +198,23 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(isolatedMedia.r.status, 200);
   assert.deepEqual(isolatedMedia.data, []);
 
-  // Record lookup is also tenant-protected, not just the collection index.
-  const deniedDetail = await call('/v1/admin/content/' + randomUUID(), 'GET', undefined, {}, true);
-  assert.equal(deniedDetail.r.status, 403);
+  // Tenant-owned CMS permits isolated workspaces, without leaking legacy pages.
+  const isolatedContent = await call('/v1/admin/content', 'GET', undefined, {}, true);
+  assert.equal(isolatedContent.r.status, 200);
+  assert.deepEqual(isolatedContent.data, []);
+  const primaryPage = (
+    await owner.query('SELECT id FROM content WHERE tenant_id=$1 LIMIT 1', [primaryTenantId])
+  ).rows[0];
+  if (primaryPage) {
+    const deniedDetail = await call(
+      '/v1/admin/content/' + primaryPage.id,
+      'GET',
+      undefined,
+      {},
+      true,
+    );
+    assert.equal(deniedDetail.r.status, 404);
+  }
 
   const deniedExport = await call('/v1/admin/content-export', 'POST', {}, {}, true);
   assert.equal(deniedExport.r.status, 403);
@@ -214,9 +227,6 @@ test('workspace membership context is explicit and tenant switching is membershi
     ['/v1/admin/workflows', 'POST', {}],
     ['/v1/admin/workflows/' + randomUUID(), 'PATCH', {}],
     ['/v1/admin/outbox/' + randomUUID() + '/retry', 'POST', {}],
-    ['/v1/admin/content', 'POST', {}],
-    ['/v1/admin/content/' + randomUUID() + '/draft', 'PATCH', {}],
-    ['/v1/admin/content/' + randomUUID() + '/action', 'POST', {}],
     ['/v1/admin/settings/brand', 'PATCH', {}],
   ] as const) {
     const denied = await call(route, method, payload, {}, true);
