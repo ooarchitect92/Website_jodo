@@ -71,7 +71,8 @@ export class LeadsService {
         eventId = randomUUID(),
         receipt = 'REQ-' + randomUUID().slice(0, 8).toUpperCase();
       await c.query(
-        'INSERT INTO leads(id,receipt,event_id,submission_key,fingerprint,encrypted_fields,form_revision,source,consent_id,acquisition_id,chat_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
+        `INSERT INTO leads(id,receipt,event_id,submission_key,fingerprint,encrypted_fields,form_revision,source,consent_id,acquisition_id,chat_id,tenant_id)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,(SELECT id FROM tenants WHERE slug='default'))`,
         [
           id,
           receipt,
@@ -113,19 +114,14 @@ export class FormsController {
 @Roles('owner', 'sales')
 export class LeadsController {
   constructor(@Inject(Db) private db: Db) {}
-  private async requireLegacyWorkspace(req: AuthedRequest) {
-    const workspace = await this.db.query(
-      "SELECT id FROM tenants WHERE id=$1 AND slug='default' AND status<>'archived'",
+  @Get() async list(@Req() req: AuthedRequest) {
+    await this.db.tx((c) =>
+      this.db.audit(c, req.actor.id, 'leads.read', 'list', { tenantId: req.actor.tenantId }),
+    );
+    const rows = await this.db.query(
+      'SELECT * FROM leads WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200',
       [req.actor.tenantId],
     );
-    if (!workspace.length) {
-      throw new ForbiddenException('Lead management is unavailable outside the legacy workspace');
-    }
-  }
-  @Get() async list(@Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
-    await this.db.tx((c) => this.db.audit(c, req.actor.id, 'leads.read', 'list'));
-    const rows = await this.db.query('SELECT * FROM leads ORDER BY created_at DESC LIMIT 200');
     return rows.map((r) => {
       const fields = decrypt<z.infer<typeof leadSchema>>(r.encrypted_fields);
       return {
@@ -145,7 +141,6 @@ export class LeadsController {
     @Body() body: unknown,
     @Req() req: AuthedRequest,
   ) {
-    await this.requireLegacyWorkspace(req);
     const v = z
       .object({
         stage: z.enum(['new', 'contacted', 'qualified', 'won', 'lost', 'spam']),
@@ -155,7 +150,7 @@ export class LeadsController {
       .strict()
       .parse(body);
     return this.db.tx(async (c) => {
-      const row = (await c.query('SELECT * FROM leads WHERE id=$1 FOR UPDATE', [uuid(id)])).rows[0];
+      const row = (await c.query('SELECT * FROM leads WHERE id=$1 AND tenant_id=$2 FOR UPDATE', [uuid(id), req.actor.tenantId])).rows[0];
       if (!row || row.version !== v.expectedVersion)
         throw new ConflictException('Lead changed; reload');
       const allowed: Record<string, string[]> = {
@@ -168,9 +163,10 @@ export class LeadsController {
       };
       if (!allowed[row.stage]?.includes(v.stage))
         throw new ConflictException('That transition is not allowed');
-      await c.query('UPDATE leads SET stage=$2,version=version+1,updated_at=now() WHERE id=$1', [
+      await c.query('UPDATE leads SET stage=$2,version=version+1,updated_at=now() WHERE id=$1 AND tenant_id=$3', [
         id,
         v.stage,
+        req.actor.tenantId,
       ]);
       await c.query(
         'INSERT INTO lead_activities(lead_id,actor_id,type,encrypted_note) VALUES($1,$2,$3,$4)',
@@ -186,8 +182,10 @@ export class LeadsController {
     });
   }
   @Post('export') @Roles('owner') async export(@Req() req: AuthedRequest, @Res() res: Response) {
-    await this.requireLegacyWorkspace(req);
-    const rows = await this.db.query('SELECT * FROM leads ORDER BY created_at DESC LIMIT 5000');
+    const rows = await this.db.query(
+      'SELECT * FROM leads WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 5000',
+      [req.actor.tenantId],
+    );
     await this.db.tx((c) =>
       this.db.audit(c, req.actor.id, 'leads.export', 'csv', { count: rows.length }),
     );
