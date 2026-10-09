@@ -74,11 +74,7 @@ export class TenantEnquiriesAdminController {
   }
 
   @Post(':id/stage')
-  async stage(
-    @Param('id') id: string,
-    @Body() body: unknown,
-    @Req() req: AuthedRequest,
-  ) {
+  async stage(@Param('id') id: string, @Body() body: unknown, @Req() req: AuthedRequest) {
     const v = z
       .object({
         stage: z.enum(['new', 'contacted', 'qualified', 'closed', 'spam']),
