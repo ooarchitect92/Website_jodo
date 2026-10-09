@@ -37,7 +37,7 @@ const enquirySchema = z
     revision: z.number().int().positive(),
     name: z.string().trim().min(2).max(120),
     email: z.email().max(200),
-    phone: z.string().trim().regex(/^\\+?[\\d ()-]{8,20}$/),
+    phone: z.string().trim().regex(/^\+?[\d ()-]{8,20}$/),
     message: z.string().trim().min(5).max(1500),
     noticeAccepted: z.literal(true),
     website: z.string().max(0).default(''),
