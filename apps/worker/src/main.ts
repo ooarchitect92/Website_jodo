@@ -29,11 +29,11 @@ export async function tick(db: Db) {
       await db.tx(async (c) => {
         if (job.type === 'lead.accepted') {
           await c.query(
-            "INSERT INTO tasks(lead_id,title,execution_key) VALUES($1,'Review new enquiry and arrange follow-up',$2) ON CONFLICT(execution_key) DO NOTHING",
+            "INSERT INTO tasks(lead_id,title,execution_key,tenant_id) SELECT id,'Review new enquiry and arrange follow-up',$2,tenant_id FROM leads WHERE id=$1 ON CONFLICT(execution_key) DO NOTHING",
             [job.aggregate_id, 'lead:' + job.event_id],
           );
           await c.query(
-            'INSERT INTO workflow_runs(workflow_id,lead_id,definition) SELECT id,$1,definition FROM workflows WHERE active=true ON CONFLICT(workflow_id,lead_id) DO NOTHING',
+            'INSERT INTO workflow_runs(workflow_id,lead_id,definition,tenant_id) SELECT w.id,l.id,w.definition,l.tenant_id FROM leads l JOIN workflows w ON w.tenant_id=l.tenant_id WHERE l.id=$1 AND w.active=true ON CONFLICT(workflow_id,lead_id) DO NOTHING',
             [job.aggregate_id],
           );
         }
@@ -286,7 +286,7 @@ export async function tick(db: Db) {
 
     const due = (
       await c.query(
-        "SELECT r.*,l.stage,w.active FROM workflow_runs r JOIN leads l ON l.id=r.lead_id JOIN workflows w ON w.id=r.workflow_id WHERE r.status='running' AND r.due_at<=now() ORDER BY r.due_at FOR UPDATE OF r SKIP LOCKED LIMIT 30",
+        "SELECT r.*,l.stage,w.active FROM workflow_runs r JOIN leads l ON l.id=r.lead_id AND l.tenant_id=r.tenant_id JOIN workflows w ON w.id=r.workflow_id AND w.tenant_id=r.tenant_id WHERE r.status='running' AND r.due_at<=now() ORDER BY r.due_at FOR UPDATE OF r SKIP LOCKED LIMIT 30",
       )
     ).rows;
     for (const run of due) {
@@ -303,8 +303,8 @@ export async function tick(db: Db) {
       }
       if (node.type === 'task')
         await c.query(
-          'INSERT INTO tasks(lead_id,title,execution_key) VALUES($1,$2,$3) ON CONFLICT(execution_key) DO NOTHING',
-          [run.lead_id, node.title, 'workflow:' + run.id + ':' + run.next_node],
+          'INSERT INTO tasks(lead_id,title,execution_key,tenant_id) VALUES($1,$2,$3,$4) ON CONFLICT(execution_key) DO NOTHING',
+          [run.lead_id, node.title, 'workflow:' + run.id + ':' + run.next_node, run.tenant_id],
         );
       await c.query(
         "UPDATE workflow_runs SET next_node=next_node+1,due_at=now()+($2::int*interval '1 minute') WHERE id=$1",
