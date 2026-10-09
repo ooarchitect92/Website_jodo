@@ -45,6 +45,11 @@ jobs:
           npm run create:owner
       - run: node scripts/verify-source.mjs
       - run: npm run lint
+      - name: Show source formatting diff when verification fails
+        if: failure()
+        run: |
+          npx prettier --write apps/api/src/content.ts 'apps/web/src/app/(public)/layout.tsx' apps/web/src/app/sitemap.ts tests/integration/platform.test.ts
+          git --no-pager diff -- apps/api/src/content.ts 'apps/web/src/app/(public)/layout.tsx' apps/web/src/app/sitemap.ts tests/integration/platform.test.ts
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:integration
