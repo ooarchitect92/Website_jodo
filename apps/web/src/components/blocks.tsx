@@ -1,6 +1,7 @@
 import { Block, PublicPage } from '@core/contracts';
 import { SmartLink } from './links';
 import { LeadForm } from './form';
+import { TenantEnquiryForm } from './tenant-enquiry-form';
 import { Calculator } from './calculator';
 function Image({
   src,
@@ -54,10 +55,17 @@ export function BlockRenderer({
   blocks,
   entries = [],
   allowLeadCapture = true,
+  tenantForm = null,
 }: {
   blocks: Block[];
   entries?: PublicPage[];
   allowLeadCapture?: boolean;
+  tenantForm?: {
+    title: string;
+    notice: string;
+    success: string;
+    revision: number;
+  } | null;
 }) {
   return (
     <>
@@ -340,7 +348,9 @@ export function BlockRenderer({
                   <SmartLink href="/products/">Explore platform capabilities</SmartLink>
                 </div>
               </div>
-              {allowLeadCapture ? (
+              {tenantForm ? (
+                <TenantEnquiryForm config={tenantForm} />
+              ) : allowLeadCapture ? (
                 <LeadForm />
               ) : (
                 <p role="status" className="small muted">

@@ -187,7 +187,12 @@ export default async function Page({ params, searchParams }: Props) {
           )}
         </header>
       )}
-      <BlockRenderer blocks={p.body.blocks} entries={all} allowLeadCapture={!config.tenantSite} />
+      <BlockRenderer
+        blocks={p.body.blocks}
+        entries={all}
+        allowLeadCapture={!config.tenantSite}
+        tenantForm={config.settings.form}
+      />
       {path === '/privacy-policy/' && !config.tenantSite && <PrivacyRequest />}
       {path === '/login/' && !config.tenantSite && (
         <section className="wrap portal-grid">

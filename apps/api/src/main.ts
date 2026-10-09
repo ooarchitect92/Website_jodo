@@ -19,6 +19,11 @@ import { checkConfig } from './config';
 import { AuthController, AuthGuard } from './auth';
 import { ContentController, PublicContentController, SettingsController } from './content';
 import { FormsController, LeadsController, LeadsService } from './leads';
+import {
+  TenantEnquiriesAdminController,
+  TenantEnquiryFormAdminController,
+  TenantEnquiryPublicController,
+} from './tenant-enquiries';
 import { PrivacyController } from './privacy';
 import { OperationsController } from './operations';
 import { ChatController } from './chat';
@@ -81,6 +86,9 @@ class Health {
     PublicContentController,
     SettingsController,
     FormsController,
+    TenantEnquiryPublicController,
+    TenantEnquiryFormAdminController,
+    TenantEnquiriesAdminController,
     LeadsController,
     PrivacyController,
     OperationsController,
@@ -125,8 +133,10 @@ export async function createApp() {
       res.setHeader('Pragma', 'no-cache');
     }
     const providerWebhook = req.path.startsWith('/v1/provider/');
+    const tenantEnquiry = req.path === '/v1/forms/tenant/submissions';
     if (
       !providerWebhook &&
+      !tenantEnquiry &&
       !['GET', 'HEAD', 'OPTIONS'].includes(req.method) &&
       req.headers.origin !== process.env.SITE_URL
     )

@@ -55,6 +55,13 @@ export class PublicContentController {
   @Get('site') async site(@Query('hostname') hostname?: string) {
     const tenant = await this.tenantFor(hostname);
     if (tenant) {
+      const form = (
+        await this.db.query(
+          `SELECT title,notice,success,revision FROM tenant_form_settings
+           WHERE tenant_id=$1 AND enabled=true`,
+          [tenant.id],
+        )
+      )[0];
       const brand = (
         await this.db.query(
           `SELECT name,primary_colour FROM tenant_brand_versions
@@ -76,7 +83,7 @@ export class PublicContentController {
             name: brand?.name || tenant.display_name,
             primary: brand?.primary_colour || '#0f766e',
           },
-          form: null,
+          form: form || null,
         },
         indexing: false,
       };
