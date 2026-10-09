@@ -129,7 +129,7 @@ export class ChatController {
     await this.db.tx(async (db) => {
       await db.query("UPDATE chats SET status='awaiting_agent' WHERE id=$1", [c.id]);
       await db.query(
-        "INSERT INTO tasks(title,execution_key) VALUES('Review a requested chat handoff',$1) ON CONFLICT(execution_key) DO NOTHING",
+        "INSERT INTO tasks(title,execution_key,tenant_id) SELECT 'Review a requested chat handoff',$1,id FROM tenants WHERE slug='default' ON CONFLICT(execution_key) DO NOTHING",
         ['chat:' + c.id],
       );
       await this.db.audit(db, 'visitor', 'chat.handoff_requested', c.id);
