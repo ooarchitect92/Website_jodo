@@ -353,10 +353,10 @@ test('workspace membership context is explicit and tenant switching is membershi
       [secondaryPage.data.id, primaryPage.draft, user.id],
     )
   ).rows[0];
-  await owner.query(
-    "UPDATE content SET published_revision=$2,state='published' WHERE id=$1",
-    [secondaryPage.data.id, publishedRevision.id],
-  );
+  await owner.query("UPDATE content SET published_revision=$2,state='published' WHERE id=$1", [
+    secondaryPage.data.id,
+    publishedRevision.id,
+  ]);
   const scopedSite = await call('/v1/public/site?hostname=' + tenantHostname);
   assert.equal(scopedSite.r.status, 200);
   assert.equal(scopedSite.data.tenantSite, true);
