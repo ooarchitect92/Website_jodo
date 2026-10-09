@@ -133,8 +133,15 @@ export class PaymentProviderController {
            WHERE tenant_id=$1 AND provider=$2 AND provider_reference=$3
              AND installment_id=$5 AND amount_minor=$6 AND currency=$7
              AND status IN('requested','created')`,
-          [tenantId, provider, event.providerReference, event.reasonCode,
-           event.installmentId, event.amountMinor, event.currency],
+          [
+            tenantId,
+            provider,
+            event.providerReference,
+            event.reasonCode,
+            event.installmentId,
+            event.amountMinor,
+            event.currency,
+          ],
         );
         const debitFailure = await c.query(
           `UPDATE autopay_debit_attempts
@@ -173,11 +180,17 @@ export class PaymentProviderController {
              WHERE id=$1`,
             [inserted.id],
           );
-          await this.db.audit(c, 'provider:' + provider, 'payment.provider_unmatched_failure', inserted.id, {
-            providerEventId: event.eventId,
-            providerReference: event.providerReference,
-            installmentId: event.installmentId,
-          });
+          await this.db.audit(
+            c,
+            'provider:' + provider,
+            'payment.provider_unmatched_failure',
+            inserted.id,
+            {
+              providerEventId: event.eventId,
+              providerReference: event.providerReference,
+              installmentId: event.installmentId,
+            },
+          );
           return {
             accepted: false,
             duplicate: false,
@@ -257,10 +270,16 @@ export class PaymentProviderController {
              WHERE id=$1`,
             [inserted.id],
           );
-          await this.db.audit(c, 'provider:' + provider, 'fees.mandate.stale_status_ignored', existingMandate.id, {
-            providerEventId: event.eventId,
-            incomingOccurredAt: event.occurredAt,
-          });
+          await this.db.audit(
+            c,
+            'provider:' + provider,
+            'fees.mandate.stale_status_ignored',
+            existingMandate.id,
+            {
+              providerEventId: event.eventId,
+              incomingOccurredAt: event.occurredAt,
+            },
+          );
           return {
             accepted: true,
             duplicate: false,

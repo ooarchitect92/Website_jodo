@@ -24,11 +24,21 @@ const valid = {
 function gate(override = {}) {
   // Isolate inherited developer credentials/configuration from the test fixture.
   const env = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) =>
-      !key.startsWith('PRODUCTION_') &&
-      !['SITE_URL','API_INTERNAL_URL','DEPLOYMENT_MODE','NODE_ENV','SITE_APPROVED',
-        'BLOG_AUTO_DELETE_ENABLED','PAYMENT_PROVIDER_MODE','PAYMENT_CHECKOUT_MODE',
-        'AUTOPAY_PROVIDER_MODE','PUBLIC_INDEXING_ENABLED'].includes(key),
+    Object.entries(process.env).filter(
+      ([key]) =>
+        !key.startsWith('PRODUCTION_') &&
+        ![
+          'SITE_URL',
+          'API_INTERNAL_URL',
+          'DEPLOYMENT_MODE',
+          'NODE_ENV',
+          'SITE_APPROVED',
+          'BLOG_AUTO_DELETE_ENABLED',
+          'PAYMENT_PROVIDER_MODE',
+          'PAYMENT_CHECKOUT_MODE',
+          'AUTOPAY_PROVIDER_MODE',
+          'PUBLIC_INDEXING_ENABLED',
+        ].includes(key),
     ),
   );
   return spawnSync(process.execPath, [resolve('scripts/production-gate.mjs')], {

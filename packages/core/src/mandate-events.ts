@@ -10,8 +10,6 @@ export function isNewerMandateEvent(
   if (!currentOccurredAt) return Number.isFinite(Date.parse(incomingOccurredAt));
   const incoming = Date.parse(incomingOccurredAt);
   const current =
-    currentOccurredAt instanceof Date
-      ? currentOccurredAt.getTime()
-      : Date.parse(currentOccurredAt);
+    currentOccurredAt instanceof Date ? currentOccurredAt.getTime() : Date.parse(currentOccurredAt);
   return Number.isFinite(incoming) && Number.isFinite(current) && incoming > current;
 }

@@ -29,8 +29,10 @@ test('valid signed webhook with no matching financial attempt remains an investi
   const fakeConnection = {
     query: async (sql: string) => {
       statements.push(sql);
-      if (sql.includes('SELECT s.tenant_id')) return { rows: [{ tenant_id: 'tenant-test' }], rowCount: 1 };
-      if (sql.includes('INSERT INTO payment_provider_events')) return { rows: [{ id: 'event-test' }], rowCount: 1 };
+      if (sql.includes('SELECT s.tenant_id'))
+        return { rows: [{ tenant_id: 'tenant-test' }], rowCount: 1 };
+      if (sql.includes('INSERT INTO payment_provider_events'))
+        return { rows: [{ id: 'event-test' }], rowCount: 1 };
       if (sql.includes('UPDATE payment_checkout_sessions')) return { rows: [], rowCount: 0 };
       if (sql.includes('UPDATE autopay_debit_attempts')) return { rows: [], rowCount: 0 };
       return { rows: [], rowCount: 1 };
@@ -38,13 +40,18 @@ test('valid signed webhook with no matching financial attempt remains an investi
   };
   const fakeDb = {
     tx: async (fn: (client: typeof fakeConnection) => Promise<unknown>) => fn(fakeConnection),
-    audit: async (_client: unknown, _actor: string, action: string) => { audits.push(action); },
+    audit: async (_client: unknown, _actor: string, action: string) => {
+      audits.push(action);
+    },
   };
   try {
     const rawBody = Buffer.from(JSON.stringify(payload));
     const timestamp = String(Math.floor(Date.now() / 1000));
     const signature = createHmac('sha256', process.env.PAYMENT_WEBHOOK_SECRET!)
-      .update(timestamp).update('.').update(rawBody).digest('hex');
+      .update(timestamp)
+      .update('.')
+      .update(rawBody)
+      .digest('hex');
     const controller = new PaymentProviderController(fakeDb as never);
     const result = await controller.webhook({ rawBody } as never, payload, signature, timestamp);
     assert.deepEqual(result, {

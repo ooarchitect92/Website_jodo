@@ -9,13 +9,27 @@ const isTrue = (key) => process.env[key] === 'true';
 const evidence = (key) => {
   const id = process.env[key]?.trim() || '';
   const normalized = id.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const placeholders = new Set(['changeme', 'todo', 'pending', 'example', 'placeholder', 'notrun', 'none', 'na']);
+  const placeholders = new Set([
+    'changeme',
+    'todo',
+    'pending',
+    'example',
+    'placeholder',
+    'notrun',
+    'none',
+    'na',
+  ]);
   return id.length >= 8 && !placeholders.has(normalized);
 };
 const requiredTrue = ['SITE_APPROVED', 'PRODUCTION_RELEASE_APPROVED'];
-for (const key of requiredTrue) if (!isTrue(key)) missing.push(key + ' must be true after independent sign-off');
-for (const key of ['PRODUCTION_SECURITY_REVIEW_ID', 'PRODUCTION_PRIVACY_REVIEW_ID',
-                   'PRODUCTION_RESTORE_TEST_ID', 'PRODUCTION_TENANT_ISOLATION_TEST_ID']) {
+for (const key of requiredTrue)
+  if (!isTrue(key)) missing.push(key + ' must be true after independent sign-off');
+for (const key of [
+  'PRODUCTION_SECURITY_REVIEW_ID',
+  'PRODUCTION_PRIVACY_REVIEW_ID',
+  'PRODUCTION_RESTORE_TEST_ID',
+  'PRODUCTION_TENANT_ISOLATION_TEST_ID',
+]) {
   if (!evidence(key)) missing.push(key + ' must refer to review/test evidence');
 }
 for (const key of ['SITE_URL', 'API_INTERNAL_URL']) {
@@ -34,7 +48,7 @@ if (isTrue('PUBLIC_INDEXING_ENABLED') && !evidence('PRODUCTION_BRAND_RIGHTS_REVI
 if (process.env.BLOG_AUTO_DELETE_ENABLED !== 'false')
   missing.push('BLOG_AUTO_DELETE_ENABLED must be false');
 const financialModes = ['PAYMENT_PROVIDER_MODE', 'PAYMENT_CHECKOUT_MODE', 'AUTOPAY_PROVIDER_MODE'];
-if (financialModes.some(key => !['disabled', undefined, ''].includes(process.env[key]))) {
+if (financialModes.some((key) => !['disabled', undefined, ''].includes(process.env[key]))) {
   if (!evidence('PRODUCTION_PAYMENT_PROVIDER_APPROVAL_ID'))
     missing.push('PRODUCTION_PAYMENT_PROVIDER_APPROVAL_ID required for financial rails');
   if (!evidence('PRODUCTION_PAYMENT_UAT_ID'))
@@ -43,8 +57,12 @@ if (financialModes.some(key => !['disabled', undefined, ''].includes(process.env
 if (missing.length) {
   console.error('PRODUCTION START BLOCKED. Unverified release requirements:');
   for (const message of missing) console.error(' - ' + message);
-  console.error('Evidence identifiers are review references, not proof of compliance. See docs/acceptance/RELEASE.md.');
+  console.error(
+    'Evidence identifiers are review references, not proof of compliance. See docs/acceptance/RELEASE.md.',
+  );
   process.exitCode = 1;
 } else {
-  console.log('Production configuration/evidence references present. External sign-offs remain the operator\'s responsibility.');
+  console.log(
+    "Production configuration/evidence references present. External sign-offs remain the operator's responsibility.",
+  );
 }

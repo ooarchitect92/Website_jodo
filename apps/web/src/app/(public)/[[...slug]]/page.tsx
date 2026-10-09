@@ -75,9 +75,7 @@ export default async function Page({ params, searchParams }: Props) {
     );
     const pageCount = Math.ceil(filtered.length / 9);
     const requestedPage =
-      typeof search.page === 'string' && /^[1-9]\\d*$/.test(search.page)
-        ? Number(search.page)
-        : 1;
+      typeof search.page === 'string' && /^[1-9]\\d*$/.test(search.page) ? Number(search.page) : 1;
     const n = Math.min(
       pageCount || 1,
       Math.max(1, Number.isSafeInteger(requestedPage) ? requestedPage : 1),

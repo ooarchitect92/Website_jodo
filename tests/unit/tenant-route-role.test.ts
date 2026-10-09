@@ -7,12 +7,18 @@ import { AuthGuard } from '../../apps/api/src/auth';
 function fixture(accountRole: string, membershipRole: string, allowed: string[]) {
   const auditActions: string[] = [];
   const db = {
-    query: async () => [{
-      id: 'user-id', email: 'test@example.invalid', role: accountRole,
-      session_id: 'session-id', csrf_hash: 'not-needed-for-get',
-      tenant_id: 'tenant-id', tenant_name: 'Institution',
-      tenant_role: membershipRole,
-    }],
+    query: async () => [
+      {
+        id: 'user-id',
+        email: 'test@example.invalid',
+        role: accountRole,
+        session_id: 'session-id',
+        csrf_hash: 'not-needed-for-get',
+        tenant_id: 'tenant-id',
+        tenant_name: 'Institution',
+        tenant_role: membershipRole,
+      },
+    ],
     tx: async (fn: (client: object) => Promise<unknown>) => fn({}),
     audit: async (_client: unknown, _user: string, action: string) => {
       auditActions.push(action);
