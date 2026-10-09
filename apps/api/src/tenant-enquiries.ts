@@ -42,7 +42,24 @@ export const tenantQuestionListSchema = z
   .max(8)
   .superRefine((fields, ctx) => {
     const keys = new Set<string>();
+    const reserved = new Set([
+      'name',
+      'email',
+      'phone',
+      'message',
+      'notice',
+      'website',
+      'hostname',
+      'revision',
+      'answers',
+    ]);
     for (const [index, field] of fields.entries()) {
+      if (reserved.has(field.key))
+        ctx.addIssue({
+          code: 'custom',
+          path: [index, 'key'],
+          message: 'Question key conflicts with a protected contact field',
+        });
       if (keys.has(field.key))
         ctx.addIssue({
           code: 'custom',

@@ -623,6 +623,14 @@ test('workspace membership context is explicit and tenant switching is membershi
     true,
   );
   assert.equal(invalidQuestions.r.status, 422);
+  const reservedQuestion = await call(
+    '/v1/admin/tenant/enquiry-form',
+    'POST',
+    { ...customSettings, fields: [{ ...questions[0], key: 'email' }] },
+    {},
+    true,
+  );
+  assert.equal(reservedQuestion.r.status, 422);
   const configuredForm = await call(
     '/v1/admin/tenant/enquiry-form',
     'POST',
