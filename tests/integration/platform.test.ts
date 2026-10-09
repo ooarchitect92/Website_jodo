@@ -153,14 +153,13 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === primaryTenantId));
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === second.id));
 
-  // Legacy operations have no tenant-owned rows yet: deny access rather than leak
-  // the primary institution's content, tasks, campaigns, or operational records.
+  // Legacy administrative operations remain restricted until their records
+  // and background jobs are tenant-owned.
   for (const route of [
     '/v1/admin/overview',
     '/v1/admin/tasks',
     '/v1/admin/audit',
     '/v1/admin/outbox',
-    '/v1/admin/campaigns',
     '/v1/admin/workflows',
     '/v1/admin/workflows/runs',
     '/v1/admin/conversations',
@@ -170,6 +169,59 @@ test('workspace membership context is explicit and tenant switching is membershi
     const denied = await call(route, 'GET', undefined, {}, true);
     assert.equal(denied.r.status, 403, route + ': ' + JSON.stringify(denied.data));
   }
+  // Campaign URLs and reads must never cross tenant boundaries.
+  const primaryCampaign = (
+    await owner.query(
+      'INSERT INTO campaigns(definition,url,created_by,tenant_id) VALUES($1,$2,$3,$4) RETURNING id',
+      [
+        {
+          name: 'Primary QA campaign',
+          path: '/',
+          source: 'google',
+          medium: 'cpc',
+          campaign: 'primary_qa',
+        },
+        process.env.SITE_URL,
+        user.id,
+        primaryTenantId,
+      ],
+    )
+  ).rows[0];
+  const emptyCampaigns = await call('/v1/admin/campaigns', 'GET', undefined, {}, true);
+  assert.equal(emptyCampaigns.r.status, 200);
+  assert.deepEqual(emptyCampaigns.data, []);
+  const campaignInput = {
+    name: 'Secondary QA campaign',
+    path: '/',
+    source: 'google',
+    medium: 'cpc',
+    campaign: 'secondary_qa',
+  };
+  const unavailable = await call('/v1/admin/campaigns', 'POST', campaignInput, {}, true);
+  assert.equal(unavailable.r.status, 409);
+
+  // A synthetic, explicitly active tenant domain is used only in this test.
+  await owner.query(
+    "INSERT INTO tenant_domains(tenant_id,hostname,challenge,created_by,status) VALUES($1,$2,$3,$4,'active')",
+    [secondaryTenantId, 'qa-' + randomUUID().slice(0, 8) + '.example.test', 'qa-only', user.id],
+  );
+  const createdCampaign = await call(
+    '/v1/admin/campaigns',
+    'POST',
+    campaignInput,
+    {},
+    true,
+  );
+  assert.equal(createdCampaign.r.status, 201, JSON.stringify(createdCampaign.data));
+  assert.equal(createdCampaign.data.tenant_id, secondaryTenantId);
+  assert.ok(new URL(createdCampaign.data.url).hostname.endsWith('.example.test'));
+  assert.equal(new URL(createdCampaign.data.url).searchParams.get('utm_campaign'), 'secondary_qa');
+  const tenantCampaigns = await call('/v1/admin/campaigns', 'GET', undefined, {}, true);
+  assert.equal(tenantCampaigns.r.status, 200);
+  assert.equal(tenantCampaigns.data.length, 1);
+  assert.equal(tenantCampaigns.data[0].id, createdCampaign.data.id);
+  assert.notEqual(createdCampaign.data.id, primaryCampaign.id);
+
   // Tenant-owned CRM is available in both workspaces, but the secondary tenant
   // must never see or mutate the primary tenant's lead records.
   const isolatedLeads = await call('/v1/admin/leads', 'GET', undefined, {}, true);
@@ -254,11 +306,10 @@ test('workspace membership context is explicit and tenant switching is membershi
   const deniedExport = await call('/v1/admin/content-export', 'POST', {}, {}, true);
   assert.equal(deniedExport.r.status, 403);
 
-  // A second workspace must not modify global legacy tasks, campaigns or workflows.
+  // A second workspace must not modify legacy tasks or workflow state.
   // These fail-closed checks happen before business payload validation.
   for (const [route, method, payload] of [
     ['/v1/admin/tasks/' + randomUUID() + '/complete', 'POST', {}],
-    ['/v1/admin/campaigns', 'POST', {}],
     ['/v1/admin/workflows', 'POST', {}],
     ['/v1/admin/workflows/' + randomUUID(), 'PATCH', {}],
     ['/v1/admin/outbox/' + randomUUID() + '/retry', 'POST', {}],

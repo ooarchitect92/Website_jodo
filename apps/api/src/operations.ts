@@ -96,13 +96,34 @@ export class OperationsController {
     return { status: 'pending' };
   }
   @Get('campaigns') async campaigns(@Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
-    return this.db.query('SELECT * FROM campaigns ORDER BY created_at DESC LIMIT 200');
+    return this.db.query(
+      'SELECT * FROM campaigns WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200',
+      [req.actor.tenantId],
+    );
   }
   @Post('campaigns') async campaign(@Body() body: unknown, @Req() req: AuthedRequest) {
-    await this.requireLegacyWorkspace(req);
     const v = campaignSchema.parse(body);
-    const url = new URL(v.path, process.env.SITE_URL);
+    const tenant = (
+      await this.db.query('SELECT slug FROM tenants WHERE id=$1', [req.actor.tenantId])
+    )[0];
+    if (!tenant) throw new ForbiddenException('Workspace not found');
+
+    // The original public site retains its current URL. Other institutions must
+    // have a tenant-owned, active serving domain before generating campaign links.
+    let origin = process.env.SITE_URL!;
+    if (tenant.slug !== 'default') {
+      const domain = (
+        await this.db.query(
+          "SELECT hostname FROM tenant_domains WHERE tenant_id=$1 AND status='active' ORDER BY created_at LIMIT 1",
+          [req.actor.tenantId],
+        )
+      )[0];
+      if (!domain) {
+        throw new ConflictException('Activate a tenant website domain before creating campaign links');
+      }
+      origin = 'https://' + domain.hostname;
+    }
+    const url = new URL(v.path, origin);
     url.search = new URLSearchParams({
       utm_source: v.source,
       utm_medium: v.medium,
@@ -111,11 +132,13 @@ export class OperationsController {
     return this.db.tx(async (c) => {
       const row = (
         await c.query(
-          'INSERT INTO campaigns(definition,url,created_by) VALUES($1,$2,$3) RETURNING *',
-          [v, url.toString(), req.actor.id],
+          'INSERT INTO campaigns(definition,url,created_by,tenant_id) VALUES($1,$2,$3,$4) RETURNING *',
+          [v, url.toString(), req.actor.id, req.actor.tenantId],
         )
       ).rows[0];
-      await this.db.audit(c, req.actor.id, 'campaign.create', row.id);
+      await this.db.audit(c, req.actor.id, 'campaign.create', row.id, {
+        tenantId: req.actor.tenantId,
+      });
       return row;
     });
   }
