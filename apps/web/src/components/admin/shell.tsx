@@ -200,7 +200,7 @@ export function AdminShell() {
           <p>TENANT CONSOLE · SAAS BLUEPRINT 2.0</p>
           <nav className="admin-nav" aria-label="Owner navigation">
             {sections
-              .filter(([key]) => allowed[session.user.role]?.includes(key!))
+              .filter(([key]) => allowed[session.tenant.role]?.includes(key!))
               .map(([key, title]) => (
                 <button
                   className={area === key ? 'selected' : ''}
@@ -262,6 +262,13 @@ export function AdminShell() {
             payment, lending and advertising providers remain disabled until separately configured
             and verified.
           </div>
+          {session.tenant.readOnly && (
+            <div role="status" className="admin-notice">
+              <strong>Read-only institution.</strong> This workspace is suspended. You can review
+              existing records but cannot create new payments or change settings. Switch to an active
+              institution using the workspace selector if you have access.
+            </div>
+          )}
           {error && (
             <p role="alert" className="error-card">
               {error}
