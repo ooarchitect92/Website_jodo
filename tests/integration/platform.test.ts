@@ -524,6 +524,70 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.match(String(scopedExport.data), /contacted/);
   assert.ok(!String(scopedExport.data).includes('Called from synthetic QA queue'));
 
+  // In-app notifications come only from committed, tenant-owned enquiry events.
+  const beforeNotification = await call(
+    '/v1/admin/tenant/notifications',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(beforeNotification.r.status, 200);
+  assert.deepEqual(beforeNotification.data, []);
+  await tick(db);
+  const projectedNotifications = await call(
+    '/v1/admin/tenant/notifications',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(projectedNotifications.r.status, 200);
+  assert.equal(projectedNotifications.data.length, 1);
+  const notification = projectedNotifications.data[0];
+  assert.equal(notification.read, false);
+  assert.equal(notification.enquiryId, recordId);
+  assert.match(notification.title, /New institution enquiry ENQ-/);
+  assert.ok(!JSON.stringify(notification).includes(activePayload.email));
+  const notificationRead = await call(
+    '/v1/admin/tenant/notifications/' + notification.id + '/read',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(notificationRead.r.status, 201);
+  assert.equal(notificationRead.data.status, 'read');
+  const repeatedRead = await call(
+    '/v1/admin/tenant/notifications/' + notification.id + '/read',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(repeatedRead.r.status, 201);
+  const afterNotification = await call(
+    '/v1/admin/tenant/notifications',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(afterNotification.data[0].read, true);
+  await tick(db);
+  const eventNotifications = await db.query(
+    'SELECT id FROM tenant_inbox_notifications WHERE source_event_id=$1',
+    [accepted.data.eventId],
+  );
+  assert.equal(eventNotifications.length, 1);
+  await assert.rejects(
+    owner.query(
+      'INSERT INTO tenant_inbox_notifications(tenant_id,source_event_id,enquiry_id,title) VALUES($1,$2,$3,$4)',
+      [primaryTenantId, randomUUID(), recordId, 'Cross-tenant alert must fail'],
+    ),
+    { code: '23503' },
+  );
+
   const reviewTasks = await call('/v1/admin/tasks', 'GET', undefined, {}, true);
   assert.ok(reviewTasks.data.some((task: any) => task.title.includes(accepted.data.receipt)));
 
@@ -558,6 +622,23 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.ok(otherTenantExport.r.status >= 200 && otherTenantExport.r.status < 300);
   assert.ok(!String(otherTenantExport.data).includes('QA Enquiry Visitor'));
 
+  const otherTenantNotifications = await call(
+    '/v1/admin/tenant/notifications',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(otherTenantNotifications.r.status, 200);
+  assert.deepEqual(otherTenantNotifications.data, []);
+  const deniedNotificationRead = await call(
+    '/v1/admin/tenant/notifications/' + notification.id + '/read',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.equal(deniedNotificationRead.r.status, 404);
   // The original institution cannot read or modify the secondary institution's review.
   const foreignTenantHistory = await call(
     '/v1/admin/tenant/enquiries/' + recordId + '/history',
