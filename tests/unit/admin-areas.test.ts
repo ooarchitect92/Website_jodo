@@ -7,7 +7,7 @@ import {
 } from '../../apps/web/src/components/admin/access';
 
 test('owner sees every registered admin area', () => {
-  assert.equal(allowedAdminAreas.owner.length, 18);
+  assert.equal(allowedAdminAreas.owner.length, 19);
   for (const area of allowedAdminAreas.owner) {
     assert.equal(canViewAdminArea('owner', area), true);
   }
@@ -23,6 +23,9 @@ test('sales and analysts do not retain owner navigation after role change', () =
   assert.equal(safeAdminArea('sales', 'audit'), 'overview');
   assert.equal(safeAdminArea('analyst', 'tenant'), 'overview');
   assert.equal(canViewAdminArea('sales', 'leads'), true);
+  assert.equal(canViewAdminArea('sales', 'enquiries'), true);
+  assert.equal(safeAdminArea('editor', 'enquiries'), 'overview');
+  assert.equal(safeAdminArea('analyst', 'enquiries'), 'overview');
 });
 
 test('unknown or revoked roles fail closed to the overview', () => {
