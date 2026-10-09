@@ -104,7 +104,9 @@ export function TenantEnquiries() {
       });
       setNotice('Enquiry stage saved with an audit record.');
       await load();
-      await showHistory({ ...selected, version: selected.version + 1 });
+      setHistory(
+        await request<History[]>('admin/tenant/enquiries/' + selected.id + '/history'),
+      );
     } catch (e) {
       setError((e as Error).message);
     } finally {
