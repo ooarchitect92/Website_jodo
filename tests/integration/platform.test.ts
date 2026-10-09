@@ -193,7 +193,7 @@ test('workspace membership context is explicit and tenant switching is membershi
     assert.equal(crossStage.r.status, 409);
   }
   const isolatedExport = await call('/v1/admin/leads/export', 'POST', {}, {}, true);
-  assert.equal(isolatedExport.r.status, 201);
+  assert.equal(isolatedExport.r.status, 200);
   assert.ok(!String(isolatedExport.data).includes('Synthetic QA Institute'));
 
   // Record lookup is also tenant-protected, not just the collection index.
