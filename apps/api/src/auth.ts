@@ -34,7 +34,8 @@ export interface Actor {
 }
 export type AuthedRequest = Request & { actor: Actor };
 export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
-export const isTenantReadOnly = (status: string) => status === 'suspended';
+export const isTenantReadOnly = (status: string) =>
+  ['restricted', 'suspended', 'offboarding', 'rejected'].includes(status);
 export const secureCookie = () => ({
   httpOnly: true,
   secure: process.env.DEPLOYMENT_MODE === 'production',
@@ -80,13 +81,13 @@ export class AuthGuard implements CanActivate {
       sessionId: row.session_id,
       csrf,
     };
-    // A suspended institution may inspect existing records, but it may not
+    // Restricted, suspended and offboarding institutions may inspect records, but may not
     // issue new financial or configuration instructions until reinstated.
     // Logout and switching to another authorised workspace remain available
     // so a suspended institution cannot trap the user in that workspace.
     const path = String(req.path || req.route?.path || '');
     if (
-      row.tenant_status === 'suspended' &&
+      isTenantReadOnly(row.tenant_status) &&
       !['GET', 'HEAD', 'OPTIONS'].includes(req.method) &&
       path !== '/v1/auth/logout' &&
       path !== '/v1/auth/switch-tenant'
@@ -94,7 +95,7 @@ export class AuthGuard implements CanActivate {
       await this.db.tx((c) =>
         this.db.audit(c, row.id, 'access.denied', path, { reason: 'tenant_suspended' }),
       );
-      throw new ForbiddenException('This institution is suspended for new changes');
+      throw new ForbiddenException('This institution is read-only; new changes are not permitted');
     }
     const roles = this.reflector.getAllAndOverride<string[]>('roles', [
       ctx.getHandler(),
