@@ -60,6 +60,31 @@ export function TenantEnquiries() {
     void load();
   }, [session.tenant.id]);
 
+  async function exportEnquiries() {
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/v1/admin/tenant/enquiries/export', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrf },
+        body: '{}',
+      });
+      if (!response.ok) throw new Error('Enquiry export was not completed.');
+      const href = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = 'institution-enquiries.csv';
+      link.click();
+      URL.revokeObjectURL(href);
+      setNotice('Protected enquiry CSV downloaded. Store the file securely.');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function showHistory(row: Enquiry) {
     setSelected(row);
     try {
@@ -134,9 +159,20 @@ export function TenantEnquiries() {
             <h2>Institution enquiry inbox</h2>
             <p>Only this institution's accepted enquiries are shown. No external reply is sent.</p>
           </div>
-          <button className="button outline" onClick={load}>
-            Refresh
-          </button>
+          <div className="admin-toolbar">
+            {session.tenant.role === 'owner' && (
+              <button
+                className="button outline"
+                onClick={exportEnquiries}
+                disabled={busy}
+              >
+                Export protected CSV
+              </button>
+            )}
+            <button className="button outline" onClick={load}>
+              Refresh
+            </button>
+          </div>
         </div>
         <label className="field">
           Search this institution's enquiries

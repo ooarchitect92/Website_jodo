@@ -10,16 +10,18 @@ import {
   Param,
   Post,
   Req,
+  Res,
   UseGuards,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { Db } from './db';
 import { AuthGuard, AuthedRequest, Roles } from './auth';
 import { decrypt, encrypt, keyed } from '../../../packages/core/src/security';
 import { uuid } from './content';
+import { csvCell } from '../../../packages/core/src/contracts';
 
 const domainSchema = z
   .string()
@@ -71,6 +73,52 @@ export class TenantEnquiriesAdminController {
       createdAt: r.created_at,
       fields: decrypt(r.encrypted_fields),
     }));
+  }
+
+  @Post('export')
+  @Roles('owner')
+  async export(@Req() req: AuthedRequest, @Res() res: Response) {
+    // Export the active institution only. Keep staff notes out of the bulk file.
+    const rows = await this.db.query(
+      `SELECT receipt,stage,encrypted_fields,created_at
+       FROM tenant_enquiries WHERE tenant_id=$1
+       ORDER BY created_at DESC,id DESC LIMIT 5000`,
+      [req.actor.tenantId],
+    );
+    const cells = rows.map((row) => {
+      const fields = decrypt<{
+        name: string;
+        email: string;
+        phone: string;
+        message: string;
+      }>(row.encrypted_fields);
+      return [
+        row.receipt,
+        fields.name,
+        fields.email,
+        fields.phone,
+        fields.message,
+        row.stage,
+        row.created_at.toISOString(),
+      ]
+        .map(csvCell)
+        .join(',');
+    });
+    // Confirm authorization and audit the exact export before returning any private data.
+    await this.db.tx((c) =>
+      this.db.audit(c, req.actor.id, 'tenant.enquiries.export', req.actor.tenantId, {
+        tenantId: req.actor.tenantId,
+        count: rows.length,
+        format: 'csv',
+      }),
+    );
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="institution-enquiries.csv"');
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.send(
+      ['Receipt,Name,Email,Phone,Message,Stage,Received', ...cells].join('\r\n'),
+    );
   }
 
   @Post(':id/stage')

@@ -515,6 +515,21 @@ test('workspace membership context is explicit and tenant switching is membershi
     true,
   );
   assert.equal(foreignHistory.r.status, 404);
+  // Protected CSV contains only this workspace's encrypted enquiries.
+  const scopedExport = await call(
+    '/v1/admin/tenant/enquiries/export',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.ok(scopedExport.r.status >= 200 && scopedExport.r.status < 300);
+  assert.match(String(scopedExport.r.headers.get('content-type')), /text\/csv/);
+  assert.match(String(scopedExport.r.headers.get('cache-control')), /no-store/);
+  assert.match(String(scopedExport.data), /QA Enquiry Visitor/);
+  assert.match(String(scopedExport.data), /contacted/);
+  assert.ok(!String(scopedExport.data).includes('Called from synthetic QA queue'));
+
   const reviewTasks = await call('/v1/admin/tasks', 'GET', undefined, {}, true);
   assert.ok(reviewTasks.data.some((task: any) => task.title.includes(accepted.data.receipt)));
 
@@ -545,6 +560,16 @@ test('workspace membership context is explicit and tenant switching is membershi
   );
   assert.equal(back.r.status, 201, JSON.stringify(back.data));
   assert.equal(back.data.tenant.id, primaryTenantId);
+  const otherTenantExport = await call(
+    '/v1/admin/tenant/enquiries/export',
+    'POST',
+    {},
+    {},
+    true,
+  );
+  assert.ok(otherTenantExport.r.status >= 200 && otherTenantExport.r.status < 300);
+  assert.ok(!String(otherTenantExport.data).includes('QA Enquiry Visitor'));
+
   // The original institution cannot read or modify the secondary institution's review.
   const foreignTenantHistory = await call(
     '/v1/admin/tenant/enquiries/' + recordId + '/history',
