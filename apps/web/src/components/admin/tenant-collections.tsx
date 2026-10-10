@@ -18,6 +18,11 @@ type Entry = {
   values: Record<string, string>;
 };
 type Snapshot = { version: number; title: string; fields: TenantQuestion[] };
+type CollectionSummary = {
+  total: number;
+  currentVersion: number;
+  byVersion: { version: number; count: number }[];
+};
 
 const starterField = (): TenantQuestion => ({
   key: 'field_' + crypto.randomUUID().slice(0, 8),
@@ -33,6 +38,7 @@ export function TenantCollections() {
   const [selectedId, setSelectedId] = useState('');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [versions, setVersions] = useState<Snapshot[]>([]);
+  const [summary, setSummary] = useState<CollectionSummary | null>(null);
   const [createFields, setCreateFields] = useState<TenantQuestion[]>([]);
   const [extraFields, setExtraFields] = useState<TenantQuestion[]>([]);
   const [status, setStatus] = useState('');
@@ -55,12 +61,14 @@ export function TenantCollections() {
 
   async function loadDetails(id: string) {
     try {
-      const [saved, history] = await Promise.all([
+      const [saved, history, counts] = await Promise.all([
         request<Entry[]>('admin/tenant/collections/' + id + '/entries'),
         request<Snapshot[]>('admin/tenant/collections/' + id + '/versions'),
+        request<CollectionSummary>('admin/tenant/collections/' + id + '/summary'),
       ]);
       setEntries(saved);
       setVersions(history);
+      setSummary(counts);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -71,6 +79,7 @@ export function TenantCollections() {
     setSelectedId('');
     setEntries([]);
     setVersions([]);
+    setSummary(null);
     setExtraFields([]);
     submittedKey.current = '';
     void refresh();
@@ -79,6 +88,7 @@ export function TenantCollections() {
   useEffect(() => {
     setEntries([]);
     setVersions([]);
+    setSummary(null);
     setExtraFields([]);
     submittedKey.current = '';
     submittedPayload.current = '';
@@ -238,6 +248,23 @@ export function TenantCollections() {
         <section className="admin-panel">
           <h2>{collection.title}</h2>
           <p>Schema version {collection.version} · Internal use only</p>
+          {summary && (
+            <>
+              <p>
+                <strong>{summary.total}</strong> saved records across all versions
+              </p>
+              <DataTable
+                rows={summary.byVersion}
+                columns={[
+                  ['version', 'Schema version'],
+                  ['count', 'Saved records'],
+                ]}
+              />
+              <p className="small muted">
+                Counts cover all records, not just the 100 most recently displayed below.
+              </p>
+            </>
+          )}
           <p>Current fields: {collection.fields.map((field) => field.label).join(', ')}</p>
           <details>
             <summary>Version history ({versions.length})</summary>

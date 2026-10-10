@@ -165,6 +165,27 @@ export class TenantCollectionsController {
     });
   }
 
+  @Get(':id/summary')
+  async summary(@Param('id') id: string, @Req() req: AuthedRequest) {
+    const collectionId = uuid(id);
+    const owned = await this.db.query(
+      'SELECT version FROM tenant_collections WHERE id=$1 AND tenant_id=$2',
+      [collectionId, req.actor.tenantId],
+    );
+    if (!owned.length) throw new NotFoundException('Collection not found');
+    const rows = await this.db.query(
+      `SELECT schema_version,COUNT(*)::integer AS count
+       FROM tenant_collection_entries WHERE collection_id=$1 AND tenant_id=$2
+       GROUP BY schema_version ORDER BY schema_version ASC`,
+      [collectionId, req.actor.tenantId],
+    );
+    return {
+      total: rows.reduce((sum, row) => sum + row.count, 0),
+      currentVersion: owned[0].version,
+      byVersion: rows.map((row) => ({ version: row.schema_version, count: row.count })),
+    };
+  }
+
   @Get(':id/entries')
   async entries(@Param('id') id: string, @Req() req: AuthedRequest) {
     const exists = await this.db.query(

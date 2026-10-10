@@ -233,6 +233,12 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(entriesBefore.r.status, 200);
   assert.equal(entriesBefore.data.length, 1);
   assert.equal(entriesBefore.data[0].values.campus_name, 'Synthetic north campus');
+  const summaryRoute = '/v1/admin/tenant/collections/' + collectionId + '/summary';
+  const summaryBefore = await call(summaryRoute, 'GET', undefined, {}, true);
+  assert.equal(summaryBefore.r.status, 200);
+  assert.equal(summaryBefore.data.total, 1);
+  assert.deepEqual(summaryBefore.data.byVersion, [{ version: 1, count: 1 }]);
+  assert.ok(!JSON.stringify(summaryBefore.data).includes('Synthetic north campus'));
 
   const statusField = {
     key: 'campus_status',
@@ -311,6 +317,14 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(entriesAfter.data.length, 2);
   assert.ok(entriesAfter.data.some((r: any) => r.schemaVersion === 1));
   assert.ok(entriesAfter.data.some((r: any) => r.schemaVersion === 2));
+  const summaryAfter = await call(summaryRoute, 'GET', undefined, {}, true);
+  assert.equal(summaryAfter.r.status, 200);
+  assert.equal(summaryAfter.data.total, 2);
+  assert.equal(summaryAfter.data.currentVersion, 2);
+  assert.deepEqual(summaryAfter.data.byVersion, [
+    { version: 1, count: 1 },
+    { version: 2, count: 1 },
+  ]);
 
   // Remaining legacy administration stays gated until tenant-scoped.
   for (const route of [
@@ -958,6 +972,8 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(otherTenantAnalytics.r.status, 200);
   assert.equal(otherTenantAnalytics.data.received, 0);
   assert.ok(!JSON.stringify(otherTenantAnalytics.data).includes('tenant-visitor@example.invalid'));
+  const foreignSummary = await call(summaryRoute, 'GET', undefined, {}, true);
+  assert.equal(foreignSummary.r.status, 404);
   const otherTenantNotifications = await call(
     '/v1/admin/tenant/notifications',
     'GET',
