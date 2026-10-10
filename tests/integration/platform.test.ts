@@ -275,8 +275,17 @@ test('workspace membership context is explicit and tenant switching is membershi
     true,
   );
   assert.equal(versions.r.status, 200);
-  assert.deepEqual(versions.data.map((v: any) => v.version), [2, 1]);
-  const oldRecord = await call(recordsRoute, 'POST', { ...recordInput, submissionKey: randomUUID() }, {}, true);
+  assert.deepEqual(
+    versions.data.map((v: any) => v.version),
+    [2, 1],
+  );
+  const oldRecord = await call(
+    recordsRoute,
+    'POST',
+    { ...recordInput, submissionKey: randomUUID() },
+    {},
+    true,
+  );
   assert.equal(oldRecord.r.status, 409);
   const missingChoice = await call(
     recordsRoute,
@@ -967,13 +976,7 @@ test('workspace membership context is explicit and tenant switching is membershi
   );
   assert.equal(deniedNotificationRead.r.status, 404);
   // Changing workspace must not reveal or mutate the other tenant's custom collections.
-  const foreignCollections = await call(
-    '/v1/admin/tenant/collections',
-    'GET',
-    undefined,
-    {},
-    true,
-  );
+  const foreignCollections = await call('/v1/admin/tenant/collections', 'GET', undefined, {}, true);
   assert.equal(foreignCollections.r.status, 200);
   assert.ok(!foreignCollections.data.some((row: any) => row.id === collectionId));
   const foreignEntries = await call(recordsRoute, 'GET', undefined, {}, true);

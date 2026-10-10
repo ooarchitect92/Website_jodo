@@ -148,7 +148,14 @@ export class TenantCollectionsController {
         `INSERT INTO tenant_collection_versions(
           tenant_id,collection_id,version,title,fields,created_by
         ) VALUES($1,$2,$3,$4,$5,$6)`,
-        [req.actor.tenantId, current.id, nextVersion, v.title, JSON.stringify(v.fields), req.actor.id],
+        [
+          req.actor.tenantId,
+          current.id,
+          nextVersion,
+          v.title,
+          JSON.stringify(v.fields),
+          req.actor.id,
+        ],
       );
       await this.db.audit(c, req.actor.id, 'tenant.collection.revise', current.id, {
         tenantId: req.actor.tenantId,

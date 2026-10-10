@@ -90,7 +90,8 @@ export function TenantCollections() {
     setBusy(true);
     setError('');
     try {
-      const values = new FormData(event.currentTarget);
+      const form = event.currentTarget;
+      const values = new FormData(form);
       const created = await request<Collection>('admin/tenant/collections', 'POST', {
         slug: values.get('slug'),
         title: values.get('title'),
@@ -100,7 +101,7 @@ export function TenantCollections() {
       setCreateFields([]);
       setSelectedId(created.id);
       setStatus('Private collection created. Existing data was not modified.');
-      event.currentTarget.reset();
+      form.reset();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -177,10 +178,20 @@ export function TenantCollections() {
           records and schema versions are never deleted. These are not public forms or payment
           instructions. Do not use them for financial credentials or sensitive personal data.
         </p>
-        {error && <p className="error-card" role="alert">{error}</p>}
-        {status && <p className="admin-feedback" role="status">{status}</p>}
+        {error && (
+          <p className="error-card" role="alert">
+            {error}
+          </p>
+        )}
+        {status && (
+          <p className="admin-feedback" role="status">
+            {status}
+          </p>
+        )}
         <div className="admin-toolbar">
-          <button className="button outline" type="button" onClick={refresh}>Refresh collections</button>
+          <button className="button outline" type="button" onClick={refresh}>
+            Refresh collections
+          </button>
         </div>
         <DataTable
           rows={collections}
@@ -203,7 +214,13 @@ export function TenantCollections() {
           <form onSubmit={createCollection}>
             <label className="field">
               Internal identifier
-              <input name="slug" required pattern="[a-z][a-z0-9_]{2,39}" maxLength={40} placeholder="campus_checklist" />
+              <input
+                name="slug"
+                required
+                pattern="[a-z][a-z0-9_]{2,39}"
+                maxLength={40}
+                placeholder="campus_checklist"
+              />
             </label>
             <label className="field">
               Collection title
@@ -244,7 +261,9 @@ export function TenantCollections() {
                   <select name={field.key} required={field.required} defaultValue="">
                     <option value="">Choose…</option>
                     {field.options.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
                     ))}
                   </select>
                 ) : (
@@ -276,7 +295,13 @@ export function TenantCollections() {
               <p>Existing fields are locked; only add new fields or change the collection title.</p>
               <label className="field">
                 New title
-                <input name="title" defaultValue={collection.title} minLength={3} maxLength={100} required />
+                <input
+                  name="title"
+                  defaultValue={collection.title}
+                  minLength={3}
+                  maxLength={100}
+                  required
+                />
               </label>
               <TenantFormBuilder fields={extraFields} onChange={setExtraFields} />
               <button
