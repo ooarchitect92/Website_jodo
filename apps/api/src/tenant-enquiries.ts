@@ -186,7 +186,8 @@ export class TenantEnquiriesAdminController {
       reviewed: received - stageCounts.new,
       byStage: stageCounts,
       daily,
-      definition: 'Counts accepted submissions received in the UTC calendar window; stages are current.',
+      definition:
+        'Counts accepted submissions received in the UTC calendar window; stages are current.',
     };
   }
 

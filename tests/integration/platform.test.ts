@@ -460,7 +460,10 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.equal(firstAnalytics.data.waiting, 1);
   assert.equal(firstAnalytics.data.byStage.new, 1);
   assert.equal(firstAnalytics.data.daily.length, 7);
-  assert.equal(firstAnalytics.data.daily.reduce((sum: number, row: any) => sum + row.count, 0), 1);
+  assert.equal(
+    firstAnalytics.data.daily.reduce((sum: number, row: any) => sum + row.count, 0),
+    1,
+  );
   assert.ok(!JSON.stringify(firstAnalytics.data).includes('tenant-visitor@example.invalid'));
   const invalidAnalytics = await call(
     '/v1/admin/tenant/enquiries/analytics?days=365',
