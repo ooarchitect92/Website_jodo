@@ -179,21 +179,33 @@
       "specification_status": "Specified",
       "applicability": "Applicable; full blueprint scope retained",
       "rationale": "Required foundation/growth capability. Missing scope is tracked as implementation work, not hidden as non-applicability.",
-      "implementation_status": "Not implemented",
-      "activation_status": "Disabled",
+      "implementation_status": "In progress",
+      "activation_status": "Demo only",
       "verification_status": "Not executed",
       "accountable_owner": "Repository owner; named production operator/reviewer not yet assigned",
       "public_workflow": null,
-      "owner_workflow": null,
-      "api_or_service": null,
-      "tables_and_constraints": [],
-      "permission_and_data_policy": "Single-site, scoped staff roles; core service works without analytics. See docs/privacy.md.",
+      "owner_workflow": "/admin/ (Custom collections)",
+      "api_or_service": [
+        "apps/api/src/tenant-collections.ts",
+        "apps/web/src/components/admin/tenant-collections.tsx",
+        "db/migrations/024_tenant_collection_builder.sql"
+      ],
+      "tables_and_constraints": [
+        "tenant_collections tenant-scoped slug uniqueness",
+        "tenant_collection_versions immutable per tenant/collection/version",
+        "tenant_collection_entries tenant/version foreign keys, replay keys and encrypted payloads"
+      ],
+      "permission_and_data_policy": "Owner manages schemas; owner/editor creates and reads private records within active tenant. No public access, financial integrations, or analytics; encrypted values and audited reads/writes.",
       "failure_behavior": "See docs/api.md and docs/acceptance/RELEASE.md; no false provider completion or business receipt.",
-      "automated_test_reference": [],
+      "automated_test_reference": [
+        "tests/unit/admin-areas.test.ts",
+        "tests/integration/platform.test.ts",
+        "GitHub Actions run 38032568994"
+      ],
       "manual_provider_evidence": "None; live external providers and production are not verified.",
-      "residual_risk": "Full blueprint and production acceptance incomplete; see RELEASE.md.",
+      "residual_risk": "Partial private collection editor only; full template catalogue, generalized rights/consent, imports, relational schemas and production controls remain missing.",
       "next_review_trigger": "Before launch or capability activation",
-      "verification_note": "No execution evidence for this capability."
+      "verification_note": "Bounded private schema/record builder passed CI: role access, additive revision history, encrypted records, replay handling, validation, cross-tenant FK/API denial, build and browser journeys. Full CAP-006 templates, governance and production acceptance not executed."
     },
     {
       "requirement_id": "CAP-007",
