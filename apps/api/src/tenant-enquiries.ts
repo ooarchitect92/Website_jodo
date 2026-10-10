@@ -182,8 +182,8 @@ export class TenantEnquiriesAdminController {
       days,
       since: since.toISOString(),
       received,
-      waiting: stageCounts.new,
-      reviewed: received - stageCounts.new,
+      waiting: stageCounts.new || 0,
+      reviewed: received - (stageCounts.new || 0),
       byStage: stageCounts,
       daily,
       definition:
