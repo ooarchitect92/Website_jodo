@@ -447,6 +447,30 @@ test('workspace membership context is explicit and tenant switching is membershi
   });
   assert.equal(wrongOrigin.r.status, 403);
 
+  const firstAnalytics = await call(
+    '/v1/admin/tenant/enquiries/analytics?days=7',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(firstAnalytics.r.status, 200);
+  assert.match(String(firstAnalytics.r.headers.get('cache-control')), /no-store/);
+  assert.equal(firstAnalytics.data.received, 1);
+  assert.equal(firstAnalytics.data.waiting, 1);
+  assert.equal(firstAnalytics.data.byStage.new, 1);
+  assert.equal(firstAnalytics.data.daily.length, 7);
+  assert.equal(firstAnalytics.data.daily.reduce((sum: number, row: any) => sum + row.count, 0), 1);
+  assert.ok(!JSON.stringify(firstAnalytics.data).includes('tenant-visitor@example.invalid'));
+  const invalidAnalytics = await call(
+    '/v1/admin/tenant/enquiries/analytics?days=365',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(invalidAnalytics.r.status, 422);
+
   const tenantEnquiries = await call('/v1/admin/tenant/enquiries', 'GET', undefined, {}, true);
   assert.equal(tenantEnquiries.r.status, 200);
   assert.equal(tenantEnquiries.data.length, 1);
@@ -489,6 +513,18 @@ test('workspace membership context is explicit and tenant switching is membershi
   const changed = await call('/v1/admin/tenant/enquiries', 'GET', undefined, {}, true);
   assert.equal(changed.data[0].stage, 'contacted');
   assert.equal(changed.data[0].version, 2);
+  const reviewedAnalytics = await call(
+    '/v1/admin/tenant/enquiries/analytics?days=30',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(reviewedAnalytics.r.status, 200);
+  assert.equal(reviewedAnalytics.data.received, 1);
+  assert.equal(reviewedAnalytics.data.waiting, 0);
+  assert.equal(reviewedAnalytics.data.reviewed, 1);
+  assert.equal(reviewedAnalytics.data.byStage.contacted, 1);
   const recordHistory = await call(
     '/v1/admin/tenant/enquiries/' + recordId + '/history',
     'GET',
@@ -707,6 +743,18 @@ test('workspace membership context is explicit and tenant switching is membershi
     (row: any) => row.receipt === validCustom.data.receipt,
   );
   assert.equal(customRow.fields.answers.preferred_campus, 'North');
+  const customAnalytics = await call(
+    '/v1/admin/tenant/enquiries/analytics?days=90',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(customAnalytics.r.status, 200);
+  assert.equal(customAnalytics.data.received, 2);
+  assert.equal(customAnalytics.data.byStage.new, 1);
+  assert.equal(customAnalytics.data.byStage.contacted, 1);
+  assert.equal(customAnalytics.data.daily.length, 90);
 
   const publicPage = await call(
     '/v1/public/pages/by-path?path=' + encodeURIComponent(primaryPage.slug),
@@ -739,6 +787,16 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.ok(otherTenantExport.r.status >= 200 && otherTenantExport.r.status < 300);
   assert.ok(!String(otherTenantExport.data).includes('QA Enquiry Visitor'));
 
+  const otherTenantAnalytics = await call(
+    '/v1/admin/tenant/enquiries/analytics?days=30',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(otherTenantAnalytics.r.status, 200);
+  assert.equal(otherTenantAnalytics.data.received, 0);
+  assert.ok(!JSON.stringify(otherTenantAnalytics.data).includes('tenant-visitor@example.invalid'));
   const otherTenantNotifications = await call(
     '/v1/admin/tenant/notifications',
     'GET',

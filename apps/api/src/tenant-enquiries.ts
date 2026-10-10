@@ -9,6 +9,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -133,6 +134,60 @@ export class TenantEnquiriesAdminController {
       createdAt: r.created_at,
       fields: decrypt(r.encrypted_fields),
     }));
+  }
+
+  @Get('analytics')
+  async analytics(
+    @Req() req: AuthedRequest,
+    @Query('days') window?: string,
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    const days = Number(z.enum(['7', '30', '90']).default('30').parse(window));
+    const since = new Date();
+    since.setUTCHours(0, 0, 0, 0);
+    since.setUTCDate(since.getUTCDate() - days + 1);
+
+    // Aggregate only institution-owned accepted submissions. Do not read or
+    // decrypt any personal information, identifiers, messages or custom answers.
+    const rows = await this.db.query(
+      `SELECT stage, to_char(created_at AT TIME ZONE 'UTC','YYYY-MM-DD') AS day,
+              COUNT(*)::integer AS count
+       FROM tenant_enquiries
+       WHERE tenant_id=$1 AND created_at >= $2::timestamptz
+       GROUP BY stage, day
+       ORDER BY day ASC`,
+      [req.actor.tenantId, since.toISOString()],
+    );
+    const stageCounts: Record<string, number> = {
+      new: 0,
+      contacted: 0,
+      qualified: 0,
+      closed: 0,
+      spam: 0,
+    };
+    const daily = Array.from({ length: days }, (_, i) => {
+      const date = new Date(since);
+      date.setUTCDate(since.getUTCDate() + i);
+      return { date: date.toISOString().slice(0, 10), count: 0 };
+    });
+    const byDate = new Map(daily.map((day) => [day.date, day]));
+    for (const row of rows) {
+      stageCounts[row.stage] = (stageCounts[row.stage] || 0) + row.count;
+      const entry = byDate.get(row.day);
+      if (entry) entry.count += row.count;
+    }
+    const received = Object.values(stageCounts).reduce((sum, count) => sum + count, 0);
+    res?.setHeader('Cache-Control', 'private, no-store');
+    return {
+      days,
+      since: since.toISOString(),
+      received,
+      waiting: stageCounts.new,
+      reviewed: received - stageCounts.new,
+      byStage: stageCounts,
+      daily,
+      definition: 'Counts accepted submissions received in the UTC calendar window; stages are current.',
+    };
   }
 
   @Post('export')

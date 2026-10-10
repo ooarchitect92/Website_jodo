@@ -26,6 +26,17 @@ type Enquiry = {
     answers?: Record<string, string>;
   };
 };
+type EnquiryAnalytics = {
+  days: number;
+  since: string;
+  received: number;
+  waiting: number;
+  reviewed: number;
+  byStage: Record<string, number>;
+  daily: { date: string; count: number }[];
+  definition: string;
+};
+
 type History = {
   id: string;
   from: string;
@@ -46,6 +57,8 @@ export function TenantEnquiries() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [reportDays, setReportDays] = useState('30');
+  const [analytics, setAnalytics] = useState<EnquiryAnalytics | null>(null);
 
   async function load() {
     try {
@@ -65,8 +78,24 @@ export function TenantEnquiries() {
   useEffect(() => {
     setSelected(null);
     setHistory([]);
+    setAnalytics(null);
     void load();
   }, [session.tenant.id]);
+
+  async function loadAnalytics() {
+    try {
+      setAnalytics(
+        await request<EnquiryAnalytics>('admin/tenant/enquiries/analytics?days=' + reportDays),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  useEffect(() => {
+    setAnalytics(null);
+    void loadAnalytics();
+  }, [session.tenant.id, reportDays]);
 
   async function exportEnquiries() {
     setBusy(true);
@@ -142,6 +171,7 @@ export function TenantEnquiries() {
       });
       setNotice('Enquiry stage saved with an audit record.');
       await load();
+      await loadAnalytics();
       setHistory(await request<History[]>('admin/tenant/enquiries/' + selected.id + '/history'));
     } catch (e) {
       setError((e as Error).message);
@@ -164,6 +194,57 @@ export function TenantEnquiries() {
   );
   return (
     <>
+      <section className="admin-panel">
+        <div className="admin-toolbar">
+          <div>
+            <h2>Enquiry activity</h2>
+            <p>Accepted submissions only. No cookies, visitor analytics or contact data.</p>
+          </div>
+          <label className="field">
+            Reporting period
+            <select value={reportDays} onChange={(e) => setReportDays(e.target.value)}>
+              <option value="7">Last 7 UTC days</option>
+              <option value="30">Last 30 UTC days</option>
+              <option value="90">Last 90 UTC days</option>
+            </select>
+          </label>
+        </div>
+        {analytics ? (
+          <>
+            <div className="admin-toolbar" aria-label="Enquiry totals">
+              <p>
+                <strong>{analytics.received}</strong> received
+              </p>
+              <p>
+                <strong>{analytics.waiting}</strong> waiting for review
+              </p>
+              <p>
+                <strong>{analytics.reviewed}</strong> moved beyond new
+              </p>
+            </div>
+            <DataTable
+              rows={Object.entries(analytics.byStage).map(([stage, count]) => ({ stage, count }))}
+              columns={[
+                ['stage', 'Current stage'],
+                ['count', 'Enquiries'],
+              ]}
+            />
+            <details>
+              <summary>Daily accepted submissions ({analytics.days} UTC days)</summary>
+              <DataTable
+                rows={analytics.daily}
+                columns={[
+                  ['date', 'UTC date'],
+                  ['count', 'Accepted enquiries'],
+                ]}
+              />
+            </details>
+            <p className="small muted">{analytics.definition}</p>
+          </>
+        ) : (
+          <p role="status">Loading institution enquiry statistics…</p>
+        )}
+      </section>
       <section className="admin-panel">
         <div className="admin-toolbar">
           <div>
