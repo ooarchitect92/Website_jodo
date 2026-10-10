@@ -181,7 +181,7 @@ export class TenantCollectionsController {
     );
     return {
       total: rows.reduce((sum, row) => sum + row.count, 0),
-      currentVersion: owned[0].version,
+      currentVersion: owned[0]!.version,
       byVersion: rows.map((row) => ({ version: row.schema_version, count: row.count })),
     };
   }
