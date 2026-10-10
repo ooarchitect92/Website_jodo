@@ -154,6 +154,155 @@ test('workspace membership context is explicit and tenant switching is membershi
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === primaryTenantId));
   assert.ok(me.data.workspaces.some((workspace: any) => workspace.id === second.id));
 
+  // Private custom collections: no public route, additive schemas and encrypted records.
+  const initialCollections = await call('/v1/admin/tenant/collections', 'GET', undefined, {}, true);
+  assert.equal(initialCollections.r.status, 200);
+  assert.deepEqual(initialCollections.data, []);
+  const campusField = {
+    key: 'campus_name',
+    label: 'Campus name',
+    kind: 'short_text',
+    required: true,
+    options: [],
+  };
+  const collectionCreated = await call(
+    '/v1/admin/tenant/collections',
+    'POST',
+    { slug: 'qa_campuses', title: 'Campus checklist', fields: [campusField] },
+    {},
+    true,
+  );
+  assert.equal(collectionCreated.r.status, 201, JSON.stringify(collectionCreated.data));
+  const collectionId = collectionCreated.data.id;
+  assert.equal(collectionCreated.data.version, 1);
+  const duplicateCollection = await call(
+    '/v1/admin/tenant/collections',
+    'POST',
+    { slug: 'qa_campuses', title: 'Campus checklist', fields: [campusField] },
+    {},
+    true,
+  );
+  assert.equal(duplicateCollection.r.status, 409);
+  const badCollectionFields = await call(
+    '/v1/admin/tenant/collections',
+    'POST',
+    { slug: 'qa_invalid', title: 'Invalid fields', fields: [campusField, campusField] },
+    {},
+    true,
+  );
+  assert.equal(badCollectionFields.r.status, 422);
+  const recordsRoute = '/v1/admin/tenant/collections/' + collectionId + '/entries';
+  const recordKey = randomUUID();
+  const recordInput = {
+    version: 1,
+    submissionKey: recordKey,
+    values: { campus_name: 'Synthetic north campus' },
+  };
+  const createdRecord = await call(recordsRoute, 'POST', recordInput, {}, true);
+  assert.equal(createdRecord.r.status, 201, JSON.stringify(createdRecord.data));
+  const replayRecord = await call(recordsRoute, 'POST', recordInput, {}, true);
+  assert.equal(replayRecord.r.status, 201);
+  assert.equal(replayRecord.data.replayed, true);
+  assert.equal(replayRecord.data.id, createdRecord.data.id);
+  const collidingRecord = await call(
+    recordsRoute,
+    'POST',
+    { ...recordInput, values: { campus_name: 'Different record' } },
+    {},
+    true,
+  );
+  assert.equal(collidingRecord.r.status, 409);
+  const invalidRecord = await call(
+    recordsRoute,
+    'POST',
+    { ...recordInput, submissionKey: randomUUID(), values: { unknown: 'other' } },
+    {},
+    true,
+  );
+  assert.equal(invalidRecord.r.status, 422);
+  const savedEncrypted = (
+    await owner.query(
+      'SELECT tenant_id,encrypted_data,schema_version FROM tenant_collection_entries WHERE id=$1',
+      [createdRecord.data.id],
+    )
+  ).rows[0];
+  assert.equal(savedEncrypted.tenant_id, secondaryTenantId);
+  assert.equal(savedEncrypted.schema_version, 1);
+  assert.ok(!savedEncrypted.encrypted_data.includes('Synthetic north campus'));
+  const entriesBefore = await call(recordsRoute, 'GET', undefined, {}, true);
+  assert.equal(entriesBefore.r.status, 200);
+  assert.equal(entriesBefore.data.length, 1);
+  assert.equal(entriesBefore.data[0].values.campus_name, 'Synthetic north campus');
+
+  const statusField = {
+    key: 'campus_status',
+    label: 'Campus status',
+    kind: 'choice',
+    required: true,
+    options: ['Pending', 'Approved'],
+  };
+  const revisionRoute = '/v1/admin/tenant/collections/' + collectionId + '/revisions';
+  const blockedRemoval = await call(
+    revisionRoute,
+    'POST',
+    { expectedVersion: 1, title: 'Campus checklist', fields: [statusField] },
+    {},
+    true,
+  );
+  assert.equal(blockedRemoval.r.status, 409);
+  const updatedCollection = await call(
+    revisionRoute,
+    'POST',
+    { expectedVersion: 1, title: 'Campus checklist', fields: [campusField, statusField] },
+    {},
+    true,
+  );
+  assert.equal(updatedCollection.r.status, 201, JSON.stringify(updatedCollection.data));
+  assert.equal(updatedCollection.data.version, 2);
+  const staleCollection = await call(
+    revisionRoute,
+    'POST',
+    { expectedVersion: 1, title: 'Campus checklist', fields: [campusField, statusField] },
+    {},
+    true,
+  );
+  assert.equal(staleCollection.r.status, 409);
+  const versions = await call(
+    '/v1/admin/tenant/collections/' + collectionId + '/versions',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(versions.r.status, 200);
+  assert.deepEqual(versions.data.map((v: any) => v.version), [2, 1]);
+  const oldRecord = await call(recordsRoute, 'POST', { ...recordInput, submissionKey: randomUUID() }, {}, true);
+  assert.equal(oldRecord.r.status, 409);
+  const missingChoice = await call(
+    recordsRoute,
+    'POST',
+    { version: 2, submissionKey: randomUUID(), values: { campus_name: 'South campus' } },
+    {},
+    true,
+  );
+  assert.equal(missingChoice.r.status, 422);
+  const validRecord = await call(
+    recordsRoute,
+    'POST',
+    {
+      version: 2,
+      submissionKey: randomUUID(),
+      values: { campus_name: 'Synthetic south campus', campus_status: 'Approved' },
+    },
+    {},
+    true,
+  );
+  assert.equal(validRecord.r.status, 201, JSON.stringify(validRecord.data));
+  const entriesAfter = await call(recordsRoute, 'GET', undefined, {}, true);
+  assert.equal(entriesAfter.data.length, 2);
+  assert.ok(entriesAfter.data.some((r: any) => r.schemaVersion === 1));
+  assert.ok(entriesAfter.data.some((r: any) => r.schemaVersion === 2));
+
   // Remaining legacy administration stays gated until tenant-scoped.
   for (const route of [
     '/v1/admin/overview',
@@ -817,6 +966,56 @@ test('workspace membership context is explicit and tenant switching is membershi
     true,
   );
   assert.equal(deniedNotificationRead.r.status, 404);
+  // Changing workspace must not reveal or mutate the other tenant's custom collections.
+  const foreignCollections = await call(
+    '/v1/admin/tenant/collections',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(foreignCollections.r.status, 200);
+  assert.ok(!foreignCollections.data.some((row: any) => row.id === collectionId));
+  const foreignEntries = await call(recordsRoute, 'GET', undefined, {}, true);
+  assert.equal(foreignEntries.r.status, 404);
+  const foreignVersions = await call(
+    '/v1/admin/tenant/collections/' + collectionId + '/versions',
+    'GET',
+    undefined,
+    {},
+    true,
+  );
+  assert.equal(foreignVersions.r.status, 404);
+  const foreignRevision = await call(
+    revisionRoute,
+    'POST',
+    { expectedVersion: 2, title: 'Foreign mutation', fields: [campusField, statusField] },
+    {},
+    true,
+  );
+  assert.equal(foreignRevision.r.status, 404);
+  const foreignRecord = await call(
+    recordsRoute,
+    'POST',
+    {
+      version: 2,
+      submissionKey: randomUUID(),
+      values: { campus_name: 'Cross-tenant', campus_status: 'Pending' },
+    },
+    {},
+    true,
+  );
+  assert.equal(foreignRecord.r.status, 404);
+  await assert.rejects(
+    owner.query(
+      `INSERT INTO tenant_collection_entries(
+         tenant_id,collection_id,schema_version,submission_key,fingerprint,encrypted_data,created_by
+       ) VALUES($1,$2,2,$3,'invalid', 'encrypted', $4)`,
+      [primaryTenantId, collectionId, randomUUID(), user.id],
+    ),
+    { code: '23503' },
+  );
+
   // The original institution cannot read or modify the secondary institution's review.
   const foreignTenantHistory = await call(
     '/v1/admin/tenant/enquiries/' + recordId + '/history',
