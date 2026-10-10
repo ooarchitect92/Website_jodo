@@ -9,6 +9,7 @@ export const allowedAdminAreas: Record<string, readonly string[]> = {
     'leads',
     'enquiries',
     'notifications',
+    'collections',
     'fees',
     'fee-plans',
     'academic',
@@ -25,7 +26,7 @@ export const allowedAdminAreas: Record<string, readonly string[]> = {
     'users',
     'integrations',
   ],
-  editor: ['overview', 'content', 'media'],
+  editor: ['overview', 'content', 'media', 'collections'],
   sales: ['overview', 'leads', 'enquiries', 'notifications', 'tasks'],
   analyst: ['overview'],
 };

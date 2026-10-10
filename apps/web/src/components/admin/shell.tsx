@@ -8,6 +8,7 @@ import { ContentList } from './content-list';
 import { Leads } from './leads';
 import { TenantEnquiries } from './tenant-enquiries';
 import { TenantNotifications } from './tenant-notifications';
+import { TenantCollections } from './tenant-collections';
 import { Workflows } from './workflows';
 import { Dashboard, Campaigns, Media, Settings, Records } from './panels';
 import { FeeOperations } from './fees';
@@ -20,6 +21,7 @@ const sections = [
   ['leads', 'Leads'],
   ['enquiries', 'Institution enquiries'],
   ['notifications', 'Notifications'],
+  ['collections', 'Custom collections'],
   ['fees', 'Fee operations'],
   ['fee-plans', 'Fee plans & receivables'],
   ['academic', 'Students & academic'],
@@ -174,6 +176,8 @@ export function AdminShell() {
         return <TenantEnquiries />;
       case 'notifications':
         return <TenantNotifications openEnquiries={() => setArea('enquiries')} />;
+      case 'collections':
+        return <TenantCollections />;
       case 'campaigns':
         return <Campaigns />;
       case 'workflows':
